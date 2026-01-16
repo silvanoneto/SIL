@@ -1,0 +1,234 @@
+version: '3.8'
+
+services:
+  # ==============================================================================
+  # Runtime - Edge deployment with LIS compiler/runtime
+  # ==============================================================================
+  sil-runtime:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: sil:runtime
+    container_name: sil-runtime
+    restart: unless-stopped
+
+    # Resource limits for edge devices
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 128M
+
+    # Mount volumes for programs and data
+    volumes:
+      - ./programs:/app/programs:ro
+      - ./data:/app/data:rw
+      - /tmp/sil:/tmp/sil:rw
+
+    # Environment variables
+    environment:
+      - RUST_LOG=info
+      - LIS_DATA_DIR=/app/data
+      - LIS_TEMP_DIR=/tmp/sil
+
+    # Network configuration
+    networks:
+      - sil-network
+
+    # Default command - run a program
+    command: ["lis", "run", "/app/programs/main.lis"]
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "lis", "--version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ==============================================================================
+  # API Server - REST API for LIS compilation and execution
+  # ==============================================================================
+  sil-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api
+    image: sil:api
+    container_name: sil-api
+    restart: unless-stopped
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+    # Port mapping
+    ports:
+      - "3000:3000"
+
+    # Environment variables
+    environment:
+      - RUST_LOG=info
+      - LIS_API_HOST=0.0.0.0
+      - LIS_API_PORT=3000
+      # Optional: API key authentication (comma-separated)
+      # - LIS_API_KEYS=key1,key2,key3
+      # Optional: Rate limiting
+      - LIS_API_RATE_LIMIT=100
+      - LIS_API_RATE_BURST=200
+
+    # Network configuration
+    networks:
+      - sil-network
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ==============================================================================
+  # Development - Development environment with full toolchain
+  # ==============================================================================
+  sil-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    image: :dev
+    container_name: -dev
+    restart: "no"
+
+    # Mount source code for live development
+    volumes:
+      - .:/workspace:rw
+      - cargo-cache:/home/sil/.cargo/registry
+      - cargo-git:/home/sil/.cargo/git
+      - target-cache:/workspace/target
+
+    # Environment variables
+    environment:
+      - RUST_LOG=debug
+      - RUST_BACKTRACE=1
+
+    # Network configuration
+    networks:
+      - sil -network
+
+    # Interactive mode
+    stdin_open: true
+    tty: true
+
+    # Override default command for development
+    command: ["/bin/bash"]
+
+  # ==============================================================================
+  # Swarm Node - P2P mesh network node
+  # ==============================================================================
+  sil-node:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: sil:latest
+    restart: unless-stopped
+
+    # Scale this service for swarm testing
+    # docker-compose up --scale -node=5
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 256M
+
+    # Volumes
+    volumes:
+      - ./programs:/app/programs:ro
+      - ./data:/app/data:rw
+
+    # Environment
+    environment:
+      - RUST_LOG=info
+      - SIL_NODE_ID=${SIL_NODE_ID:-auto}
+      - SIL_MESH_NETWORK=-swarm
+      - SIL_P2P_PORT=8888
+
+    # Network
+    networks:
+      - sil-network
+
+    # Expose P2P port
+    expose:
+      - "8888"
+
+    # Command - run swarm node
+    command: ["lis", "run", "/app/programs/swarm_node.lis"]
+
+# ==============================================================================
+# Networks
+# ==============================================================================
+networks:
+  sil-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+# ==============================================================================
+# Volumes for development (persist cargo cache)
+# ==============================================================================
+volumes:
+  cargo-cache:
+  cargo-git:
+  target-cache:
+
+# ==============================================================================
+# Usage Examples:
+# ==============================================================================
+#
+# 1. Build and run runtime:
+#    docker-compose up sil-runtime
+#
+# 2. Run API server:
+#    docker-compose up sil-api
+#    # API available at http://localhost:3000
+#    # Swagger UI at http://localhost:3000/docs
+#
+# 3. Development environment:
+#    docker-compose run --rm sil-dev
+#
+# 4. Run swarm of 5 nodes:
+#    docker-compose up --scale sil-node=5 sil-node
+#
+# 5. Build only:
+#    docker-compose build
+#
+# 6. Stop all services:
+#    docker-compose down
+#
+# 7. View logs:
+#    docker-compose logs -f sil-api
+#
+# 8. Execute command in running container:
+#    docker-compose exec sil-runtime lis compile /app/programs/test.lis
+#
+# 9. Test API endpoint:
+#    curl -X POST http://localhost:3000/api/compile \
+#      -H "Content-Type: application/json" \
+#      -d '{"source": "fn main() { return 42; }"}'
+#
+# ==============================================================================

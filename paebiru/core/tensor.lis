@@ -1,0 +1,282 @@
+// Paebiru ML Library - Core Tensor Operations
+// ByteSil/State helpers for ML computations
+
+// =============================================================================
+// ByteSil Conversions
+// =============================================================================
+
+fn magnitude(b: ByteSil) -> Float {
+    return bytesil_magnitude(b);
+}
+
+fn phase(b: ByteSil) -> Float {
+    return bytesil_phase_radians(b);
+}
+
+fn phase_degrees(b: ByteSil) -> Float {
+    return bytesil_phase_degrees(b);
+}
+
+fn rho(b: ByteSil) -> Int {
+    return bytesil_rho(b);
+}
+
+fn theta(b: ByteSil) -> Int {
+    return bytesil_theta(b);
+}
+
+fn from_rho_theta(r: Int, t: Int) -> ByteSil {
+    return bytesil_new(r, t);
+}
+
+fn from_mag_phase(mag: Float, phase_rad: Float) -> ByteSil {
+    let safe_mag = max_float(mag, 0.0001);
+    let rho_float = ln(safe_mag);
+    let rho_clamped = clamp_float(rho_float, -8.0, 7.0);
+    let rho_int = floor(rho_clamped + 0.5);
+    let pi_val = pi();
+    let two_pi = pi_val * 2.0;
+    let phase_norm = phase_rad - floor(phase_rad / two_pi) * two_pi;
+    let theta_float = phase_norm * 8.0 / pi_val;
+    let theta_clamped = clamp_float(theta_float, 0.0, 15.9);
+    let theta_int = floor(theta_clamped);
+    return bytesil_new(floor(rho_int), floor(theta_int));
+}
+
+fn from_cartesian(real: Float, imag: Float) -> ByteSil {
+    let mag = sqrt(real * real + imag * imag);
+    let phase_rad = atan2(imag, real);
+    return from_mag_phase(mag, phase_rad);
+}
+
+fn to_real(b: ByteSil) -> Float {
+    let mag = bytesil_magnitude(b);
+    let phase_rad = bytesil_phase_radians(b);
+    return mag * cos(phase_rad);
+}
+
+fn to_imag(b: ByteSil) -> Float {
+    let mag = bytesil_magnitude(b);
+    let phase_rad = bytesil_phase_radians(b);
+    return mag * sin(phase_rad);
+}
+
+// =============================================================================
+// ByteSil Constants
+// =============================================================================
+
+fn zero() -> ByteSil {
+    return bytesil_null();
+}
+
+fn one() -> ByteSil {
+    return bytesil_one();
+}
+
+fn i_unit() -> ByteSil {
+    return bytesil_i();
+}
+
+fn neg_one() -> ByteSil {
+    return bytesil_neg_one();
+}
+
+fn neg_i() -> ByteSil {
+    return bytesil_neg_i();
+}
+
+fn max_bytesil() -> ByteSil {
+    return bytesil_max();
+}
+
+// =============================================================================
+// ByteSil Arithmetic
+// =============================================================================
+
+fn add_bs(a: ByteSil, b: ByteSil) -> ByteSil {
+    return complex_add(a, b);
+}
+
+fn sub_bs(a: ByteSil, b: ByteSil) -> ByteSil {
+    return complex_sub(a, b);
+}
+
+fn mul_bs(a: ByteSil, b: ByteSil) -> ByteSil {
+    return bytesil_mul(a, b);
+}
+
+fn div_bs(a: ByteSil, b: ByteSil) -> ByteSil {
+    return bytesil_div(a, b);
+}
+
+fn scale_bs(b: ByteSil, s: Float) -> ByteSil {
+    return complex_scale(b, s);
+}
+
+fn rotate_bs(b: ByteSil, angle_rad: Float) -> ByteSil {
+    return complex_rotate(b, angle_rad);
+}
+
+fn conjugate(b: ByteSil) -> ByteSil {
+    return bytesil_conj(b);
+}
+
+fn inverse(b: ByteSil) -> ByteSil {
+    return bytesil_inv(b);
+}
+
+fn power(b: ByteSil, n: Int) -> ByteSil {
+    return bytesil_pow(b, n);
+}
+
+fn root(b: ByteSil, n: Int) -> ByteSil {
+    return bytesil_root(b, n);
+}
+
+fn lerp_bs(a: ByteSil, b: ByteSil, t: Float) -> ByteSil {
+    return complex_lerp(a, b, t);
+}
+
+// =============================================================================
+// State Layer Access
+// =============================================================================
+
+fn get_layer(s: State, idx: Int) -> ByteSil {
+    return state_get_layer(s, idx);
+}
+
+fn set_layer(s: State, idx: Int, val: ByteSil) -> State {
+    return state_set_layer(s, idx, val);
+}
+
+// =============================================================================
+// State Construction
+// =============================================================================
+
+fn vacuum() -> State {
+    return state_vacuum();
+}
+
+fn neutral() -> State {
+    return state_neutral();
+}
+
+fn maximum() -> State {
+    return state_maximum();
+}
+
+fn singleton(idx: Int, val: ByteSil) -> State {
+    let s = state_vacuum();
+    return state_set_layer(s, idx, val);
+}
+
+fn uniform(val: ByteSil) -> State {
+    let s = state_vacuum();
+    let s = state_set_layer(s, 0, val);
+    let s = state_set_layer(s, 1, val);
+    let s = state_set_layer(s, 2, val);
+    let s = state_set_layer(s, 3, val);
+    let s = state_set_layer(s, 4, val);
+    let s = state_set_layer(s, 5, val);
+    let s = state_set_layer(s, 6, val);
+    let s = state_set_layer(s, 7, val);
+    let s = state_set_layer(s, 8, val);
+    let s = state_set_layer(s, 9, val);
+    let s = state_set_layer(s, 10, val);
+    let s = state_set_layer(s, 11, val);
+    let s = state_set_layer(s, 12, val);
+    let s = state_set_layer(s, 13, val);
+    let s = state_set_layer(s, 14, val);
+    let s = state_set_layer(s, 15, val);
+    return s;
+}
+
+// =============================================================================
+// State Operations
+// =============================================================================
+
+fn xor_state(a: State, b: State) -> State {
+    return state_xor(a, b);
+}
+
+fn tensor(a: State, b: State) -> State {
+    return state_tensor(a, b);
+}
+
+fn project(s: State, group: Int) -> State {
+    return state_project(s, group);
+}
+
+fn collapse_xor(s: State) -> ByteSil {
+    return state_collapse_xor(s);
+}
+
+fn collapse_sum(s: State) -> ByteSil {
+    return state_collapse_sum(s);
+}
+
+fn shift_up(s: State) -> State {
+    return shift_layers_up(s);
+}
+
+fn shift_down(s: State) -> State {
+    return shift_layers_down(s);
+}
+
+fn rotate_state(s: State, n: Int) -> State {
+    return rotate_layers(s, n);
+}
+
+// =============================================================================
+// State Interpolation
+// =============================================================================
+
+fn interpolate(a: State, b: State, t: Float) -> State {
+    let tc = clamp_float(t, 0.0, 1.0);
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, complex_lerp(state_get_layer(a, 0), state_get_layer(b, 0), tc));
+    let r = state_set_layer(r, 1, complex_lerp(state_get_layer(a, 1), state_get_layer(b, 1), tc));
+    let r = state_set_layer(r, 2, complex_lerp(state_get_layer(a, 2), state_get_layer(b, 2), tc));
+    let r = state_set_layer(r, 3, complex_lerp(state_get_layer(a, 3), state_get_layer(b, 3), tc));
+    let r = state_set_layer(r, 4, complex_lerp(state_get_layer(a, 4), state_get_layer(b, 4), tc));
+    let r = state_set_layer(r, 5, complex_lerp(state_get_layer(a, 5), state_get_layer(b, 5), tc));
+    let r = state_set_layer(r, 6, complex_lerp(state_get_layer(a, 6), state_get_layer(b, 6), tc));
+    let r = state_set_layer(r, 7, complex_lerp(state_get_layer(a, 7), state_get_layer(b, 7), tc));
+    let r = state_set_layer(r, 8, complex_lerp(state_get_layer(a, 8), state_get_layer(b, 8), tc));
+    let r = state_set_layer(r, 9, complex_lerp(state_get_layer(a, 9), state_get_layer(b, 9), tc));
+    let r = state_set_layer(r, 10, complex_lerp(state_get_layer(a, 10), state_get_layer(b, 10), tc));
+    let r = state_set_layer(r, 11, complex_lerp(state_get_layer(a, 11), state_get_layer(b, 11), tc));
+    let r = state_set_layer(r, 12, complex_lerp(state_get_layer(a, 12), state_get_layer(b, 12), tc));
+    let r = state_set_layer(r, 13, complex_lerp(state_get_layer(a, 13), state_get_layer(b, 13), tc));
+    let r = state_set_layer(r, 14, complex_lerp(state_get_layer(a, 14), state_get_layer(b, 14), tc));
+    let r = state_set_layer(r, 15, complex_lerp(state_get_layer(a, 15), state_get_layer(b, 15), tc));
+    return r;
+}
+
+// =============================================================================
+// State Predicates
+// =============================================================================
+
+fn is_vacuum(s: State) -> Bool {
+    return state_is_vacuum(s);
+}
+
+fn is_neutral(s: State) -> Bool {
+    return state_is_neutral(s);
+}
+
+fn equals(a: State, b: State) -> Bool {
+    return state_equals(a, b);
+}
+
+fn count_active(s: State) -> Int {
+    return state_count_active_layers(s);
+}
+
+fn count_null(s: State) -> Int {
+    return state_count_null_layers(s);
+}
+
+fn hash(s: State) -> Int {
+    return state_hash(s);
+}

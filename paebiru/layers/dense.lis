@@ -1,0 +1,466 @@
+// Dense (fully connected) layer implementation
+// Uses State as 4x4 matrix for weights, State as 16-element vector for input/output
+
+// Dense layer forward pass: output = activation(input * weights + bias)
+// input: State (16 elements as input vector)
+// weights: State (16 elements, treated as 4x4 weight matrix flattened)
+// bias: State (16 elements bias vector)
+// Returns: State with linear transformation applied
+fn dense_forward(input: State, weights: State, bias: State) -> State {
+    // Compute weighted sum using dot products
+    // For a 16-element vector, we compute element-wise multiplication and sum
+    let weighted = state_tensor(input, weights);
+    let with_bias = state_xor(weighted, bias);
+    return with_bias;
+}
+
+// Dense forward without bias
+fn dense_no_bias(input: State, weights: State) -> State {
+    return state_tensor(input, weights);
+}
+
+// Dense forward with ReLU activation
+fn dense_relu(input: State, weights: State, bias: State) -> State {
+    let linear = dense_forward(input, weights, bias);
+    return relu_state_internal(linear);
+}
+
+// Dense forward with sigmoid activation
+fn dense_sigmoid(input: State, weights: State, bias: State) -> State {
+    let linear = dense_forward(input, weights, bias);
+    return sigmoid_state_internal(linear);
+}
+
+// Dense forward with GELU activation
+fn dense_gelu(input: State, weights: State, bias: State) -> State {
+    let linear = dense_forward(input, weights, bias);
+    return gelu_state_internal(linear);
+}
+
+// Helper: ReLU on State (inline to avoid cross-module dependency)
+fn relu_state_internal(s: State) -> State {
+    let result = state_vacuum();
+
+    let v0 = state_get_layer(s, 0);
+    let m0 = bytesil_magnitude(v0);
+    let r0 = bytesil_new(floor(max_float(0.0, ln(max_float(m0, 0.0001)))), 0);
+    let result = state_set_layer(result, 0, r0);
+
+    let v1 = state_get_layer(s, 1);
+    let m1 = bytesil_magnitude(v1);
+    let r1 = bytesil_new(floor(max_float(0.0, ln(max_float(m1, 0.0001)))), 0);
+    let result = state_set_layer(result, 1, r1);
+
+    let v2 = state_get_layer(s, 2);
+    let m2 = bytesil_magnitude(v2);
+    let r2 = bytesil_new(floor(max_float(0.0, ln(max_float(m2, 0.0001)))), 0);
+    let result = state_set_layer(result, 2, r2);
+
+    let v3 = state_get_layer(s, 3);
+    let m3 = bytesil_magnitude(v3);
+    let r3 = bytesil_new(floor(max_float(0.0, ln(max_float(m3, 0.0001)))), 0);
+    let result = state_set_layer(result, 3, r3);
+
+    let v4 = state_get_layer(s, 4);
+    let m4 = bytesil_magnitude(v4);
+    let r4 = bytesil_new(floor(max_float(0.0, ln(max_float(m4, 0.0001)))), 0);
+    let result = state_set_layer(result, 4, r4);
+
+    let v5 = state_get_layer(s, 5);
+    let m5 = bytesil_magnitude(v5);
+    let r5 = bytesil_new(floor(max_float(0.0, ln(max_float(m5, 0.0001)))), 0);
+    let result = state_set_layer(result, 5, r5);
+
+    let v6 = state_get_layer(s, 6);
+    let m6 = bytesil_magnitude(v6);
+    let r6 = bytesil_new(floor(max_float(0.0, ln(max_float(m6, 0.0001)))), 0);
+    let result = state_set_layer(result, 6, r6);
+
+    let v7 = state_get_layer(s, 7);
+    let m7 = bytesil_magnitude(v7);
+    let r7 = bytesil_new(floor(max_float(0.0, ln(max_float(m7, 0.0001)))), 0);
+    let result = state_set_layer(result, 7, r7);
+
+    let v8 = state_get_layer(s, 8);
+    let m8 = bytesil_magnitude(v8);
+    let r8 = bytesil_new(floor(max_float(0.0, ln(max_float(m8, 0.0001)))), 0);
+    let result = state_set_layer(result, 8, r8);
+
+    let v9 = state_get_layer(s, 9);
+    let m9 = bytesil_magnitude(v9);
+    let r9 = bytesil_new(floor(max_float(0.0, ln(max_float(m9, 0.0001)))), 0);
+    let result = state_set_layer(result, 9, r9);
+
+    let v10 = state_get_layer(s, 10);
+    let m10 = bytesil_magnitude(v10);
+    let r10 = bytesil_new(floor(max_float(0.0, ln(max_float(m10, 0.0001)))), 0);
+    let result = state_set_layer(result, 10, r10);
+
+    let v11 = state_get_layer(s, 11);
+    let m11 = bytesil_magnitude(v11);
+    let r11 = bytesil_new(floor(max_float(0.0, ln(max_float(m11, 0.0001)))), 0);
+    let result = state_set_layer(result, 11, r11);
+
+    let v12 = state_get_layer(s, 12);
+    let m12 = bytesil_magnitude(v12);
+    let r12 = bytesil_new(floor(max_float(0.0, ln(max_float(m12, 0.0001)))), 0);
+    let result = state_set_layer(result, 12, r12);
+
+    let v13 = state_get_layer(s, 13);
+    let m13 = bytesil_magnitude(v13);
+    let r13 = bytesil_new(floor(max_float(0.0, ln(max_float(m13, 0.0001)))), 0);
+    let result = state_set_layer(result, 13, r13);
+
+    let v14 = state_get_layer(s, 14);
+    let m14 = bytesil_magnitude(v14);
+    let r14 = bytesil_new(floor(max_float(0.0, ln(max_float(m14, 0.0001)))), 0);
+    let result = state_set_layer(result, 14, r14);
+
+    let v15 = state_get_layer(s, 15);
+    let m15 = bytesil_magnitude(v15);
+    let r15 = bytesil_new(floor(max_float(0.0, ln(max_float(m15, 0.0001)))), 0);
+    let result = state_set_layer(result, 15, r15);
+
+    return result;
+}
+
+// Helper: Sigmoid on State
+fn sigmoid_state_internal(s: State) -> State {
+    let result = state_vacuum();
+
+    let v0 = state_get_layer(s, 0);
+    let m0 = bytesil_magnitude(v0);
+    let sig0 = 1.0 / (1.0 + exp(0.0 - m0));
+    let r0 = bytesil_new(floor(ln(max_float(sig0, 0.0001))), 0);
+    let result = state_set_layer(result, 0, r0);
+
+    let v1 = state_get_layer(s, 1);
+    let m1 = bytesil_magnitude(v1);
+    let sig1 = 1.0 / (1.0 + exp(0.0 - m1));
+    let r1 = bytesil_new(floor(ln(max_float(sig1, 0.0001))), 0);
+    let result = state_set_layer(result, 1, r1);
+
+    let v2 = state_get_layer(s, 2);
+    let m2 = bytesil_magnitude(v2);
+    let sig2 = 1.0 / (1.0 + exp(0.0 - m2));
+    let r2 = bytesil_new(floor(ln(max_float(sig2, 0.0001))), 0);
+    let result = state_set_layer(result, 2, r2);
+
+    let v3 = state_get_layer(s, 3);
+    let m3 = bytesil_magnitude(v3);
+    let sig3 = 1.0 / (1.0 + exp(0.0 - m3));
+    let r3 = bytesil_new(floor(ln(max_float(sig3, 0.0001))), 0);
+    let result = state_set_layer(result, 3, r3);
+
+    let v4 = state_get_layer(s, 4);
+    let m4 = bytesil_magnitude(v4);
+    let sig4 = 1.0 / (1.0 + exp(0.0 - m4));
+    let r4 = bytesil_new(floor(ln(max_float(sig4, 0.0001))), 0);
+    let result = state_set_layer(result, 4, r4);
+
+    let v5 = state_get_layer(s, 5);
+    let m5 = bytesil_magnitude(v5);
+    let sig5 = 1.0 / (1.0 + exp(0.0 - m5));
+    let r5 = bytesil_new(floor(ln(max_float(sig5, 0.0001))), 0);
+    let result = state_set_layer(result, 5, r5);
+
+    let v6 = state_get_layer(s, 6);
+    let m6 = bytesil_magnitude(v6);
+    let sig6 = 1.0 / (1.0 + exp(0.0 - m6));
+    let r6 = bytesil_new(floor(ln(max_float(sig6, 0.0001))), 0);
+    let result = state_set_layer(result, 6, r6);
+
+    let v7 = state_get_layer(s, 7);
+    let m7 = bytesil_magnitude(v7);
+    let sig7 = 1.0 / (1.0 + exp(0.0 - m7));
+    let r7 = bytesil_new(floor(ln(max_float(sig7, 0.0001))), 0);
+    let result = state_set_layer(result, 7, r7);
+
+    let v8 = state_get_layer(s, 8);
+    let m8 = bytesil_magnitude(v8);
+    let sig8 = 1.0 / (1.0 + exp(0.0 - m8));
+    let r8 = bytesil_new(floor(ln(max_float(sig8, 0.0001))), 0);
+    let result = state_set_layer(result, 8, r8);
+
+    let v9 = state_get_layer(s, 9);
+    let m9 = bytesil_magnitude(v9);
+    let sig9 = 1.0 / (1.0 + exp(0.0 - m9));
+    let r9 = bytesil_new(floor(ln(max_float(sig9, 0.0001))), 0);
+    let result = state_set_layer(result, 9, r9);
+
+    let v10 = state_get_layer(s, 10);
+    let m10 = bytesil_magnitude(v10);
+    let sig10 = 1.0 / (1.0 + exp(0.0 - m10));
+    let r10 = bytesil_new(floor(ln(max_float(sig10, 0.0001))), 0);
+    let result = state_set_layer(result, 10, r10);
+
+    let v11 = state_get_layer(s, 11);
+    let m11 = bytesil_magnitude(v11);
+    let sig11 = 1.0 / (1.0 + exp(0.0 - m11));
+    let r11 = bytesil_new(floor(ln(max_float(sig11, 0.0001))), 0);
+    let result = state_set_layer(result, 11, r11);
+
+    let v12 = state_get_layer(s, 12);
+    let m12 = bytesil_magnitude(v12);
+    let sig12 = 1.0 / (1.0 + exp(0.0 - m12));
+    let r12 = bytesil_new(floor(ln(max_float(sig12, 0.0001))), 0);
+    let result = state_set_layer(result, 12, r12);
+
+    let v13 = state_get_layer(s, 13);
+    let m13 = bytesil_magnitude(v13);
+    let sig13 = 1.0 / (1.0 + exp(0.0 - m13));
+    let r13 = bytesil_new(floor(ln(max_float(sig13, 0.0001))), 0);
+    let result = state_set_layer(result, 13, r13);
+
+    let v14 = state_get_layer(s, 14);
+    let m14 = bytesil_magnitude(v14);
+    let sig14 = 1.0 / (1.0 + exp(0.0 - m14));
+    let r14 = bytesil_new(floor(ln(max_float(sig14, 0.0001))), 0);
+    let result = state_set_layer(result, 14, r14);
+
+    let v15 = state_get_layer(s, 15);
+    let m15 = bytesil_magnitude(v15);
+    let sig15 = 1.0 / (1.0 + exp(0.0 - m15));
+    let r15 = bytesil_new(floor(ln(max_float(sig15, 0.0001))), 0);
+    let result = state_set_layer(result, 15, r15);
+
+    return result;
+}
+
+// Helper: tanh approximation using exp: (exp(x) - exp(-x)) / (exp(x) + exp(-x))
+fn tanh_approx(x: Float) -> Float {
+    let exp_x = exp(x);
+    let exp_neg_x = exp(0.0 - x);
+    return (exp_x - exp_neg_x) / (exp_x + exp_neg_x);
+}
+
+// Helper: GELU on State (approximate)
+fn gelu_state_internal(s: State) -> State {
+    let result = state_vacuum();
+    let sqrt_2_pi = 0.7978845608;
+    let k = 0.044715;
+
+    let v0 = state_get_layer(s, 0);
+    let x0 = bytesil_magnitude(v0);
+    let inner0 = sqrt_2_pi * (x0 + k * x0 * x0 * x0);
+    let tanh0 = tanh_approx(inner0);
+    let gelu0 = 0.5 * x0 * (1.0 + tanh0);
+    let r0 = bytesil_new(floor(ln(max_float(gelu0, 0.0001))), 0);
+    let result = state_set_layer(result, 0, r0);
+
+    let v1 = state_get_layer(s, 1);
+    let x1 = bytesil_magnitude(v1);
+    let inner1 = sqrt_2_pi * (x1 + k * x1 * x1 * x1);
+    let tanh1 = tanh_approx(inner1);
+    let gelu1 = 0.5 * x1 * (1.0 + tanh1);
+    let r1 = bytesil_new(floor(ln(max_float(gelu1, 0.0001))), 0);
+    let result = state_set_layer(result, 1, r1);
+
+    let v2 = state_get_layer(s, 2);
+    let x2 = bytesil_magnitude(v2);
+    let inner2 = sqrt_2_pi * (x2 + k * x2 * x2 * x2);
+    let tanh2 = tanh_approx(inner2);
+    let gelu2 = 0.5 * x2 * (1.0 + tanh2);
+    let r2 = bytesil_new(floor(ln(max_float(gelu2, 0.0001))), 0);
+    let result = state_set_layer(result, 2, r2);
+
+    let v3 = state_get_layer(s, 3);
+    let x3 = bytesil_magnitude(v3);
+    let inner3 = sqrt_2_pi * (x3 + k * x3 * x3 * x3);
+    let tanh3 = tanh_approx(inner3);
+    let gelu3 = 0.5 * x3 * (1.0 + tanh3);
+    let r3 = bytesil_new(floor(ln(max_float(gelu3, 0.0001))), 0);
+    let result = state_set_layer(result, 3, r3);
+
+    let v4 = state_get_layer(s, 4);
+    let x4 = bytesil_magnitude(v4);
+    let inner4 = sqrt_2_pi * (x4 + k * x4 * x4 * x4);
+    let tanh4 = tanh_approx(inner4);
+    let gelu4 = 0.5 * x4 * (1.0 + tanh4);
+    let r4 = bytesil_new(floor(ln(max_float(gelu4, 0.0001))), 0);
+    let result = state_set_layer(result, 4, r4);
+
+    let v5 = state_get_layer(s, 5);
+    let x5 = bytesil_magnitude(v5);
+    let inner5 = sqrt_2_pi * (x5 + k * x5 * x5 * x5);
+    let tanh5 = tanh_approx(inner5);
+    let gelu5 = 0.5 * x5 * (1.0 + tanh5);
+    let r5 = bytesil_new(floor(ln(max_float(gelu5, 0.0001))), 0);
+    let result = state_set_layer(result, 5, r5);
+
+    let v6 = state_get_layer(s, 6);
+    let x6 = bytesil_magnitude(v6);
+    let inner6 = sqrt_2_pi * (x6 + k * x6 * x6 * x6);
+    let tanh6 = tanh_approx(inner6);
+    let gelu6 = 0.5 * x6 * (1.0 + tanh6);
+    let r6 = bytesil_new(floor(ln(max_float(gelu6, 0.0001))), 0);
+    let result = state_set_layer(result, 6, r6);
+
+    let v7 = state_get_layer(s, 7);
+    let x7 = bytesil_magnitude(v7);
+    let inner7 = sqrt_2_pi * (x7 + k * x7 * x7 * x7);
+    let tanh7 = tanh_approx(inner7);
+    let gelu7 = 0.5 * x7 * (1.0 + tanh7);
+    let r7 = bytesil_new(floor(ln(max_float(gelu7, 0.0001))), 0);
+    let result = state_set_layer(result, 7, r7);
+
+    let v8 = state_get_layer(s, 8);
+    let x8 = bytesil_magnitude(v8);
+    let inner8 = sqrt_2_pi * (x8 + k * x8 * x8 * x8);
+    let tanh8 = tanh_approx(inner8);
+    let gelu8 = 0.5 * x8 * (1.0 + tanh8);
+    let r8 = bytesil_new(floor(ln(max_float(gelu8, 0.0001))), 0);
+    let result = state_set_layer(result, 8, r8);
+
+    let v9 = state_get_layer(s, 9);
+    let x9 = bytesil_magnitude(v9);
+    let inner9 = sqrt_2_pi * (x9 + k * x9 * x9 * x9);
+    let tanh9 = tanh_approx(inner9);
+    let gelu9 = 0.5 * x9 * (1.0 + tanh9);
+    let r9 = bytesil_new(floor(ln(max_float(gelu9, 0.0001))), 0);
+    let result = state_set_layer(result, 9, r9);
+
+    let v10 = state_get_layer(s, 10);
+    let x10 = bytesil_magnitude(v10);
+    let inner10 = sqrt_2_pi * (x10 + k * x10 * x10 * x10);
+    let tanh10 = tanh_approx(inner10);
+    let gelu10 = 0.5 * x10 * (1.0 + tanh10);
+    let r10 = bytesil_new(floor(ln(max_float(gelu10, 0.0001))), 0);
+    let result = state_set_layer(result, 10, r10);
+
+    let v11 = state_get_layer(s, 11);
+    let x11 = bytesil_magnitude(v11);
+    let inner11 = sqrt_2_pi * (x11 + k * x11 * x11 * x11);
+    let tanh11 = tanh_approx(inner11);
+    let gelu11 = 0.5 * x11 * (1.0 + tanh11);
+    let r11 = bytesil_new(floor(ln(max_float(gelu11, 0.0001))), 0);
+    let result = state_set_layer(result, 11, r11);
+
+    let v12 = state_get_layer(s, 12);
+    let x12 = bytesil_magnitude(v12);
+    let inner12 = sqrt_2_pi * (x12 + k * x12 * x12 * x12);
+    let tanh12 = tanh_approx(inner12);
+    let gelu12 = 0.5 * x12 * (1.0 + tanh12);
+    let r12 = bytesil_new(floor(ln(max_float(gelu12, 0.0001))), 0);
+    let result = state_set_layer(result, 12, r12);
+
+    let v13 = state_get_layer(s, 13);
+    let x13 = bytesil_magnitude(v13);
+    let inner13 = sqrt_2_pi * (x13 + k * x13 * x13 * x13);
+    let tanh13 = tanh_approx(inner13);
+    let gelu13 = 0.5 * x13 * (1.0 + tanh13);
+    let r13 = bytesil_new(floor(ln(max_float(gelu13, 0.0001))), 0);
+    let result = state_set_layer(result, 13, r13);
+
+    let v14 = state_get_layer(s, 14);
+    let x14 = bytesil_magnitude(v14);
+    let inner14 = sqrt_2_pi * (x14 + k * x14 * x14 * x14);
+    let tanh14 = tanh_approx(inner14);
+    let gelu14 = 0.5 * x14 * (1.0 + tanh14);
+    let r14 = bytesil_new(floor(ln(max_float(gelu14, 0.0001))), 0);
+    let result = state_set_layer(result, 14, r14);
+
+    let v15 = state_get_layer(s, 15);
+    let x15 = bytesil_magnitude(v15);
+    let inner15 = sqrt_2_pi * (x15 + k * x15 * x15 * x15);
+    let tanh15 = tanh_approx(inner15);
+    let gelu15 = 0.5 * x15 * (1.0 + tanh15);
+    let r15 = bytesil_new(floor(ln(max_float(gelu15, 0.0001))), 0);
+    let result = state_set_layer(result, 15, r15);
+
+    return result;
+}
+
+// Initialize weights with small values based on seed (Float version)
+// seed_f should be float between 0-15 for theta range
+fn init_weights_f(seed_f: Float) -> State {
+    let result = state_vacuum();
+
+    // Use seed as base theta, wrap around 0-15 using floor
+    let base = seed_f - floor(seed_f / 16.0) * 16.0;
+
+    let w0 = bytesil_new(0, floor(base));
+    let result = state_set_layer(result, 0, w0);
+
+    let t1 = base + 1.0;
+    let t1 = t1 - floor(t1 / 16.0) * 16.0;
+    let w1 = bytesil_new(0, floor(t1));
+    let result = state_set_layer(result, 1, w1);
+
+    let t2 = base + 2.0;
+    let t2 = t2 - floor(t2 / 16.0) * 16.0;
+    let w2 = bytesil_new(0, floor(t2));
+    let result = state_set_layer(result, 2, w2);
+
+    let t3 = base + 3.0;
+    let t3 = t3 - floor(t3 / 16.0) * 16.0;
+    let w3 = bytesil_new(0, floor(t3));
+    let result = state_set_layer(result, 3, w3);
+
+    let t4 = base + 4.0;
+    let t4 = t4 - floor(t4 / 16.0) * 16.0;
+    let w4 = bytesil_new(0, floor(t4));
+    let result = state_set_layer(result, 4, w4);
+
+    let t5 = base + 5.0;
+    let t5 = t5 - floor(t5 / 16.0) * 16.0;
+    let w5 = bytesil_new(0, floor(t5));
+    let result = state_set_layer(result, 5, w5);
+
+    let t6 = base + 6.0;
+    let t6 = t6 - floor(t6 / 16.0) * 16.0;
+    let w6 = bytesil_new(0, floor(t6));
+    let result = state_set_layer(result, 6, w6);
+
+    let t7 = base + 7.0;
+    let t7 = t7 - floor(t7 / 16.0) * 16.0;
+    let w7 = bytesil_new(0, floor(t7));
+    let result = state_set_layer(result, 7, w7);
+
+    let t8 = base + 8.0;
+    let t8 = t8 - floor(t8 / 16.0) * 16.0;
+    let w8 = bytesil_new(0, floor(t8));
+    let result = state_set_layer(result, 8, w8);
+
+    let t9 = base + 9.0;
+    let t9 = t9 - floor(t9 / 16.0) * 16.0;
+    let w9 = bytesil_new(0, floor(t9));
+    let result = state_set_layer(result, 9, w9);
+
+    let t10 = base + 10.0;
+    let t10 = t10 - floor(t10 / 16.0) * 16.0;
+    let w10 = bytesil_new(0, floor(t10));
+    let result = state_set_layer(result, 10, w10);
+
+    let t11 = base + 11.0;
+    let t11 = t11 - floor(t11 / 16.0) * 16.0;
+    let w11 = bytesil_new(0, floor(t11));
+    let result = state_set_layer(result, 11, w11);
+
+    let t12 = base + 12.0;
+    let t12 = t12 - floor(t12 / 16.0) * 16.0;
+    let w12 = bytesil_new(0, floor(t12));
+    let result = state_set_layer(result, 12, w12);
+
+    let t13 = base + 13.0;
+    let t13 = t13 - floor(t13 / 16.0) * 16.0;
+    let w13 = bytesil_new(0, floor(t13));
+    let result = state_set_layer(result, 13, w13);
+
+    let t14 = base + 14.0;
+    let t14 = t14 - floor(t14 / 16.0) * 16.0;
+    let w14 = bytesil_new(0, floor(t14));
+    let result = state_set_layer(result, 14, w14);
+
+    let t15 = base + 15.0;
+    let t15 = t15 - floor(t15 / 16.0) * 16.0;
+    let w15 = bytesil_new(0, floor(t15));
+    let result = state_set_layer(result, 15, w15);
+
+    return result;
+}
+
+// Zero bias initialization
+fn init_bias_zero() -> State {
+    return state_vacuum();
+}

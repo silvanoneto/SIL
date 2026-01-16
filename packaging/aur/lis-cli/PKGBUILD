@@ -1,0 +1,23 @@
+pkgname=lis-cli
+pkgver=@PKGVER@
+pkgrel=1
+pkgdesc="Command-line interface for the LIS language compiler"
+arch=('x86_64' 'aarch64')
+url="https://github.com/silvanoneto/SIL"
+license=('AGPL3')
+depends=()
+makedepends=('rust' 'cargo')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/ecosystem-v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  cd "SIL-ecosystem-v$pkgver"
+  cargo build --release -p lis-cli
+}
+
+package() {
+  cd "SIL-ecosystem-v$pkgver"
+  install -Dm755 "target/release/lis"     "$pkgdir/usr/bin/lis"
+  install -Dm755 "target/release/lis-lsp" "$pkgdir/usr/bin/lis-lsp"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

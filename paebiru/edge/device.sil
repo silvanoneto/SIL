@@ -1,0 +1,633 @@
+.mode SIL-128
+
+.code
+
+DEVICE_NANO:
+    MOVI R0, 0
+    RET
+
+DEVICE_MICRO:
+    MOVI R0, 1
+    RET
+
+DEVICE_MINI:
+    MOVI R0, 2
+    RET
+
+DEVICE_STANDARD:
+    MOVI R0, 3
+    RET
+
+DEVICE_EDGE:
+    MOVI R0, 4
+    RET
+
+DEVICE_CLOUD:
+    MOVI R0, 5
+    RET
+
+ZONE_ULTRALOCAL:
+    MOVI R0, 0
+    RET
+
+ZONE_LOCAL:
+    MOVI R0, 1
+    RET
+
+ZONE_NEAR:
+    MOVI R0, 2
+    RET
+
+ZONE_FAR:
+    MOVI R0, 3
+    RET
+
+ZONE_HPC:
+    MOVI R0, 4
+    RET
+
+device_class_from_capability:
+    MOVI R2, 100
+    MOVI R3, 0
+    COMPLEX R1, R2, R3
+    CMP R4, R0, R1
+    JZ R4, else0
+    MOVI R5, 0
+    MOV R0, R5
+    RET
+    JMP if_end1
+else0:
+if_end1:
+    MOVI R7, 250
+    MOVI R8, 0
+    COMPLEX R6, R7, R8
+    CMP R9, R0, R6
+    JZ R9, else2
+    MOVI RA, 1
+    MOV R0, RA
+    RET
+    JMP if_end3
+else2:
+if_end3:
+    MOVI RC, 450
+    MOVI RD, 0
+    COMPLEX RB, RC, RD
+    CMP RE, R0, RB
+    JZ RE, else4
+    MOVI RF, 2
+    MOV R0, RF
+    RET
+    JMP if_end5
+else4:
+if_end5:
+    MOVI R1, 650
+    MOVI R2, 0
+    COMPLEX R0, R1, R2
+    CMP R3, R0, R0
+    JZ R3, else6
+    MOVI R4, 3
+    MOV R0, R4
+    RET
+    JMP if_end7
+else6:
+if_end7:
+    MOVI R6, 850
+    MOVI R7, 0
+    COMPLEX R5, R6, R7
+    CMP R8, R0, R5
+    JZ R8, else8
+    MOVI R9, 4
+    MOV R0, R9
+    RET
+    JMP if_end9
+else8:
+if_end9:
+    MOVI RA, 5
+    MOV R0, RA
+    RET
+
+chromatic_zone_from_rho:
+    MOVI R2, 150
+    MOVI R3, 0
+    COMPLEX R1, R2, R3
+    CMP R4, R0, R1
+    JZ R4, else10
+    MOVI R5, 0
+    MOV R0, R5
+    RET
+    JMP if_end11
+else10:
+if_end11:
+    MOVI R7, 350
+    MOVI R8, 0
+    COMPLEX R6, R7, R8
+    CMP R9, R0, R6
+    JZ R9, else12
+    MOVI RA, 1
+    MOV R0, RA
+    RET
+    JMP if_end13
+else12:
+if_end13:
+    MOVI RC, 550
+    MOVI RD, 0
+    COMPLEX RB, RC, RD
+    CMP RE, R0, RB
+    JZ RE, else14
+    MOVI RF, 2
+    MOV R0, RF
+    RET
+    JMP if_end15
+else14:
+if_end15:
+    MOVI R1, 750
+    MOVI R2, 0
+    COMPLEX R0, R1, R2
+    CMP R3, R0, R0
+    JZ R3, else16
+    MOVI R4, 3
+    MOV R0, R4
+    RET
+    JMP if_end17
+else16:
+if_end17:
+    MOVI R5, 4
+    MOV R0, R5
+    RET
+
+max_rho_for_device_class:
+    MOVI R1, 0
+    CMP R2, R0, R1
+    JZ R2, else18
+    MOVI R4, 100
+    MOVI R5, 0
+    COMPLEX R3, R4, R5
+    MOV R0, R3
+    RET
+    JMP if_end19
+else18:
+if_end19:
+    MOVI R6, 1
+    CMP R7, R0, R6
+    JZ R7, else20
+    MOVI R9, 250
+    MOVI RA, 0
+    COMPLEX R8, R9, RA
+    MOV R0, R8
+    RET
+    JMP if_end21
+else20:
+if_end21:
+    MOVI RB, 2
+    CMP RC, R0, RB
+    JZ RC, else22
+    MOVI RE, 450
+    MOVI RF, 0
+    COMPLEX RD, RE, RF
+    MOV R0, RD
+    RET
+    JMP if_end23
+else22:
+if_end23:
+    MOVI R0, 3
+    CMP R1, R0, R0
+    JZ R1, else24
+    MOVI R3, 650
+    MOVI R4, 0
+    COMPLEX R2, R3, R4
+    MOV R0, R2
+    RET
+    JMP if_end25
+else24:
+if_end25:
+    MOVI R5, 4
+    CMP R6, R0, R5
+    JZ R6, else26
+    MOVI R8, 850
+    MOVI R9, 0
+    COMPLEX R7, R8, R9
+    MOV R0, R7
+    RET
+    JMP if_end27
+else26:
+if_end27:
+    MOVI RB, 1000
+    MOVI RC, 0
+    COMPLEX RA, RB, RC
+    MOV R0, RA
+    RET
+
+zone_latency_ms:
+    MOVI R1, 0
+    CMP R2, R0, R1
+    JZ R2, else28
+    MOVI R4, 100
+    MOVI R5, 0
+    COMPLEX R3, R4, R5
+    MOV R0, R3
+    RET
+    JMP if_end29
+else28:
+if_end29:
+    MOVI R6, 1
+    CMP R7, R0, R6
+    JZ R7, else30
+    MOVI R9, 2000
+    MOVI RA, 0
+    COMPLEX R8, R9, RA
+    MOV R0, R8
+    RET
+    JMP if_end31
+else30:
+if_end31:
+    MOVI RB, 2
+    CMP RC, R0, RB
+    JZ RC, else32
+    MOVI RE, 20000
+    MOVI RF, 0
+    COMPLEX RD, RE, RF
+    MOV R0, RD
+    RET
+    JMP if_end33
+else32:
+if_end33:
+    MOVI R0, 3
+    CMP R1, R0, R0
+    JZ R1, else34
+    MOVI R3, 100000
+    MOVI R4, 0
+    COMPLEX R2, R3, R4
+    MOV R0, R2
+    RET
+    JMP if_end35
+else34:
+if_end35:
+    MOVI R6, 500000
+    MOVI R7, 0
+    COMPLEX R5, R6, R7
+    MOV R0, R5
+    RET
+
+zone_bandwidth_mbps:
+    MOVI R1, 0
+    CMP R2, R0, R1
+    JZ R2, else36
+    MOVI R4, 10000000
+    MOVI R5, 0
+    COMPLEX R3, R4, R5
+    MOV R0, R3
+    RET
+    JMP if_end37
+else36:
+if_end37:
+    MOVI R6, 1
+    CMP R7, R0, R6
+    JZ R7, else38
+    MOVI R9, 1000000
+    MOVI RA, 0
+    COMPLEX R8, R9, RA
+    MOV R0, R8
+    RET
+    JMP if_end39
+else38:
+if_end39:
+    MOVI RB, 2
+    CMP RC, R0, RB
+    JZ RC, else40
+    MOVI RE, 100000
+    MOVI RF, 0
+    COMPLEX RD, RE, RF
+    MOV R0, RD
+    RET
+    JMP if_end41
+else40:
+if_end41:
+    MOVI R0, 3
+    CMP R1, R0, R0
+    JZ R1, else42
+    MOVI R3, 50000
+    MOVI R4, 0
+    COMPLEX R2, R3, R4
+    MOV R0, R2
+    RET
+    JMP if_end43
+else42:
+if_end43:
+    MOVI R6, 10000
+    MOVI R7, 0
+    COMPLEX R5, R6, R7
+    MOV R0, R5
+    RET
+
+energy_multiplier:
+    MOVI R1, 0
+    CMP R2, R0, R1
+    JZ R2, else44
+    MOVI R4, 1000
+    MOVI R5, 0
+    COMPLEX R3, R4, R5
+    MOV R0, R3
+    RET
+    JMP if_end45
+else44:
+if_end45:
+    MOVI R6, 1
+    CMP R7, R0, R6
+    JZ R7, else46
+    MOVI R9, 2000
+    MOVI RA, 0
+    COMPLEX R8, R9, RA
+    MOV R0, R8
+    RET
+    JMP if_end47
+else46:
+if_end47:
+    MOVI RB, 2
+    CMP RC, R0, RB
+    JZ RC, else48
+    MOVI RE, 10000
+    MOVI RF, 0
+    COMPLEX RD, RE, RF
+    MOV R0, RD
+    RET
+    JMP if_end49
+else48:
+if_end49:
+    MOVI R0, 3
+    CMP R1, R0, R0
+    JZ R1, else50
+    MOVI R3, 50000
+    MOVI R4, 0
+    COMPLEX R2, R3, R4
+    MOV R0, R2
+    RET
+    JMP if_end51
+else50:
+if_end51:
+    MOVI R5, 4
+    CMP R6, R0, R5
+    JZ R6, else52
+    MOVI R8, 200000
+    MOVI R9, 0
+    COMPLEX R7, R8, R9
+    MOV R0, R7
+    RET
+    JMP if_end53
+else52:
+if_end53:
+    MOVI RB, 1000000
+    MOVI RC, 0
+    COMPLEX RA, RB, RC
+    MOV R0, RA
+    RET
+
+compute_tflops:
+    MOVI R1, 0
+    CMP R2, R0, R1
+    JZ R2, else54
+    MOVI R4, 1
+    MOVI R5, 0
+    COMPLEX R3, R4, R5
+    MOV R0, R3
+    RET
+    JMP if_end55
+else54:
+if_end55:
+    MOVI R6, 1
+    CMP R7, R0, R6
+    JZ R7, else56
+    MOVI R9, 10
+    MOVI RA, 0
+    COMPLEX R8, R9, RA
+    MOV R0, R8
+    RET
+    JMP if_end57
+else56:
+if_end57:
+    MOVI RB, 2
+    CMP RC, R0, RB
+    JZ RC, else58
+    MOVI RE, 500
+    MOVI RF, 0
+    COMPLEX RD, RE, RF
+    MOV R0, RD
+    RET
+    JMP if_end59
+else58:
+if_end59:
+    MOVI R0, 3
+    CMP R1, R0, R0
+    JZ R1, else60
+    MOVI R3, 10000
+    MOVI R4, 0
+    COMPLEX R2, R3, R4
+    MOV R0, R2
+    RET
+    JMP if_end61
+else60:
+if_end61:
+    MOVI R5, 4
+    CMP R6, R0, R5
+    JZ R6, else62
+    MOVI R8, 100000
+    MOVI R9, 0
+    COMPLEX R7, R8, R9
+    MOV R0, R7
+    RET
+    JMP if_end63
+else62:
+if_end63:
+    MOVI RB, 1000000
+    MOVI RC, 0
+    COMPLEX RA, RB, RC
+    MOV R0, RA
+    RET
+
+can_handle_workload:
+    CALL max_rho_for_device_class
+    CMP R2, R1, R0
+    MOV R0, R2
+    RET
+
+min_device_for_rho:
+    MOVI R2, 100
+    MOVI R3, 0
+    COMPLEX R1, R2, R3
+    CMP R4, R0, R1
+    JZ R4, else64
+    MOVI R5, 0
+    MOV R0, R5
+    RET
+    JMP if_end65
+else64:
+if_end65:
+    MOVI R7, 250
+    MOVI R8, 0
+    COMPLEX R6, R7, R8
+    CMP R9, R0, R6
+    JZ R9, else66
+    MOVI RA, 1
+    MOV R0, RA
+    RET
+    JMP if_end67
+else66:
+if_end67:
+    MOVI RC, 450
+    MOVI RD, 0
+    COMPLEX RB, RC, RD
+    CMP RE, R0, RB
+    JZ RE, else68
+    MOVI RF, 2
+    MOV R0, RF
+    RET
+    JMP if_end69
+else68:
+if_end69:
+    MOVI R1, 650
+    MOVI R2, 0
+    COMPLEX R0, R1, R2
+    CMP R3, R0, R0
+    JZ R3, else70
+    MOVI R4, 3
+    MOV R0, R4
+    RET
+    JMP if_end71
+else70:
+if_end71:
+    MOVI R6, 850
+    MOVI R7, 0
+    COMPLEX R5, R6, R7
+    CMP R8, R0, R5
+    JZ R8, else72
+    MOVI R9, 4
+    MOV R0, R9
+    RET
+    JMP if_end73
+else72:
+if_end73:
+    MOVI RA, 5
+    MOV R0, RA
+    RET
+
+compute_cost_score:
+    CALL zone_latency_ms
+    MOVI R7, 100000
+    MOVI R8, 0
+    COMPLEX R6, R7, R8
+    DIV R9, R0, R6
+    CALL energy_multiplier
+    MOVI RB, 100000
+    MOVI RC, 0
+    COMPLEX RA, RB, RC
+    DIV RD, R0, RA
+    CALL compute_tflops
+    MUL RE, R2, R0
+    MOVI R0, 10000
+    MOVI R1, 0
+    COMPLEX RF, R0, R1
+    DIV R2, RE, RF
+    MUL R3, R3, R9
+    MUL R4, R4, RD
+    ADD R5, R3, R4
+    MUL R6, R5, R2
+    ADD R7, R5, R6
+    MOV R0, R7
+    RET
+
+select_optimal_compute:
+    CALL min_device_for_rho
+    MOVI R3, 0
+    MOVI R5, 2000
+    MOVI R6, 0
+    COMPLEX R4, R5, R6
+    CMP R7, R2, R4
+    JZ R7, else74
+    MOVI R8, 1
+    JMP if_end75
+else74:
+if_end75:
+    MOVI RA, 20000
+    MOVI RB, 0
+    COMPLEX R9, RA, RB
+    CMP RC, R2, R9
+    JZ RC, else76
+    MOVI RD, 2
+    JMP if_end77
+else76:
+if_end77:
+    MOVI RF, 100000
+    MOVI R0, 0
+    COMPLEX RE, RF, R0
+    CMP R1, R2, RE
+    JZ R1, else78
+    MOVI R2, 3
+    JMP if_end79
+else78:
+if_end79:
+    MOVI R4, 500000
+    MOVI R5, 0
+    COMPLEX R3, R4, R5
+    CMP R6, R2, R3
+    JZ R6, else80
+    MOVI R7, 4
+    JMP if_end81
+else80:
+if_end81:
+    MOVI R8, 10
+    MUL R9, R0, R8
+    ADD RA, R9, R7
+    MOV R0, RA
+    RET
+
+decode_device:
+    MOVI R1, 10
+    DIV R2, R0, R1
+    MOV R0, R2
+    RET
+
+decode_zone:
+    MOVI R1, 10
+    DIV R2, R0, R1
+    MOVI R3, 10
+    MUL R4, R2, R3
+    SUB R5, R0, R4
+    MOV R0, R5
+    RET
+
+estimate_completion_time:
+    CALL zone_bandwidth_mbps
+    MOVI R5, 8000
+    MOVI R6, 0
+    COMPLEX R4, R5, R6
+    MUL R7, R3, R4
+    MOVI R9, 1000000
+    MOVI RA, 0
+    COMPLEX R8, R9, RA
+    MUL RB, R0, R8
+    DIV RC, R7, RB
+    CALL zone_latency_ms
+    CALL compute_tflops
+    MOVI RE, 1000000000
+    MOVI RF, 0
+    COMPLEX RD, RE, RF
+    MUL R0, RD, R0
+    MUL R1, R0, R0
+    MOVI R3, 1000000000000
+    MOVI R4, 0
+    COMPLEX R2, R3, R4
+    MUL R5, R0, R2
+    DIV R6, R1, R5
+    MOVI R8, 1000000
+    MOVI R9, 0
+    COMPLEX R7, R8, R9
+    MUL RA, R6, R7
+    ADD RB, RC, R0
+    ADD RC, RB, RA
+    MOV R0, RC
+    RET
+
+device_class_name_index:
+    RET
+
+zone_name_index:
+    RET

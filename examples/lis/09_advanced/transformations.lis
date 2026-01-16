@@ -1,0 +1,224 @@
+// LIS Example: Transformacoes Avancadas
+// Demonstra: phase_shift, magnitude_scale, apply_feedback
+// Documentacao: Secao 8.10
+
+// Complex transformation combining multiple operations
+fn complex_transform(s: State) -> State {
+    // Combinacao de varias transformacoes
+    let result = s;
+    let result = transform_magnitude_scale(result, 2);
+    let result = transform_phase_shift(result, 1);  // approximately pi/4
+    let result = state_normalize(result);
+    let result = relu_state(result);
+    return result;
+}
+
+// Transform: scale magnitude by 2
+transform scale_up(s: State) -> State {
+    return transform_magnitude_scale(s, 2);
+}
+
+// Transform: rotate phase by approximately 45 degrees
+transform rotate_45(s: State) -> State {
+    return transform_phase_shift(s, 1);
+}
+
+// Transform: normalize state
+transform normalize_t(s: State) -> State {
+    return state_normalize(s);
+}
+
+// Transform: apply ReLU activation
+transform activate(s: State) -> State {
+    return relu_state(s);
+}
+
+// Iterative decay function
+fn iterative_decay(s: State, decay_rate: Int, iterations: Int) -> State {
+    let current = s;
+    let i = 0;
+
+    loop {
+        if i >= iterations {
+            break;
+        }
+
+        let current = transform_magnitude_scale(current, decay_rate);
+        let i = i + 1;
+    }
+
+    return current;
+}
+
+// Conditional transformation based on threshold
+fn conditional_transform(s: State, threshold: Float) -> State {
+    let mag = bytesil_magnitude(state_get_layer(s, 0));
+
+    if mag > threshold {
+        // Escalar para baixo se acima do threshold
+        return transform_magnitude_scale(s, 1);
+    } else {
+        // Escalar para cima se abaixo do threshold
+        return transform_magnitude_scale(s, 2);
+    }
+}
+
+fn main() {
+    print_string("=== Advanced Transformations ===");
+
+    // =========================================
+    // State Inicial
+    // =========================================
+    let s = state_neutral();
+    print_string("Initial state created");
+    print_string("L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(s, 0)));
+    print_string("L0 phase:");
+    print_float(bytesil_phase_radians(state_get_layer(s, 0)));
+
+    // =========================================
+    // transform_phase_shift
+    // =========================================
+    print_string("--- transform_phase_shift ---");
+
+    // Desloca a fase de todas as camadas por um angulo (Int value)
+    let shifted_1 = transform_phase_shift(s, 1);
+    print_string("Phase shifted by 1:");
+    print_string("L0 new phase:");
+    print_float(bytesil_phase_radians(state_get_layer(shifted_1, 0)));
+
+    let shifted_2 = transform_phase_shift(s, 2);
+    print_string("Phase shifted by 2:");
+    print_string("L0 new phase:");
+    print_float(bytesil_phase_radians(state_get_layer(shifted_2, 0)));
+
+    let shifted_4 = transform_phase_shift(s, 4);
+    print_string("Phase shifted by 4:");
+    print_string("L0 new phase:");
+    print_float(bytesil_phase_radians(state_get_layer(shifted_4, 0)));
+
+    // Magnitude nao muda com phase shift
+    print_string("L0 magnitude after shift (should be unchanged):");
+    print_float(bytesil_magnitude(state_get_layer(shifted_2, 0)));
+
+    // =========================================
+    // transform_magnitude_scale
+    // =========================================
+    print_string("--- transform_magnitude_scale ---");
+
+    // Escala a magnitude de todas as camadas
+    let scaled_2x = transform_magnitude_scale(s, 2);
+    print_string("Magnitude scaled by 2:");
+    print_string("L0 new magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(scaled_2x, 0)));
+
+    let scaled_1x = transform_magnitude_scale(s, 1);
+    print_string("Magnitude scaled by 1:");
+    print_string("L0 new magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(scaled_1x, 0)));
+
+    let scaled_3x = transform_magnitude_scale(s, 3);
+    print_string("Magnitude scaled by 3:");
+    print_string("L0 new magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(scaled_3x, 0)));
+
+    // Fase nao muda com magnitude scale
+    print_string("L0 phase after scale (should be unchanged):");
+    print_float(bytesil_phase_radians(state_get_layer(scaled_2x, 0)));
+
+    // =========================================
+    // apply_feedback
+    // =========================================
+    print_string("--- apply_feedback ---");
+
+    // Aplica um sinal de feedback a um estado
+    let input = state_neutral();
+    let feedback_strength = 0.5;
+
+    let with_feedback = apply_feedback(input, feedback_strength);
+    print_string("Applied feedback with strength 0.5:");
+    print_string("L0 magnitude after feedback:");
+    print_float(bytesil_magnitude(state_get_layer(with_feedback, 0)));
+
+    // =========================================
+    // detect_emergence
+    // =========================================
+    print_string("--- detect_emergence ---");
+
+    let test1 = state_vacuum();
+    let has_em1 = detect_emergence(test1, 0.5);
+    if has_em1 {
+        print_string("Vacuum state has emergence");
+    } else {
+        print_string("Vacuum state has no emergence");
+    }
+
+    let test2 = state_neutral();
+    let has_em2 = detect_emergence(test2, 0.5);
+    if has_em2 {
+        print_string("Neutral state has emergence");
+    } else {
+        print_string("Neutral state has no emergence");
+    }
+
+    // =========================================
+    // relu_state
+    // =========================================
+    print_string("--- relu_state ---");
+
+    // Aplica ReLU element-wise nas magnitudes
+    let before_relu = state_neutral();
+    let after_relu = relu_state(before_relu);
+
+    print_string("After relu_state:");
+    print_string("L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(after_relu, 0)));
+
+    // =========================================
+    // Composicao de Transformacoes
+    // =========================================
+    print_string("--- Transformation Composition ---");
+
+    let composed = complex_transform(state_neutral());
+    print_string("After complex transform:");
+    print_string("L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(composed, 0)));
+    print_string("L0 phase:");
+    print_float(bytesil_phase_radians(state_get_layer(composed, 0)));
+
+    // =========================================
+    // Pipeline de Transformacoes
+    // =========================================
+    print_string("--- Transformation Pipeline ---");
+
+    let pipeline_result = state_neutral()
+        |> scale_up
+        |> rotate_45
+        |> normalize_t
+        |> activate;
+
+    print_string("Pipeline result:");
+    print_string("L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(pipeline_result, 0)));
+
+    // =========================================
+    // Transformacao Iterativa
+    // =========================================
+    print_string("--- Iterative Transformation ---");
+
+    let decayed = iterative_decay(state_neutral(), 1, 10);
+    print_string("After 10 iterations of decay:");
+    print_string("L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(decayed, 0)));
+
+    // =========================================
+    // Transformacao Condicional
+    // =========================================
+    print_string("--- Conditional Transformation ---");
+
+    let cond_result = conditional_transform(state_neutral(), 0.5);
+    print_string("Conditional transform result:");
+    print_float(bytesil_magnitude(state_get_layer(cond_result, 0)));
+
+    print_string("=== Transformations Demo Complete ===");
+}

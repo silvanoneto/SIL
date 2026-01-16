@@ -1,0 +1,316 @@
+---
+# ==============================================================================
+# Kubernetes Deployment - Edge Computing
+# ==============================================================================
+# This manifest deploys runtime to a Kubernetes cluster
+# Suitable for: K3s, MicroK8s, KubeEdge, edge orchestration
+# ==============================================================================
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sil-system
+  labels:
+    name: sil-system
+    app: sil
+
+---
+# ConfigMap for configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sil-config
+  namespace: sil-system
+data:
+  RUST_LOG: "info"
+  LIS_DATA_DIR: "/app/data"
+  LIS_TEMP_DIR: "/tmp/"
+  SIL_MESH_NETWORK: "sil-k8s-mesh"
+  SIL_P2P_PORT: "8888"
+
+---
+# PersistentVolumeClaim for programs
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sil-programs-pvc
+  namespace: sil-system
+spec:
+  accessModes:
+    - ReadOnlyMany
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: local-path
+
+---
+# PersistentVolumeClaim for data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sil-data-pvc
+  namespace: sil-system
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: local-path
+
+---
+# Deployment for Runtime
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sil-runtime
+  namespace: sil-system
+  labels:
+    app: sil
+    component: runtime
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: sil
+      component: runtime
+  template:
+    metadata:
+      labels:
+        app: sil
+        component: runtime
+    spec:
+      # Node affinity for edge devices
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: node-role.kubernetes.io/edge
+                    operator: In
+                    values:
+                      - "true"
+
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+
+      containers:
+        - name: sil
+          image: sil:latest
+          imagePullPolicy: IfNotPresent
+
+          # Command override
+          command: ["lis"]
+          args: ["run", "/app/programs/main.lis"]
+
+          # Environment from ConfigMap
+          envFrom:
+            - configMapRef:
+                name: sil-config
+
+          # Resource limits for edge devices
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+          # Volume mounts
+          volumeMounts:
+            - name: programs
+              mountPath: /app/programs
+              readOnly: true
+            - name: data
+              mountPath: /app/data
+            - name: tmp
+              mountPath: /tmp/sil
+
+          # Liveness probe
+          livenessProbe:
+            exec:
+              command: ["lis", "--version"]
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # Readiness probe
+          readinessProbe:
+            exec:
+              command: ["lis", "--version"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+      # Volumes
+      volumes:
+        - name: programs
+          persistentVolumeClaim:
+            claimName: sil-programs-pvc
+        - name: data
+          persistentVolumeClaim:
+            claimName: sil-data-pvc
+        - name: tmp
+          emptyDir: {}
+
+      # Restart policy
+      restartPolicy: Always
+
+---
+# Service for inter-pod communication (P2P mesh)
+apiVersion: v1
+kind: Service
+metadata:
+  name: sil-service
+  namespace: sil-system
+  labels:
+    app: sil
+spec:
+  type: ClusterIP
+  clusterIP: None  # Headless service for P2P mesh
+  selector:
+    app: sil
+    component: runtime
+  ports:
+    - name: p2p
+      port: 8888
+      targetPort: 8888
+      protocol: TCP
+
+---
+# DaemonSet for node-local deployment
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: sil-node-agent
+  namespace: sil-system
+  labels:
+    app: sil
+    component: node-agent
+spec:
+  selector:
+    matchLabels:
+      app: sil
+      component: node-agent
+  template:
+    metadata:
+      labels:
+        app: sil
+        component: node-agent
+    spec:
+      # Only deploy to edge nodes
+      nodeSelector:
+        node-role.kubernetes.io/edge: "true"
+
+      hostNetwork: true  # Access host network for sensors
+
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+
+      containers:
+        - name: sil-node-agent
+          image: sil-node-agent:latest
+          imagePullPolicy: IfNotPresent
+
+          command: ["lis"]
+          args: ["run", "/app/programs/node_agent.lis"]
+
+          envFrom:
+            - configMapRef:
+                name: sil-node-agent-config
+
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+
+          volumeMounts:
+            - name: programs
+              mountPath: /app/programs
+              readOnly: true
+            - name: data
+              mountPath: /app/data
+            - name: device
+              mountPath: /dev
+              readOnly: true
+
+      volumes:
+        - name: programs
+          persistentVolumeClaim:
+            claimName: sil-programs-pvc
+        - name: data
+          hostPath:
+            path: /opt/sil/data
+            type: DirectoryOrCreate
+        - name: device
+          hostPath:
+            path: /dev
+            type: Directory
+
+---
+# HorizontalPodAutoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: sil-runtime-hpa
+  namespace: sil-system
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: sil-runtime
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+
+---
+# ServiceMonitor for Prometheus (if using Prometheus Operator)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: sil-metrics
+  namespace: sil-system
+  labels:
+    app: sil
+spec:
+  selector:
+    matchLabels:
+      app: sil
+  endpoints:
+    - port: metrics
+      interval: 30s
+      path: /metrics

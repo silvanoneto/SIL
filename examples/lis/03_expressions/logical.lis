@@ -1,0 +1,130 @@
+// LIS Example: Operadores Lógicos
+// Demonstra: &&, ||, !
+// Documentação: Seção 6.4
+
+fn main() {
+    print_string("=== Logical Operators ===");
+
+    let t = true;
+    let f = false;
+
+    // =========================================
+    // AND Lógico (&&)
+    // =========================================
+    print_string("--- Logical AND (&&) ---");
+
+    if t && t {
+        print_string("true && true = true");
+    }
+
+    if t && f {
+        print_string("true && false = true");
+    } else {
+        print_string("true && false = false");
+    }
+
+    if f && t {
+        print_string("false && true = true");
+    } else {
+        print_string("false && true = false");
+    }
+
+    if f && f {
+        print_string("false && false = true");
+    } else {
+        print_string("false && false = false");
+    }
+
+    // =========================================
+    // OR Lógico (||)
+    // =========================================
+    print_string("--- Logical OR (||) ---");
+
+    if t || t {
+        print_string("true || true = true");
+    }
+
+    if t || f {
+        print_string("true || false = true");
+    }
+
+    if f || t {
+        print_string("false || true = true");
+    }
+
+    if f || f {
+        print_string("false || false = true");
+    } else {
+        print_string("false || false = false");
+    }
+
+    // =========================================
+    // NOT Lógico (!)
+    // =========================================
+    print_string("--- Logical NOT (!) ---");
+
+    if !f {
+        print_string("!false = true");
+    }
+
+    if !t {
+        print_string("!true = true");
+    } else {
+        print_string("!true = false");
+    }
+
+    // =========================================
+    // Expressões Lógicas Compostas
+    // =========================================
+    print_string("--- Compound Logical Expressions ---");
+
+    let a = true;
+    let b = false;
+    let c = true;
+
+    // (a && b) || c
+    if (a && b) || c {
+        print_string("(true && false) || true = true");
+    }
+
+    // a && (b || c)
+    if a && (b || c) {
+        print_string("true && (false || true) = true");
+    }
+
+    // !(a && b)
+    if !(a && b) {
+        print_string("!(true && false) = true");
+    }
+
+    // !a || !b (De Morgan)
+    if !a || !b {
+        print_string("!true || !false = true");
+    }
+
+    // =========================================
+    // Uso com Comparações
+    // =========================================
+    print_string("--- With Comparisons ---");
+
+    let x = 10;
+    let y = 20;
+    let z = 15;
+
+    // Range check: x <= z <= y
+    if x <= z && z <= y {
+        print_string("15 is between 10 and 20");
+    }
+
+    // Either condition
+    if x > 100 || y > 100 {
+        print_string("At least one > 100: true");
+    } else {
+        print_string("Neither > 100");
+    }
+
+    // Complex condition
+    if (x < y) && (y > z) && (z > x) {
+        print_string("x < z < y confirmed");
+    }
+}

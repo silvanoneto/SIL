@@ -1,0 +1,157 @@
+// LIS Example: Funções Básicas
+// Demonstra: Definição de funções com parâmetros tipados
+// Documentação: Seção 5.2
+
+// =========================================
+// Função Simples com Tipos
+// =========================================
+
+fn add(a: Int, b: Int) -> Int {
+    return a + b;
+}
+
+fn multiply(x: Int, y: Int) -> Int {
+    return x * y;
+}
+
+fn subtract(a: Float, b: Float) -> Float {
+    return a - b;
+}
+
+// =========================================
+// Função sem Parâmetros
+// =========================================
+
+fn get_pi() -> Float {
+    return 3.14159265358979;
+}
+
+fn get_zero() -> Int {
+    return 0;
+}
+
+fn create_empty_state() -> State {
+    return state_vacuum();
+}
+
+// =========================================
+// Função com um Parâmetro
+// =========================================
+
+fn square(n: Int) -> Int {
+    return n * n;
+}
+
+fn double_float(x: Float) -> Float {
+    return x * 2.0;
+}
+
+fn negate(x: Int) -> Int {
+    return -x;
+}
+
+// =========================================
+// Função com Múltiplos Parâmetros
+// =========================================
+
+fn average_three(a: Float, b: Float, c: Float) -> Float {
+    return (a + b + c) / 3.0;
+}
+
+fn clamp(value: Float, min_val: Float, max_val: Float) -> Float {
+    if value < min_val {
+        return min_val;
+    }
+    if value > max_val {
+        return max_val;
+    }
+    return value;
+}
+
+fn in_range(x: Int, lo: Int, hi: Int) -> Bool {
+    return x >= lo && x <= hi;
+}
+
+// =========================================
+// Função com String
+// =========================================
+
+fn greet(name: String) -> String {
+    return string_concat("Hello, ", name);
+}
+
+fn make_message(prefix: String, value: Int) -> String {
+    return prefix;  // Simplificado - LIS pode não ter int-to-string
+}
+
+// =========================================
+// Função com ByteSil
+// =========================================
+
+fn make_unit_complex() -> ByteSil {
+    return bytesil_one();
+}
+
+fn scale_bytesil(bs: ByteSil, factor: Float) -> ByteSil {
+    return complex_scale(bs, factor);
+}
+
+// =========================================
+// Função com State
+// =========================================
+
+fn initialize_state(initial_value: ByteSil) -> State {
+    let s = state_vacuum();
+    let s = state_set_layer(s, 0, initial_value);
+    return s;
+}
+
+fn get_first_layer(s: State) -> ByteSil {
+    return state_get_layer(s, 0);
+}
+
+fn main() {
+    print_string("=== Basic Functions ===");
+
+    // Chamando funções simples
+    let sum = add(10, 20);
+    print_string("add(10, 20) =");
+    print_int(sum);
+
+    let prod = multiply(7, 8);
+    print_string("multiply(7, 8) =");
+    print_int(prod);
+
+    // Funções sem parâmetros
+    let pi = get_pi();
+    print_string("get_pi() =");
+    print_float(pi);
+
+    // Funções com um parâmetro
+    let sq = square(9);
+    print_string("square(9) =");
+    print_int(sq);
+
+    // Funções com múltiplos parâmetros
+    let avg = average_three(10.0, 20.0, 30.0);
+    print_string("average_three(10, 20, 30) =");
+    print_float(avg);
+
+    let clamped = clamp(150.0, 0.0, 100.0);
+    print_string("clamp(150, 0, 100) =");
+    print_float(clamped);
+
+    // Função com Bool retorno
+    let is_in = in_range(5, 1, 10);
+    if is_in {
+        print_string("5 is in range [1, 10]");
+    }
+
+    // Funções com State
+    let bs = make_unit_complex();
+    let s = initialize_state(bs);
+    let first = get_first_layer(s);
+
+    print_string("First layer magnitude:");
+    print_float(bytesil_magnitude(first));
+}

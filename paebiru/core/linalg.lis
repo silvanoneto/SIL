@@ -1,0 +1,173 @@
+// Paebiru ML Library - Linear Algebra Operations
+
+fn dot(a: State, b: State) -> Float {
+    let sum = 0.0;
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 0)) * bytesil_magnitude(state_get_layer(b, 0));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 1)) * bytesil_magnitude(state_get_layer(b, 1));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 2)) * bytesil_magnitude(state_get_layer(b, 2));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 3)) * bytesil_magnitude(state_get_layer(b, 3));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 4)) * bytesil_magnitude(state_get_layer(b, 4));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 5)) * bytesil_magnitude(state_get_layer(b, 5));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 6)) * bytesil_magnitude(state_get_layer(b, 6));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 7)) * bytesil_magnitude(state_get_layer(b, 7));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 8)) * bytesil_magnitude(state_get_layer(b, 8));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 9)) * bytesil_magnitude(state_get_layer(b, 9));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 10)) * bytesil_magnitude(state_get_layer(b, 10));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 11)) * bytesil_magnitude(state_get_layer(b, 11));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 12)) * bytesil_magnitude(state_get_layer(b, 12));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 13)) * bytesil_magnitude(state_get_layer(b, 13));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 14)) * bytesil_magnitude(state_get_layer(b, 14));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 15)) * bytesil_magnitude(state_get_layer(b, 15));
+    return sum;
+}
+
+fn norm_l2(s: State) -> Float {
+    return sqrt(dot(s, s));
+}
+
+fn norm_l1(s: State) -> Float {
+    let sum = 0.0;
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(s, 0)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(s, 1)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(s, 2)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(s, 3)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(s, 4)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(s, 5)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(s, 6)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(s, 7)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(s, 8)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(s, 9)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(s, 10)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(s, 11)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(s, 12)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(s, 13)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(s, 14)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(s, 15)));
+    return sum;
+}
+
+fn add_st(a: State, b: State) -> State {
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, complex_add(state_get_layer(a, 0), state_get_layer(b, 0)));
+    let r = state_set_layer(r, 1, complex_add(state_get_layer(a, 1), state_get_layer(b, 1)));
+    let r = state_set_layer(r, 2, complex_add(state_get_layer(a, 2), state_get_layer(b, 2)));
+    let r = state_set_layer(r, 3, complex_add(state_get_layer(a, 3), state_get_layer(b, 3)));
+    let r = state_set_layer(r, 4, complex_add(state_get_layer(a, 4), state_get_layer(b, 4)));
+    let r = state_set_layer(r, 5, complex_add(state_get_layer(a, 5), state_get_layer(b, 5)));
+    let r = state_set_layer(r, 6, complex_add(state_get_layer(a, 6), state_get_layer(b, 6)));
+    let r = state_set_layer(r, 7, complex_add(state_get_layer(a, 7), state_get_layer(b, 7)));
+    let r = state_set_layer(r, 8, complex_add(state_get_layer(a, 8), state_get_layer(b, 8)));
+    let r = state_set_layer(r, 9, complex_add(state_get_layer(a, 9), state_get_layer(b, 9)));
+    let r = state_set_layer(r, 10, complex_add(state_get_layer(a, 10), state_get_layer(b, 10)));
+    let r = state_set_layer(r, 11, complex_add(state_get_layer(a, 11), state_get_layer(b, 11)));
+    let r = state_set_layer(r, 12, complex_add(state_get_layer(a, 12), state_get_layer(b, 12)));
+    let r = state_set_layer(r, 13, complex_add(state_get_layer(a, 13), state_get_layer(b, 13)));
+    let r = state_set_layer(r, 14, complex_add(state_get_layer(a, 14), state_get_layer(b, 14)));
+    let r = state_set_layer(r, 15, complex_add(state_get_layer(a, 15), state_get_layer(b, 15)));
+    return r;
+}
+
+fn sub_st(a: State, b: State) -> State {
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, complex_sub(state_get_layer(a, 0), state_get_layer(b, 0)));
+    let r = state_set_layer(r, 1, complex_sub(state_get_layer(a, 1), state_get_layer(b, 1)));
+    let r = state_set_layer(r, 2, complex_sub(state_get_layer(a, 2), state_get_layer(b, 2)));
+    let r = state_set_layer(r, 3, complex_sub(state_get_layer(a, 3), state_get_layer(b, 3)));
+    let r = state_set_layer(r, 4, complex_sub(state_get_layer(a, 4), state_get_layer(b, 4)));
+    let r = state_set_layer(r, 5, complex_sub(state_get_layer(a, 5), state_get_layer(b, 5)));
+    let r = state_set_layer(r, 6, complex_sub(state_get_layer(a, 6), state_get_layer(b, 6)));
+    let r = state_set_layer(r, 7, complex_sub(state_get_layer(a, 7), state_get_layer(b, 7)));
+    let r = state_set_layer(r, 8, complex_sub(state_get_layer(a, 8), state_get_layer(b, 8)));
+    let r = state_set_layer(r, 9, complex_sub(state_get_layer(a, 9), state_get_layer(b, 9)));
+    let r = state_set_layer(r, 10, complex_sub(state_get_layer(a, 10), state_get_layer(b, 10)));
+    let r = state_set_layer(r, 11, complex_sub(state_get_layer(a, 11), state_get_layer(b, 11)));
+    let r = state_set_layer(r, 12, complex_sub(state_get_layer(a, 12), state_get_layer(b, 12)));
+    let r = state_set_layer(r, 13, complex_sub(state_get_layer(a, 13), state_get_layer(b, 13)));
+    let r = state_set_layer(r, 14, complex_sub(state_get_layer(a, 14), state_get_layer(b, 14)));
+    let r = state_set_layer(r, 15, complex_sub(state_get_layer(a, 15), state_get_layer(b, 15)));
+    return r;
+}
+
+fn hadamard(a: State, b: State) -> State {
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, bytesil_mul(state_get_layer(a, 0), state_get_layer(b, 0)));
+    let r = state_set_layer(r, 1, bytesil_mul(state_get_layer(a, 1), state_get_layer(b, 1)));
+    let r = state_set_layer(r, 2, bytesil_mul(state_get_layer(a, 2), state_get_layer(b, 2)));
+    let r = state_set_layer(r, 3, bytesil_mul(state_get_layer(a, 3), state_get_layer(b, 3)));
+    let r = state_set_layer(r, 4, bytesil_mul(state_get_layer(a, 4), state_get_layer(b, 4)));
+    let r = state_set_layer(r, 5, bytesil_mul(state_get_layer(a, 5), state_get_layer(b, 5)));
+    let r = state_set_layer(r, 6, bytesil_mul(state_get_layer(a, 6), state_get_layer(b, 6)));
+    let r = state_set_layer(r, 7, bytesil_mul(state_get_layer(a, 7), state_get_layer(b, 7)));
+    let r = state_set_layer(r, 8, bytesil_mul(state_get_layer(a, 8), state_get_layer(b, 8)));
+    let r = state_set_layer(r, 9, bytesil_mul(state_get_layer(a, 9), state_get_layer(b, 9)));
+    let r = state_set_layer(r, 10, bytesil_mul(state_get_layer(a, 10), state_get_layer(b, 10)));
+    let r = state_set_layer(r, 11, bytesil_mul(state_get_layer(a, 11), state_get_layer(b, 11)));
+    let r = state_set_layer(r, 12, bytesil_mul(state_get_layer(a, 12), state_get_layer(b, 12)));
+    let r = state_set_layer(r, 13, bytesil_mul(state_get_layer(a, 13), state_get_layer(b, 13)));
+    let r = state_set_layer(r, 14, bytesil_mul(state_get_layer(a, 14), state_get_layer(b, 14)));
+    let r = state_set_layer(r, 15, bytesil_mul(state_get_layer(a, 15), state_get_layer(b, 15)));
+    return r;
+}
+
+fn scale_st(s: State, scalar: Float) -> State {
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, complex_scale(state_get_layer(s, 0), scalar));
+    let r = state_set_layer(r, 1, complex_scale(state_get_layer(s, 1), scalar));
+    let r = state_set_layer(r, 2, complex_scale(state_get_layer(s, 2), scalar));
+    let r = state_set_layer(r, 3, complex_scale(state_get_layer(s, 3), scalar));
+    let r = state_set_layer(r, 4, complex_scale(state_get_layer(s, 4), scalar));
+    let r = state_set_layer(r, 5, complex_scale(state_get_layer(s, 5), scalar));
+    let r = state_set_layer(r, 6, complex_scale(state_get_layer(s, 6), scalar));
+    let r = state_set_layer(r, 7, complex_scale(state_get_layer(s, 7), scalar));
+    let r = state_set_layer(r, 8, complex_scale(state_get_layer(s, 8), scalar));
+    let r = state_set_layer(r, 9, complex_scale(state_get_layer(s, 9), scalar));
+    let r = state_set_layer(r, 10, complex_scale(state_get_layer(s, 10), scalar));
+    let r = state_set_layer(r, 11, complex_scale(state_get_layer(s, 11), scalar));
+    let r = state_set_layer(r, 12, complex_scale(state_get_layer(s, 12), scalar));
+    let r = state_set_layer(r, 13, complex_scale(state_get_layer(s, 13), scalar));
+    let r = state_set_layer(r, 14, complex_scale(state_get_layer(s, 14), scalar));
+    let r = state_set_layer(r, 15, complex_scale(state_get_layer(s, 15), scalar));
+    return r;
+}
+
+fn identity() -> State {
+    let m = state_vacuum();
+    let one = bytesil_one();
+    let m = state_set_layer(m, 0, one);
+    let m = state_set_layer(m, 5, one);
+    let m = state_set_layer(m, 10, one);
+    let m = state_set_layer(m, 15, one);
+    return m;
+}
+
+fn transpose(m: State) -> State {
+    let t = state_vacuum();
+    let t = state_set_layer(t, 0, state_get_layer(m, 0));
+    let t = state_set_layer(t, 1, state_get_layer(m, 4));
+    let t = state_set_layer(t, 2, state_get_layer(m, 8));
+    let t = state_set_layer(t, 3, state_get_layer(m, 12));
+    let t = state_set_layer(t, 4, state_get_layer(m, 1));
+    let t = state_set_layer(t, 5, state_get_layer(m, 5));
+    let t = state_set_layer(t, 6, state_get_layer(m, 9));
+    let t = state_set_layer(t, 7, state_get_layer(m, 13));
+    let t = state_set_layer(t, 8, state_get_layer(m, 2));
+    let t = state_set_layer(t, 9, state_get_layer(m, 6));
+    let t = state_set_layer(t, 10, state_get_layer(m, 10));
+    let t = state_set_layer(t, 11, state_get_layer(m, 14));
+    let t = state_set_layer(t, 12, state_get_layer(m, 3));
+    let t = state_set_layer(t, 13, state_get_layer(m, 7));
+    let t = state_set_layer(t, 14, state_get_layer(m, 11));
+    let t = state_set_layer(t, 15, state_get_layer(m, 15));
+    return t;
+}
+
+fn cosine_similarity(a: State, b: State) -> Float {
+    let d = dot(a, b);
+    let na = norm_l2(a);
+    let nb = norm_l2(b);
+    let denom = na * nb;
+    if denom < 0.0000001 {
+        return 0.0;
+    }
+    return d / denom;
+}

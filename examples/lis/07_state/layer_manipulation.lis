@@ -1,0 +1,145 @@
+// LIS Example: Manipulação de Camadas
+// Demonstra: shift_up, shift_down, rotate_layers
+// Documentação: Seção 8.9
+
+// =========================================
+// Aplicações Práticas
+// =========================================
+
+// Mover dados de percepção para processamento
+fn move_perception_to_processing(s: State) -> State {
+    // L0-L3 (percepção) para L5-L8 (processamento)
+    let result = s;
+    let result = state_set_layer(result, 5, state_get_layer(s, 0));
+    let result = state_set_layer(result, 6, state_get_layer(s, 1));
+    let result = state_set_layer(result, 7, state_get_layer(s, 2));
+    let result = state_set_layer(result, 8, state_get_layer(s, 3));
+    return result;
+}
+
+// Pipeline de transformação com rotação
+fn rotate_pipeline(s: State, steps: Int) -> State {
+    let result = s;
+    let i = 0;
+    loop {
+        if i >= steps {
+            break;
+        }
+        let result = rotate_layers(result, 1);
+        let i = i + 1;
+    }
+    return result;
+}
+
+// Swap de Camadas
+fn swap_layers(s: State, i: Int, j: Int) -> State {
+    let temp_i = state_get_layer(s, i);
+    let temp_j = state_get_layer(s, j);
+    let result = state_set_layer(s, i, temp_j);
+    let result = state_set_layer(result, j, temp_i);
+    return result;
+}
+
+fn main() {
+    print_string("=== Layer Manipulation ===");
+
+    // =========================================
+    // Criar Estado de Teste
+    // =========================================
+    // Estado com padrão reconhecível
+    let s = state_vacuum();
+    let s = state_set_layer(s, 0, bytesil_new(1, 0));
+    let s = state_set_layer(s, 1, bytesil_new(2, 0));
+    let s = state_set_layer(s, 2, bytesil_new(3, 0));
+    let s = state_set_layer(s, 3, bytesil_new(4, 0));
+    let s = state_set_layer(s, 4, bytesil_new(5, 0));
+
+    print_string("Initial state:");
+    print_string("L0 rho:"); print_int(bytesil_rho(state_get_layer(s, 0)));
+    print_string("L1 rho:"); print_int(bytesil_rho(state_get_layer(s, 1)));
+    print_string("L2 rho:"); print_int(bytesil_rho(state_get_layer(s, 2)));
+    print_string("L3 rho:"); print_int(bytesil_rho(state_get_layer(s, 3)));
+    print_string("L4 rho:"); print_int(bytesil_rho(state_get_layer(s, 4)));
+
+    // =========================================
+    // Shift Up (shift_layers_up)
+    // =========================================
+    print_string("--- shift_layers_up ---");
+
+    // Move camadas para cima (índices menores)
+    // L1 -> L0, L2 -> L1, etc.
+    let shifted_up = shift_layers_up(s);
+
+    print_string("After shift_layers_up(s):");
+    print_string("L0 rho (was L1):"); print_int(bytesil_rho(state_get_layer(shifted_up, 0)));
+    print_string("L1 rho (was L2):"); print_int(bytesil_rho(state_get_layer(shifted_up, 1)));
+    print_string("L2 rho (was L3):"); print_int(bytesil_rho(state_get_layer(shifted_up, 2)));
+
+    // =========================================
+    // Shift Down (shift_layers_down)
+    // =========================================
+    print_string("--- shift_layers_down ---");
+
+    // Move camadas para baixo (índices maiores)
+    // L0 -> L1, L1 -> L2, etc.
+    let shifted_down = shift_layers_down(s);
+
+    print_string("After shift_layers_down(s):");
+    print_string("L0 rho (new):"); print_int(bytesil_rho(state_get_layer(shifted_down, 0)));
+    print_string("L1 rho (was L0):"); print_int(bytesil_rho(state_get_layer(shifted_down, 1)));
+    print_string("L2 rho (was L1):"); print_int(bytesil_rho(state_get_layer(shifted_down, 2)));
+
+    // =========================================
+    // Rotate Layers (rotate_layers)
+    // =========================================
+    print_string("--- rotate_layers ---");
+
+    // Rotação circular das camadas
+    // Com n positivo, camadas movem para cima (circular)
+    let rotated_pos = rotate_layers(s, 1);
+
+    print_string("After rotate_layers(s, 1):");
+    print_string("L0 rho (was L1):"); print_int(bytesil_rho(state_get_layer(rotated_pos, 0)));
+    print_string("L15 rho (was L0):"); print_int(bytesil_rho(state_get_layer(rotated_pos, 15)));
+
+    // Rotação negativa (sentido oposto)
+    let rotated_neg = rotate_layers(s, -1);
+
+    print_string("After rotate_layers(s, -1):");
+    print_string("L1 rho (was L0):"); print_int(bytesil_rho(state_get_layer(rotated_neg, 1)));
+
+    // =========================================
+    // Rotação Completa
+    // =========================================
+    print_string("--- Full Rotation ---");
+
+    // Rotação por 16 deve retornar ao original
+    let rotated_full = rotate_layers(s, 16);
+
+    print_string("After rotate_layers(s, 16) - should be same as original:");
+    print_string("L0 rho:"); print_int(bytesil_rho(state_get_layer(rotated_full, 0)));
+    print_string("L1 rho:"); print_int(bytesil_rho(state_get_layer(rotated_full, 1)));
+
+    // =========================================
+    // Aplicações Práticas
+    // =========================================
+    print_string("--- Practical Applications ---");
+
+    let moved = move_perception_to_processing(s);
+    print_string("Moved perception to processing:");
+    print_string("L5 rho (copied from L0):"); print_int(bytesil_rho(state_get_layer(moved, 5)));
+
+    let piped = rotate_pipeline(s, 4);
+    print_string("After 4 rotation steps:");
+    print_string("L0 rho (was L4):"); print_int(bytesil_rho(state_get_layer(piped, 0)));
+
+    // =========================================
+    // Swap de Camadas
+    // =========================================
+    print_string("--- Layer Swap ---");
+
+    let swapped = swap_layers(s, 0, 4);
+    print_string("After swapping L0 and L4:");
+    print_string("L0 rho (was L4):"); print_int(bytesil_rho(state_get_layer(swapped, 0)));
+    print_string("L4 rho (was L0):"); print_int(bytesil_rho(state_get_layer(swapped, 4)));
+}

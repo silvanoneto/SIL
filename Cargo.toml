@@ -1,0 +1,38 @@
+[workspace]
+members = [
+    # SIL Core
+    "sil-core",
+    # SIL Perception (L0-L4)
+    "sil-photonic",
+    "sil-acoustic",
+    "sil-olfactory",
+    "sil-gustatory",
+    "sil-haptic",
+    # SIL Processing (L5-L7)
+    "sil-electronic",
+    "sil-actuator",
+    "sil-environment",
+    # SIL Interaction (L8-LA)
+    "sil-network",
+    "sil-governance",
+    "sil-cosmopolitan",
+    # SIL Emergence (LB-LC)
+    "sil-swarm",
+    "sil-quantum",
+    # SIL Meta (LD-LF)
+    "sil-superposition",
+    "sil-entanglement",
+    "sil-collapse",
+    # SIL Orchestration
+    "sil-orchestration",
+    # LIS Language
+    "lis-core",
+    "lis-cli",
+    "lis-format",
+    "lis-runtime",
+    "lis-api",
+    # Meta Debian package
+    "sil-ecosystem",
+    "benches",
+]
+resolver = "2"

@@ -1,0 +1,21 @@
+# Exclude development-only files from the VSIX
+.vscode/**
+.github/**
+
+# Exclude TypeScript sources and tests (ship compiled JS in out/)
+src/**
+out/test/**
+
+# Maps and TS files not needed at runtime
+**/*.map
+**/*.ts
+
+# Project configs
+tsconfig.json
+.eslintrc*
+.prettierrc*
+.editorconfig
+
+# Git files
+.gitignore
+.gitattributes

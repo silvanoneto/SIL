@@ -1,0 +1,304 @@
+{
+  "LIS Program": {
+    "prefix": "lis-prog",
+    "body": [
+      "// ${1:Program description}",
+      "",
+      "fn main() {",
+      "    ${0:// Main function}",
+      "}"
+    ],
+    "description": "Create a new LIS program"
+  },
+  "Function Definition": {
+    "prefix": "lis-fn",
+    "body": [
+      "fn ${1:function_name}(${2:arg}: ${3:Int}) -> ${4:Int} {",
+      "    ${5:// Function body}",
+      "    return ${6:result};",
+      "}"
+    ],
+    "description": "Define a LIS function"
+  },
+  "Transform Definition": {
+    "prefix": "lis-transform",
+    "body": [
+      "transform ${1:transform_name}(input: State) -> State {",
+      "    let output = ${2:process(input)};",
+      "    feedback output |> ${1:transform_name};",
+      "    return output;",
+      "}"
+    ],
+    "description": "Define a LIS transform with feedback loop"
+  },
+  "State Construction": {
+    "prefix": "lis-state",
+    "body": [
+      "let state = State {",
+      "    L0: (${1:1.0}, ${2:0.0}),  // Photonic",
+      "    L1: (${3:0.5}, ${4:1.57}), // Acoustic",
+      "    ${0:// ... more layers}",
+      "};"
+    ],
+    "description": "Construct a SIL State with layers"
+  },
+  "Pipeline": {
+    "prefix": "lis-pipeline",
+    "body": [
+      "let result = ${1:input}",
+      "    |> ${2:normalize}",
+      "    |> ${3:process}",
+      "    |> ${4:emerge};"
+    ],
+    "description": "Create a pipeline of transforms"
+  },
+  "Conditional": {
+    "prefix": "lis-if",
+    "body": [
+      "if ${1:condition} {",
+      "    ${2:// then branch}",
+      "} else {",
+      "    ${0:// else branch}",
+      "}"
+    ],
+    "description": "If-else conditional"
+  },
+  "Loop": {
+    "prefix": "lis-loop",
+    "body": [
+      "loop {",
+      "    ${1:// loop body}",
+      "    if ${2:condition} {",
+      "        break;",
+      "    }",
+      "}"
+    ],
+    "description": "Infinite loop with break"
+  },
+  "For-like Loop": {
+    "prefix": "lis-for",
+    "body": [
+      "let ${1:i} = ${2:0};",
+      "loop {",
+      "    if ${1:i} >= ${3:10} {",
+      "        break;",
+      "    }",
+      "    ${4:// loop body}",
+      "    ${1:i} = ${1:i} + 1;",
+      "}"
+    ],
+    "description": "For-style loop pattern"
+  },
+  "Complex Operations": {
+    "prefix": "lis-complex",
+    "body": [
+      "let z1 = (${1:2.0}, ${2:1.57});  // (rho, theta) log-polar",
+      "let z2 = (${3:1.0}, ${4:0.78});",
+      "let product = z1 * z2;        // Multiply in O(1)",
+      "let magnitude = |z1|;         // Get magnitude",
+      "let conjugate = ~z1;          // Complex conjugate"
+    ],
+    "description": "Complex number operations (log-polar)"
+  },
+  "Layer Access": {
+    "prefix": "lis-layer",
+    "body": [
+      "let state = ${1:sense()};",
+      "let photonic = state.L0;  // Photonic layer",
+      "let acoustic = state.L1;  // Acoustic layer",
+      "let ${2:result} = photonic ${3:*} acoustic;"
+    ],
+    "description": "Access specific layers from State"
+  },
+  "Sense-Process-Act": {
+    "prefix": "lis-spa",
+    "body": [
+      "fn main() {",
+      "    loop {",
+      "        let state = sense();           // Capture sensory input",
+      "        let processed = process(state); // Transform",
+      "        act(processed);                // Actuate",
+      "    }",
+      "}"
+    ],
+    "description": "Sense-Process-Act control loop"
+  },
+  "Hardware Hint - GPU": {
+    "prefix": "lis-gpu",
+    "body": [
+      "@gpu",
+      "fn ${1:parallel_function}(data: State) -> State {",
+      "    ${0:// GPU-accelerated code}",
+      "    return data;",
+      "}"
+    ],
+    "description": "Mark function for GPU execution"
+  },
+  "Hardware Hint - NPU": {
+    "prefix": "lis-npu",
+    "body": [
+      "@npu",
+      "fn ${1:inference_function}(input: State) -> Int {",
+      "    ${0:// Neural Engine inference}",
+      "    return 0;",
+      "}"
+    ],
+    "description": "Mark function for NPU execution"
+  },
+  "Hardware Hint - CPU": {
+    "prefix": "lis-cpu",
+    "body": [
+      "@cpu",
+      "fn ${1:cpu_function}(data: ${2:Int}) -> ${3:Int} {",
+      "    ${0:// CPU-only code}",
+      "    return data;",
+      "}"
+    ],
+    "description": "Mark function for CPU execution"
+  },
+  "Feedback Loop": {
+    "prefix": "lis-feedback",
+    "body": [
+      "transform ${1:autopoietic}(input: State) -> State {",
+      "    let output = ${2:transform}(input);",
+      "    feedback output |> ${1:autopoietic};  // Self-referential loop",
+      "    return output;",
+      "}"
+    ],
+    "description": "Autopoietic feedback loop"
+  },
+  "Emergence Detection": {
+    "prefix": "lis-emerge",
+    "body": [
+      "let ${1:emergent} = ${2:state}",
+      "    |> normalize",
+      "    |> detect_patterns",
+      "    |> emerge;  // Detect emergent behavior"
+    ],
+    "description": "Pipeline with emergence detection"
+  },
+  "Type Alias": {
+    "prefix": "lis-type",
+    "body": [
+      "type ${1:TypeName} = ${2:State};"
+    ],
+    "description": "Define a type alias"
+  },
+  "Let Binding": {
+    "prefix": "let",
+    "body": [
+      "let ${1:var_name} = ${2:value};"
+    ],
+    "description": "Variable binding"
+  },
+  "Constant Binding": {
+    "prefix": "const",
+    "body": [
+      "const ${1:CONSTANT_NAME} = ${2:value};"
+    ],
+    "description": "Constant binding"
+  },
+  "Tuple Pattern": {
+    "prefix": "lis-tuple",
+    "body": [
+      "let (${1:rho}, ${2:theta}) = ${3:complex_value};"
+    ],
+    "description": "Destructure tuple"
+  },
+  "Use Statement": {
+    "prefix": "use",
+    "body": [
+      "use ${1:module}::${2:item};"
+    ],
+    "description": "Import a module"
+  },
+  "Use with Alias": {
+    "prefix": "use-as",
+    "body": [
+      "use ${1:module}::${2:item} as ${3:alias};"
+    ],
+    "description": "Import a module with alias"
+  },
+  "Public Use (Re-export)": {
+    "prefix": "pub-use",
+    "body": [
+      "pub use ${1:module}::${2:item};"
+    ],
+    "description": "Re-export a module publicly"
+  },
+  "Module Declaration": {
+    "prefix": "mod",
+    "body": [
+      "mod ${1:module_name};"
+    ],
+    "description": "Declare a module"
+  },
+  "Public Module": {
+    "prefix": "pub-mod",
+    "body": [
+      "pub mod ${1:module_name};"
+    ],
+    "description": "Declare a public module"
+  },
+  "Extern Function": {
+    "prefix": "extern-fn",
+    "body": [
+      "extern fn ${1:function_name}(${2:arg}: ${3:Type}) -> ${4:ReturnType};"
+    ],
+    "description": "Declare an external Rust function"
+  },
+  "Public Function": {
+    "prefix": "pub-fn",
+    "body": [
+      "pub fn ${1:function_name}(${2:arg}: ${3:Type}) -> ${4:ReturnType} {",
+      "    ${0:// Function body}",
+      "}"
+    ],
+    "description": "Define a public function"
+  },
+  "Public Transform": {
+    "prefix": "pub-transform",
+    "body": [
+      "pub transform ${1:transform_name}(input: State) -> State {",
+      "    ${0:// Transform body}",
+      "    return input;",
+      "}"
+    ],
+    "description": "Define a public transform"
+  },
+  "Public Type Alias": {
+    "prefix": "pub-type",
+    "body": [
+      "pub type ${1:TypeName} = ${2:State};"
+    ],
+    "description": "Define a public type alias"
+  },
+  "LIS Project Main": {
+    "prefix": "lis-project",
+    "body": [
+      "// ${1:Project description}",
+      "//",
+      "// Entry point for ${2:project_name}",
+      "",
+      "mod ${3:utils};",
+      "",
+      "use ${3:utils}::${4:helper};",
+      "",
+      "fn main() {",
+      "    ${0:// Main function}",
+      "}"
+    ],
+    "description": "Create a LIS project main file with module imports"
+  },
+  "LIS Module File": {
+    "prefix": "lis-mod",
+    "body": [
+      "// ${1:Module description}",
+      "",
+      "pub fn ${2:function_name}(${3:arg}: ${4:Type}) -> ${5:ReturnType} {",
+      "    ${0:// Implementation}",
+      "}"
+    ],
+    "description": "Create a LIS module file template"
+  }
+}

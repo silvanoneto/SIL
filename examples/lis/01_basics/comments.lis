@@ -1,0 +1,22 @@
+// LIS Example: Comentários
+// Demonstra: Comentários de linha e bloco
+// Documentação: Seção 3.7
+
+// Este é um comentário de linha simples
+// Comentários de linha começam com //
+
+// Comentários de bloco também são suportados:
+// /* Este é um comentário de bloco */
+// Podem ocupar múltiplas linhas.
+
+fn main() {
+    // Comentário dentro de função
+    let x = 42;  // Comentário ao final da linha
+
+    // Comentários podem documentar variáveis
+    // ou explicar lógica complexa
+
+    print_int(x);
+}
+
+// Comentário após a função

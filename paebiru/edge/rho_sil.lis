@@ -1,0 +1,419 @@
+// Paebiru Edge Computing - rho_Sil Complexity Metric
+// Measures computational complexity of State for edge routing decisions
+//
+// The rho_Sil metric combines:
+// 1. Transition count: number of significant changes between adjacent layers
+// 2. Information entropy: distribution of magnitudes
+// 3. Phase coherence: alignment of phases across layers
+//
+// Higher rho values indicate more complex states requiring more compute
+
+// Helper: Create ByteSil from magnitude
+fn from_mag(m: Float) -> ByteSil {
+    return bytesil_new(floor(clamp_float(ln(max_float(m, 0.0001)), -8.0, 7.0)), 0);
+}
+
+// Absolute value
+fn abs_f(x: Float) -> Float {
+    if x < 0.0 {
+        return 0.0 - x;
+    }
+    return x;
+}
+
+// Sum of all magnitudes in state
+fn sum_magnitudes(s: State) -> Float {
+    let sum = 0.0;
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 0));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 1));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 2));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 3));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 4));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 5));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 6));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 7));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 8));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 9));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 10));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 11));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 12));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 13));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 14));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 15));
+    return sum;
+}
+
+// Count significant transitions between adjacent layers
+// A transition occurs when magnitude change exceeds threshold
+fn transition_count(s: State, threshold: Float) -> Float {
+    let count = 0.0;
+
+    let m0 = bytesil_magnitude(state_get_layer(s, 0));
+    let m1 = bytesil_magnitude(state_get_layer(s, 1));
+    if abs_f(m1 - m0) > threshold {
+        let count = count + 1.0;
+    }
+
+    let m2 = bytesil_magnitude(state_get_layer(s, 2));
+    if abs_f(m2 - m1) > threshold {
+        let count = count + 1.0;
+    }
+
+    let m3 = bytesil_magnitude(state_get_layer(s, 3));
+    if abs_f(m3 - m2) > threshold {
+        let count = count + 1.0;
+    }
+
+    let m4 = bytesil_magnitude(state_get_layer(s, 4));
+    if abs_f(m4 - m3) > threshold {
+        let count = count + 1.0;
+    }
+
+    let m5 = bytesil_magnitude(state_get_layer(s, 5));
+    if abs_f(m5 - m4) > threshold {
+        let count = count + 1.0;
+    }
+
+    let m6 = bytesil_magnitude(state_get_layer(s, 6));
+    if abs_f(m6 - m5) > threshold {
+        let count = count + 1.0;
+    }
+
+    let m7 = bytesil_magnitude(state_get_layer(s, 7));
+    if abs_f(m7 - m6) > threshold {
+        let count = count + 1.0;
+    }
+
+    let m8 = bytesil_magnitude(state_get_layer(s, 8));
+    if abs_f(m8 - m7) > threshold {
+        let count = count + 1.0;
+    }
+
+    let m9 = bytesil_magnitude(state_get_layer(s, 9));
+    if abs_f(m9 - m8) > threshold {
+        let count = count + 1.0;
+    }
+
+    let m10 = bytesil_magnitude(state_get_layer(s, 10));
+    if abs_f(m10 - m9) > threshold {
+        let count = count + 1.0;
+    }
+
+    let m11 = bytesil_magnitude(state_get_layer(s, 11));
+    if abs_f(m11 - m10) > threshold {
+        let count = count + 1.0;
+    }
+
+    let m12 = bytesil_magnitude(state_get_layer(s, 12));
+    if abs_f(m12 - m11) > threshold {
+        let count = count + 1.0;
+    }
+
+    let m13 = bytesil_magnitude(state_get_layer(s, 13));
+    if abs_f(m13 - m12) > threshold {
+        let count = count + 1.0;
+    }
+
+    let m14 = bytesil_magnitude(state_get_layer(s, 14));
+    if abs_f(m14 - m13) > threshold {
+        let count = count + 1.0;
+    }
+
+    let m15 = bytesil_magnitude(state_get_layer(s, 15));
+    if abs_f(m15 - m14) > threshold {
+        let count = count + 1.0;
+    }
+
+    return count;
+}
+
+// Information entropy of magnitude distribution
+// H = -sum(p * log(p)) where p = normalized magnitudes
+fn magnitude_entropy(s: State) -> Float {
+    let total = sum_magnitudes(s) + 0.0001;
+
+    let entropy = 0.0;
+
+    let p0 = bytesil_magnitude(state_get_layer(s, 0)) / total;
+    if p0 > 0.0001 {
+        let entropy = entropy - p0 * ln(p0);
+    }
+
+    let p1 = bytesil_magnitude(state_get_layer(s, 1)) / total;
+    if p1 > 0.0001 {
+        let entropy = entropy - p1 * ln(p1);
+    }
+
+    let p2 = bytesil_magnitude(state_get_layer(s, 2)) / total;
+    if p2 > 0.0001 {
+        let entropy = entropy - p2 * ln(p2);
+    }
+
+    let p3 = bytesil_magnitude(state_get_layer(s, 3)) / total;
+    if p3 > 0.0001 {
+        let entropy = entropy - p3 * ln(p3);
+    }
+
+    let p4 = bytesil_magnitude(state_get_layer(s, 4)) / total;
+    if p4 > 0.0001 {
+        let entropy = entropy - p4 * ln(p4);
+    }
+
+    let p5 = bytesil_magnitude(state_get_layer(s, 5)) / total;
+    if p5 > 0.0001 {
+        let entropy = entropy - p5 * ln(p5);
+    }
+
+    let p6 = bytesil_magnitude(state_get_layer(s, 6)) / total;
+    if p6 > 0.0001 {
+        let entropy = entropy - p6 * ln(p6);
+    }
+
+    let p7 = bytesil_magnitude(state_get_layer(s, 7)) / total;
+    if p7 > 0.0001 {
+        let entropy = entropy - p7 * ln(p7);
+    }
+
+    let p8 = bytesil_magnitude(state_get_layer(s, 8)) / total;
+    if p8 > 0.0001 {
+        let entropy = entropy - p8 * ln(p8);
+    }
+
+    let p9 = bytesil_magnitude(state_get_layer(s, 9)) / total;
+    if p9 > 0.0001 {
+        let entropy = entropy - p9 * ln(p9);
+    }
+
+    let p10 = bytesil_magnitude(state_get_layer(s, 10)) / total;
+    if p10 > 0.0001 {
+        let entropy = entropy - p10 * ln(p10);
+    }
+
+    let p11 = bytesil_magnitude(state_get_layer(s, 11)) / total;
+    if p11 > 0.0001 {
+        let entropy = entropy - p11 * ln(p11);
+    }
+
+    let p12 = bytesil_magnitude(state_get_layer(s, 12)) / total;
+    if p12 > 0.0001 {
+        let entropy = entropy - p12 * ln(p12);
+    }
+
+    let p13 = bytesil_magnitude(state_get_layer(s, 13)) / total;
+    if p13 > 0.0001 {
+        let entropy = entropy - p13 * ln(p13);
+    }
+
+    let p14 = bytesil_magnitude(state_get_layer(s, 14)) / total;
+    if p14 > 0.0001 {
+        let entropy = entropy - p14 * ln(p14);
+    }
+
+    let p15 = bytesil_magnitude(state_get_layer(s, 15)) / total;
+    if p15 > 0.0001 {
+        let entropy = entropy - p15 * ln(p15);
+    }
+
+    return entropy;
+}
+
+// Phase coherence: measures alignment of phases
+// Coherence = 1 means all phases aligned, 0 means random
+fn phase_coherence(s: State) -> Float {
+    // Calculate mean phase using circular mean
+    let sum_sin = 0.0;
+    let sum_cos = 0.0;
+
+    let ph0 = bytesil_phase_radians(state_get_layer(s, 0));
+    let sum_sin = sum_sin + sin(ph0);
+    let sum_cos = sum_cos + cos(ph0);
+
+    let ph1 = bytesil_phase_radians(state_get_layer(s, 1));
+    let sum_sin = sum_sin + sin(ph1);
+    let sum_cos = sum_cos + cos(ph1);
+
+    let ph2 = bytesil_phase_radians(state_get_layer(s, 2));
+    let sum_sin = sum_sin + sin(ph2);
+    let sum_cos = sum_cos + cos(ph2);
+
+    let ph3 = bytesil_phase_radians(state_get_layer(s, 3));
+    let sum_sin = sum_sin + sin(ph3);
+    let sum_cos = sum_cos + cos(ph3);
+
+    let ph4 = bytesil_phase_radians(state_get_layer(s, 4));
+    let sum_sin = sum_sin + sin(ph4);
+    let sum_cos = sum_cos + cos(ph4);
+
+    let ph5 = bytesil_phase_radians(state_get_layer(s, 5));
+    let sum_sin = sum_sin + sin(ph5);
+    let sum_cos = sum_cos + cos(ph5);
+
+    let ph6 = bytesil_phase_radians(state_get_layer(s, 6));
+    let sum_sin = sum_sin + sin(ph6);
+    let sum_cos = sum_cos + cos(ph6);
+
+    let ph7 = bytesil_phase_radians(state_get_layer(s, 7));
+    let sum_sin = sum_sin + sin(ph7);
+    let sum_cos = sum_cos + cos(ph7);
+
+    let ph8 = bytesil_phase_radians(state_get_layer(s, 8));
+    let sum_sin = sum_sin + sin(ph8);
+    let sum_cos = sum_cos + cos(ph8);
+
+    let ph9 = bytesil_phase_radians(state_get_layer(s, 9));
+    let sum_sin = sum_sin + sin(ph9);
+    let sum_cos = sum_cos + cos(ph9);
+
+    let ph10 = bytesil_phase_radians(state_get_layer(s, 10));
+    let sum_sin = sum_sin + sin(ph10);
+    let sum_cos = sum_cos + cos(ph10);
+
+    let ph11 = bytesil_phase_radians(state_get_layer(s, 11));
+    let sum_sin = sum_sin + sin(ph11);
+    let sum_cos = sum_cos + cos(ph11);
+
+    let ph12 = bytesil_phase_radians(state_get_layer(s, 12));
+    let sum_sin = sum_sin + sin(ph12);
+    let sum_cos = sum_cos + cos(ph12);
+
+    let ph13 = bytesil_phase_radians(state_get_layer(s, 13));
+    let sum_sin = sum_sin + sin(ph13);
+    let sum_cos = sum_cos + cos(ph13);
+
+    let ph14 = bytesil_phase_radians(state_get_layer(s, 14));
+    let sum_sin = sum_sin + sin(ph14);
+    let sum_cos = sum_cos + cos(ph14);
+
+    let ph15 = bytesil_phase_radians(state_get_layer(s, 15));
+    let sum_sin = sum_sin + sin(ph15);
+    let sum_cos = sum_cos + cos(ph15);
+
+    // Resultant length normalized by n
+    let mean_sin = sum_sin / 16.0;
+    let mean_cos = sum_cos / 16.0;
+
+    return sqrt(mean_sin * mean_sin + mean_cos * mean_cos);
+}
+
+// L2 norm of state magnitudes
+fn norm_l2(s: State) -> Float {
+    let sum = 0.0;
+    let m0 = bytesil_magnitude(state_get_layer(s, 0));
+    let sum = sum + m0 * m0;
+    let m1 = bytesil_magnitude(state_get_layer(s, 1));
+    let sum = sum + m1 * m1;
+    let m2 = bytesil_magnitude(state_get_layer(s, 2));
+    let sum = sum + m2 * m2;
+    let m3 = bytesil_magnitude(state_get_layer(s, 3));
+    let sum = sum + m3 * m3;
+    let m4 = bytesil_magnitude(state_get_layer(s, 4));
+    let sum = sum + m4 * m4;
+    let m5 = bytesil_magnitude(state_get_layer(s, 5));
+    let sum = sum + m5 * m5;
+    let m6 = bytesil_magnitude(state_get_layer(s, 6));
+    let sum = sum + m6 * m6;
+    let m7 = bytesil_magnitude(state_get_layer(s, 7));
+    let sum = sum + m7 * m7;
+    let m8 = bytesil_magnitude(state_get_layer(s, 8));
+    let sum = sum + m8 * m8;
+    let m9 = bytesil_magnitude(state_get_layer(s, 9));
+    let sum = sum + m9 * m9;
+    let m10 = bytesil_magnitude(state_get_layer(s, 10));
+    let sum = sum + m10 * m10;
+    let m11 = bytesil_magnitude(state_get_layer(s, 11));
+    let sum = sum + m11 * m11;
+    let m12 = bytesil_magnitude(state_get_layer(s, 12));
+    let sum = sum + m12 * m12;
+    let m13 = bytesil_magnitude(state_get_layer(s, 13));
+    let sum = sum + m13 * m13;
+    let m14 = bytesil_magnitude(state_get_layer(s, 14));
+    let sum = sum + m14 * m14;
+    let m15 = bytesil_magnitude(state_get_layer(s, 15));
+    let sum = sum + m15 * m15;
+    return sqrt(sum);
+}
+
+// rho_Sil: The core complexity metric
+// Combines transition count, entropy, and inverse coherence
+// Higher values = more complex state = needs more compute
+fn rho_sil(s: State) -> Float {
+    let threshold = 0.1;
+
+    // Transition component (0-15 range, normalized to 0-1)
+    let trans = transition_count(s, threshold) / 15.0;
+
+    // Entropy component (0 to ln(16) ~= 2.77, normalized to 0-1)
+    let ent = magnitude_entropy(s) / 2.77;
+
+    // Incoherence component (1 - coherence, so 0-1)
+    let incoh = 1.0 - phase_coherence(s);
+
+    // Magnitude component (log scale, normalized)
+    let mag = ln(norm_l2(s) + 1.0) / 4.0;
+
+    // Weighted combination
+    // Transitions and entropy are most important for compute complexity
+    let rho = 0.35 * trans + 0.35 * ent + 0.15 * incoh + 0.15 * mag;
+
+    return clamp_float(rho, 0.0, 1.0);
+}
+
+// Simplified rho based only on transitions (faster to compute)
+fn rho_sil_fast(s: State) -> Float {
+    let threshold = 0.1;
+    let trans = transition_count(s, threshold) / 15.0;
+    let ent = magnitude_entropy(s) / 2.77;
+    return clamp_float(0.5 * trans + 0.5 * ent, 0.0, 1.0);
+}
+
+// Critical threshold for offloading decision
+// Returns true if computation should be offloaded to more powerful device
+fn should_offload(rho: Float, rho_critical: Float) -> Bool {
+    return rho > rho_critical;
+}
+
+// Dynamic critical threshold based on device capability
+// capability: 0.0 (minimal) to 1.0 (high-end)
+fn rho_critical_dynamic(capability: Float, load_factor: Float) -> Float {
+    // Base threshold scales with capability
+    let base = 0.3 + 0.5 * capability;
+
+    // Reduce threshold when device is under load
+    let adjusted = base * (1.0 - 0.3 * load_factor);
+
+    return clamp_float(adjusted, 0.1, 0.9);
+}
+
+// Compute estimated FLOPS for state based on rho
+// Used for load balancing and scheduling
+fn estimated_flops(rho: Float, base_flops: Float) -> Float {
+    // Exponential scaling: complex states need much more compute
+    return base_flops * exp(2.0 * rho);
+}
+
+// Energy estimate based on complexity (arbitrary units)
+fn energy_estimate(rho: Float, base_energy: Float) -> Float {
+    // Energy scales quadratically with complexity
+    return base_energy * (1.0 + rho * rho);
+}
+
+// Latency estimate in milliseconds
+fn latency_estimate(rho: Float, base_latency_ms: Float) -> Float {
+    // Latency increases with complexity
+    return base_latency_ms * (1.0 + 2.0 * rho);
+}
+
+// Compute complexity delta between two states
+// Useful for tracking how complexity changes through layers
+fn rho_delta(s1: State, s2: State) -> Float {
+    let rho1 = rho_sil(s1);
+    let rho2 = rho_sil(s2);
+    return rho2 - rho1;
+}
+
+// Moving average of rho values (for smoothing)
+// prev_avg: previous average, new_rho: new measurement, alpha: smoothing (0-1)
+fn rho_moving_avg(prev_avg: Float, new_rho: Float, alpha: Float) -> Float {
+    return alpha * new_rho + (1.0 - alpha) * prev_avg;
+}
+

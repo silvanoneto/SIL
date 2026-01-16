@@ -1,0 +1,97 @@
+// LIS Example: Inferência de Tipos
+// Demonstra: Inferência bidirecional de tipos
+// Documentação: Seção 4.3
+
+// =========================================
+// Inferência em Variáveis
+// =========================================
+
+fn demo_variable_inference() {
+    // Tipo inferido a partir do literal
+    let x = 42;           // Inferido: Int
+    let y = 3.14;         // Inferido: Float
+    let flag = true;      // Inferido: Bool
+    let msg = "hello";    // Inferido: String
+
+    print_string("Variable inference:");
+    print_int(x);
+    print_float(y);
+    print_string(msg);
+}
+
+// =========================================
+// Inferência em Funções
+// =========================================
+
+// Parâmetros tipados, retorno inferido
+fn add_explicit(a: Int, b: Int) {
+    return a + b;  // Retorno inferido como Int
+}
+
+// Parâmetros inferidos pelo uso
+fn double(n) {
+    return n * 2;  // n inferido como numérico pelo operador *
+}
+
+// Múltiplos usos determinam o tipo
+fn process(value) {
+    let result = value + 1;  // value deve ser numérico
+    return result * 2;       // result também numérico
+}
+
+// =========================================
+// Inferência Contextual
+// =========================================
+
+fn demo_contextual_inference() {
+    // Tipo inferido do contexto de uso
+    let a = 10;
+    let b = 20;
+    let sum = a + b;  // sum inferido como Int
+
+    // Promoção de tipo
+    let c = 10;
+    let d = 3.14;
+    let mixed = c + d;  // c promovido para Float, mixed é Float
+
+    print_string("Contextual inference:");
+    print_int(sum);
+    print_float(mixed);
+}
+
+// =========================================
+// Inferência em Chamadas de Função
+// =========================================
+
+fn identity(x) {
+    return x;  // Tipo de x inferido pelo uso
+}
+
+fn demo_call_inference() {
+    // Tipo inferido pelo argumento passado
+    let int_result = identity(42);      // identity retorna Int
+    let float_result = identity(3.14);  // identity retorna Float
+
+    print_string("Call inference:");
+    print_int(int_result);
+    print_float(float_result);
+}
+
+// =========================================
+// Inferência com Tipos Explícitos
+// =========================================
+
+fn demo_explicit_override() {
+    // Tipo explícito força conversão
+    let x: Float = 42;  // Int 42 promovido para Float 42.0
+
+    print_string("Explicit type override:");
+    print_float(x);
+}
+
+fn main() {
+    demo_variable_inference();
+    demo_contextual_inference();
+    demo_call_inference();
+    demo_explicit_override();
+}

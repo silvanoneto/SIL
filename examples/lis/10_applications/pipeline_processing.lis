@@ -1,0 +1,317 @@
+// LIS Example: Pipeline de Processamento
+// Demonstra: Pipeline completo com múltiplas transformações
+// Documentação: Seção 12.5
+
+// =========================================
+// Transforms do Pipeline
+// =========================================
+
+transform preprocess(s: State) -> State {
+    // Normalizar entrada
+    return state_normalize(s);
+}
+
+transform encode(s: State) -> State {
+    // Codificar via transformação de fase
+    return transform_phase_shift(s, 2);  // phase increment
+}
+
+transform scale_up(s: State) -> State {
+    return transform_magnitude_scale(s, 2);
+}
+
+transform scale_down(s: State) -> State {
+    return transform_magnitude_scale(s, 1);
+}
+
+transform activate_relu(s: State) -> State {
+    return relu_state(s);
+}
+
+transform postprocess(s: State) -> State {
+    return state_normalize(s);
+}
+
+// =========================================
+// Dense Layer Transform
+// =========================================
+
+fn create_weights(seed: Float) -> State {
+    let result = state_vacuum();
+    let idx = 0;
+
+    loop {
+        if idx >= 16 {
+            break;
+        }
+
+        let theta = seed + idx * 1.0;
+        let theta = theta - floor(theta / 16.0) * 16.0;
+        let w = bytesil_new(3, floor(theta));
+        let result = state_set_layer(result, idx, w);
+
+        let idx = idx + 1;
+    }
+
+    return result;
+}
+
+transform dense_layer(s: State) -> State {
+    let weights = create_weights(7.0);
+    let bias = state_vacuum();
+    let weighted = state_tensor(s, weights);
+    return state_xor(weighted, bias);
+}
+
+// =========================================
+// Pipeline de Processamento de Sinal
+// =========================================
+
+fn signal_processing_pipeline(input: State) -> State {
+    // Pipeline completo de processamento de sinal
+    return input
+        |> preprocess
+        |> encode
+        |> scale_up
+        |> activate_relu
+        |> postprocess;
+}
+
+// =========================================
+// Pipeline de Rede Neural
+// =========================================
+
+fn neural_pipeline(input: State) -> State {
+    // Pipeline de rede neural simples
+    return input
+        |> preprocess
+        |> dense_layer
+        |> activate_relu
+        |> dense_layer
+        |> postprocess;
+}
+
+// =========================================
+// Pipeline com Branches (Conditional)
+// =========================================
+
+fn conditional_pipeline(input: State, use_heavy: Bool) -> State {
+    let processed = preprocess(input);
+
+    if use_heavy {
+        // Pipeline pesado
+        let processed = dense_layer(processed);
+        let processed = activate_relu(processed);
+        let processed = dense_layer(processed);
+        return postprocess(processed);
+    } else {
+        // Pipeline leve
+        let processed = scale_up(processed);
+        let processed = encode(processed);
+        return postprocess(processed);
+    }
+}
+
+// =========================================
+// Pipeline com Feedback
+// =========================================
+
+fn feedback_pipeline(input: State, iterations: Int) -> State {
+    let current = input |> preprocess;
+    let i = 0;
+
+    loop {
+        if i >= iterations {
+            break;
+        }
+
+        // Aplicar pipeline
+        let current = current
+            |> encode
+            |> scale_down
+            |> activate_relu;
+
+        // Aplicar feedback
+        let current = feedback(current);
+        let current = state_normalize(current);
+
+        let i = i + 1;
+    }
+
+    return current |> postprocess;
+}
+
+// =========================================
+// Pipeline de Fusão Multimodal
+// =========================================
+
+fn multimodal_pipeline(vision: State, audio: State, text: State) -> State {
+    // Pré-processar cada modalidade
+    let v_proc = vision |> preprocess |> encode;
+    let a_proc = audio |> preprocess |> encode;
+    let t_proc = text |> preprocess |> encode;
+
+    // Fusão - combinar estados via XOR
+    let fused = state_xor(v_proc, a_proc);
+    let fused = state_xor(fused, t_proc);
+
+    // Pós-processamento
+    return fused
+        |> dense_layer
+        |> activate_relu
+        |> postprocess;
+}
+
+// =========================================
+// Pipeline Residual (Skip Connection)
+// =========================================
+
+fn residual_block(input: State) -> State {
+    // Bloco residual: output = input + f(input)
+    let transformed = input
+        |> dense_layer
+        |> activate_relu
+        |> dense_layer;
+
+    // Skip connection via XOR (aproximação de soma)
+    return state_xor(input, transformed);
+}
+
+fn residual_pipeline(input: State, num_blocks: Int) -> State {
+    let current = preprocess(input);
+    let i = 0;
+
+    loop {
+        if i >= num_blocks {
+            break;
+        }
+
+        let current = residual_block(current);
+        let i = i + 1;
+    }
+
+    return postprocess(current);
+}
+
+fn main() {
+    print_string("=== Pipeline Processing Demo ===");
+
+    // =========================================
+    // Criar dados de teste
+    // =========================================
+    print_string("--- Creating test data ---");
+
+    let input = state_neutral();
+    print_string("Input created");
+    print_string("Initial L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(input, 0)));
+
+    // =========================================
+    // Signal Processing Pipeline
+    // =========================================
+    print_string("--- Signal Processing Pipeline ---");
+
+    let signal_output = signal_processing_pipeline(input);
+    print_string("Signal pipeline output L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(signal_output, 0)));
+
+    // =========================================
+    // Neural Pipeline
+    // =========================================
+    print_string("--- Neural Pipeline ---");
+
+    let neural_output = neural_pipeline(input);
+    print_string("Neural pipeline output L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(neural_output, 0)));
+
+    // =========================================
+    // Conditional Pipeline
+    // =========================================
+    print_string("--- Conditional Pipeline ---");
+
+    let heavy_output = conditional_pipeline(input, true);
+    print_string("Heavy pipeline output L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(heavy_output, 0)));
+
+    let light_output = conditional_pipeline(input, false);
+    print_string("Light pipeline output L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(light_output, 0)));
+
+    // =========================================
+    // Feedback Pipeline
+    // =========================================
+    print_string("--- Feedback Pipeline (3 iterations) ---");
+
+    let fb_output = feedback_pipeline(input, 3);
+    print_string("Feedback pipeline output L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(fb_output, 0)));
+
+    // =========================================
+    // Multimodal Pipeline
+    // =========================================
+    print_string("--- Multimodal Pipeline ---");
+
+    let vision = state_neutral();
+    let audio = state_vacuum();
+    let audio = state_set_layer(audio, 0, bytesil_new(8, 4));
+    let text = state_vacuum();
+    let text = state_set_layer(text, 0, bytesil_new(6, 8));
+
+    let multi_output = multimodal_pipeline(vision, audio, text);
+    print_string("Multimodal pipeline output L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(multi_output, 0)));
+
+    // =========================================
+    // Residual Pipeline
+    // =========================================
+    print_string("--- Residual Pipeline (2 blocks) ---");
+
+    let res_output = residual_pipeline(input, 2);
+    print_string("Residual pipeline output L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(res_output, 0)));
+
+    // =========================================
+    // Custom Pipeline
+    // =========================================
+    print_string("--- Custom Pipeline ---");
+
+    let custom_output = input
+        |> preprocess
+        |> scale_up
+        |> encode
+        |> dense_layer
+        |> activate_relu
+        |> scale_down
+        |> dense_layer
+        |> activate_relu
+        |> postprocess;
+
+    print_string("Custom pipeline output L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(custom_output, 0)));
+
+    // =========================================
+    // Pipeline Timing (Simplified)
+    // =========================================
+    print_string("--- Pipeline Timing ---");
+
+    let start_time = timestamp_millis();
+
+    // Executar pipeline múltiplas vezes
+    let iter = 0;
+    let test_input = state_neutral();
+    loop {
+        if iter >= 10 {
+            break;
+        }
+        let temp = signal_processing_pipeline(test_input);
+        let iter = iter + 1;
+    }
+
+    let end_time = timestamp_millis();
+    let elapsed = end_time - start_time;
+
+    print_string("Time for 10 pipeline executions (ms):");
+    print_int(elapsed);
+
+    print_string("=== Pipeline Processing Demo Complete ===");
+}

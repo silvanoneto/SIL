@@ -1,0 +1,448 @@
+{
+  "name": "sil-language",
+  "displayName": "SIL & LIS Language Support",
+  "description": "Full IDE support for SIL & LIS (Symbolic Integration Layer & Language for Intelligent Systems)",
+  "version": "2026.1.16",
+  "publisher": "sil-",
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/silvanoneto/SIL.git"
+  },
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Debuggers",
+    "Linters",
+    "Formatters"
+  ],
+  "keywords": [
+    "sil",
+    "lis",
+    "assembly",
+    "language",
+    "virtual-machine",
+    "128-bit",
+    "log-polar",
+    "intelligent-systems"
+  ],
+  "icon": "images/sil-icon.png",
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "sil",
+        "aliases": ["SIL", "sil"],
+        "extensions": [".sil"],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./images/sil-file-light.png",
+          "dark": "./images/sil-file-dark.png"
+        }
+      },
+      {
+        "id": "lis",
+        "aliases": ["LIS", "lis"],
+        "extensions": [".lis"],
+        "configuration": "./language-configuration-lis.json",
+        "icon": {
+          "light": "./images/sil-file-light.png",
+          "dark": "./images/sil-file-dark.png"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "sil",
+        "scopeName": "source.sil",
+        "path": "./syntaxes/sil.tmLanguage.json"
+      },
+      {
+        "language": "lis",
+        "scopeName": "source.lis",
+        "path": "./syntaxes/lis.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "sil",
+        "path": "./snippets/sil.json"
+      },
+      {
+        "language": "lis",
+        "path": "./snippets/lis.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "sil.newProgram",
+        "title": "SIL: New Program",
+        "icon": "$(file-add)"
+      },
+      {
+        "command": "sil.assemble",
+        "title": "SIL: Assemble",
+        "icon": "$(package)"
+      },
+      {
+        "command": "sil.run",
+        "title": "SIL: Run",
+        "icon": "$(play)"
+      },
+      {
+        "command": "sil.debug",
+        "title": "SIL: Debug",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "sil.repl",
+        "title": "SIL: Open REPL",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "sil.disassemble",
+        "title": "SIL: Disassemble .silc",
+        "icon": "$(search)"
+      },
+      {
+        "command": "lis.newProgram",
+        "title": "LIS: New Program",
+        "icon": "$(file-add)"
+      },
+      {
+        "command": "lis.compile",
+        "title": "LIS: Compile to SIL",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "lis.build",
+        "title": "LIS: Build to Bytecode",
+        "icon": "$(package)"
+      },
+      {
+        "command": "lis.run",
+        "title": "LIS: Run",
+        "icon": "$(play)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "when": "resourceLangId == sil",
+          "command": "sil.run",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceLangId == sil",
+          "command": "sil.debug",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceLangId == lis",
+          "command": "lis.run",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceLangId == lis",
+          "command": "lis.compile",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "when": "resourceLangId == sil",
+          "command": "sil.assemble",
+          "group": "sil@1"
+        },
+        {
+          "when": "resourceLangId == sil",
+          "command": "sil.run",
+          "group": "sil@2"
+        },
+        {
+          "when": "resourceLangId == lis",
+          "command": "lis.compile",
+          "group": "lis@1"
+        },
+        {
+          "when": "resourceLangId == lis",
+          "command": "lis.run",
+          "group": "lis@2"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "sil.run",
+        "key": "ctrl+shift+r",
+        "mac": "cmd+shift+r",
+        "when": "resourceLangId == sil"
+      },
+      {
+        "command": "sil.assemble",
+        "key": "ctrl+shift+b",
+        "mac": "cmd+shift+b",
+        "when": "resourceLangId == sil"
+      },
+      {
+        "command": "lis.run",
+        "key": "ctrl+shift+r",
+        "mac": "cmd+shift+r",
+        "when": "resourceLangId == lis"
+      },
+      {
+        "command": "lis.compile",
+        "key": "ctrl+shift+b",
+        "mac": "cmd+shift+b",
+        "when": "resourceLangId == lis"
+      }
+    ],
+    "configuration": {
+      "title": "SIL",
+      "properties": {
+        "sil.mode": {
+          "type": "string",
+          "default": "SIL-128",
+          "enum": ["SIL-8", "SIL-16", "SIL-32", "SIL-64", "SIL-128"],
+          "description": "Default SIL compatibility mode"
+        },
+        "sil.lsp.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Language Server Protocol (requires sil-lsp binary)"
+        },
+        "sil.lsp.path": {
+          "type": "string",
+          "default": "",
+          "description": "Custom path to SIL language server binary"
+        },
+        "sil.format.alignOperands": {
+          "type": "boolean",
+          "default": true,
+          "description": "Align operands in columns"
+        },
+        "sil.format.uppercaseOpcodes": {
+          "type": "boolean",
+          "default": true,
+          "description": "Format opcodes as UPPERCASE"
+        },
+        "sil.debug.stopOnEntry": {
+          "type": "boolean",
+          "default": false,
+          "description": "Stop at first instruction when debugging"
+        },
+        "sil.debug.showLayerValues": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show all 16 layer values in debugger"
+        },
+        "sil.diagnostics.checkUndefinedLabels": {
+          "type": "boolean",
+          "default": true,
+          "description": "Report errors for undefined labels"
+        },
+        "sil.diagnostics.checkUnusedLabels": {
+          "type": "boolean",
+          "default": true,
+          "description": "Report warnings for unused labels"
+        },
+        "lis.compiler.path": {
+          "type": "string",
+          "default": "lis",
+          "description": "Path to LIS compiler (lis-cli binary)"
+        },
+        "lis.silMode": {
+          "type": "string",
+          "default": "SIL-128",
+          "enum": ["SIL-8", "SIL-16", "SIL-32", "SIL-64", "SIL-128"],
+          "description": "Target SIL mode for LIS compilation"
+        },
+        "lis.optimizationLevel": {
+          "type": "string",
+          "default": "O2",
+          "enum": ["O0", "O1", "O2", "O3"],
+          "description": "Compiler optimization level (O0=none, O3=max)"
+        },
+        "lis.format.indentSize": {
+          "type": "integer",
+          "default": 4,
+          "description": "Number of spaces for indentation"
+        },
+        "lis.lsp.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Language Server Protocol for LIS (requires lis-lsp binary)"
+        },
+        "lis.lsp.path": {
+          "type": "string",
+          "default": "",
+          "description": "Custom path to LIS language server binary (lis-lsp)"
+        },
+        "lis.formatter.path": {
+          "type": "string",
+          "default": "lis-format",
+          "description": "Path to lis-format binary"
+        },
+        "lis.format.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable code formatting for LIS files"
+        }
+      }
+    },
+    "languages": [
+      {
+        "id": "lis",
+        "extensions": [".lis"],
+        "configuration": "./language-configuration-lis.json",
+        "aliases": ["LIS", "lis"]
+      }
+    ],
+    "[lis]": {
+      "editor.defaultFormatter": "sil-.sil-language",
+      "editor.formatOnSave": false
+    },
+    "debuggers": [
+      {
+        "type": "sil",
+        "label": "SIL & LIS Debug",
+        "languages": ["sil", "lis"],
+        "program": "./out/debugAdapter.js",
+        "runtime": "node",
+        "configurationAttributes": {
+          "launch": {
+            "required": ["program"],
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "Path to .sil, .lis, or .silc file",
+                "default": "${file}"
+              },
+              "stopOnEntry": {
+                "type": "boolean",
+                "description": "Stop at first instruction",
+                "default": false
+              },
+              "mode": {
+                "type": "string",
+                "description": "SIL mode",
+                "default": "SIL-128"
+              },
+              "trace": {
+                "type": "boolean",
+                "description": "Enable trace output",
+                "default": false
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "type": "sil",
+            "request": "launch",
+            "name": "Debug SIL Program",
+            "program": "${file}",
+            "stopOnEntry": false
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "SIL: Launch",
+            "description": "Launch and debug SIL program",
+            "body": {
+              "type": "sil",
+              "request": "launch",
+              "name": "Debug ${1:program}",
+              "program": "^\"\\${workspaceFolder}/${2:main.sil}\"",
+              "stopOnEntry": false
+            }
+          }
+        ]
+      }
+    ],
+    "problemMatchers": [
+      {
+        "name": "sil",
+        "owner": "sil",
+        "fileLocation": ["relative", "${workspaceFolder}"],
+        "pattern": {
+          "regexp": "^(.+):(\\d+):(\\d+):\\s+(error|warning):\\s+(.+)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      },
+      {
+        "name": "lis",
+        "owner": "lis",
+        "fileLocation": ["relative", "${workspaceFolder}"],
+        "pattern": {
+          "regexp": "^(.+):(\\d+):(\\d+):\\s+(error|warning):\\s+(.+)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "sil",
+        "required": ["task"],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "The SIL task: assemble, run, test"
+          },
+          "file": {
+            "type": "string",
+            "description": "The target .sil file"
+          }
+        }
+      },
+      {
+        "type": "lis",
+        "required": ["task"],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "The LIS task: compile, build, run, test"
+          },
+          "file": {
+            "type": "string",
+            "description": "The target .lis file"
+          }
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "node ./out/test/runTest.js",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1",
+    "@vscode/debugadapter": "^1.65.0"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.95.0",
+    "@types/node": "^25.0.6",
+    "@vscode/debugprotocol": "^1.65.0",
+    "@typescript-eslint/eslint-plugin": "^8.x",
+    "@typescript-eslint/parser": "^8.x",
+    "eslint": "^9.x",
+    "typescript": "^5.x",
+    "@vscode/vsce": "^3.x"
+  }
+}

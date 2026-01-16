@@ -1,0 +1,95 @@
+// LIS Example: Aliases de Tipos
+// Demonstra: Definição de tipos com keyword 'type'
+// Documentação: Seção 5.3
+
+// =========================================
+// Definição de Type Aliases
+// =========================================
+
+// Aliases para tipos de Estado
+type Tensor = State;
+type Weights = State;
+type Bias = State;
+
+// Aliases para ByteSil
+type Layer = ByteSil;
+
+// Aliases para índices
+type Index = Int;
+
+// =========================================
+// Uso dos Aliases
+// =========================================
+
+fn create_zero_tensor() -> Tensor {
+    return state_vacuum();
+}
+
+fn create_unit_weights() -> Weights {
+    return state_neutral();
+}
+
+fn get_layer_value(t: Tensor, idx: Index) -> Layer {
+    return state_get_layer(t, idx);
+}
+
+// =========================================
+// Exemplo de Neural Network com Aliases
+// =========================================
+
+fn dense_forward(input: Tensor, weights: Weights, bias: Bias) -> Tensor {
+    let weighted = state_tensor(input, weights);
+    let with_bias = state_xor(weighted, bias);
+    return with_bias;
+}
+
+fn apply_relu(t: Tensor) -> Tensor {
+    return relu_state(t);
+}
+
+// =========================================
+// Vetores e Matrizes
+// =========================================
+
+fn vector_add(a: State, b: State) -> State {
+    return state_xor(a, b);
+}
+
+fn dot_product(a: State, b: State) -> ByteSil {
+    let product = state_tensor(a, b);
+    return state_collapse_sum(product);
+}
+
+fn main() {
+    // Criando estruturas usando aliases
+    let input: Tensor = create_zero_tensor();
+    let weights: Weights = create_unit_weights();
+    let bias: Bias = state_vacuum();
+
+    print_string("=== Type Aliases Demo ===");
+
+    // Operação de rede neural
+    let output = dense_forward(input, weights, bias);
+    print_string("Dense forward complete");
+
+    // Acessar camada específica
+    let idx: Index = 0;
+    let layer: Layer = get_layer_value(output, idx);
+
+    print_string("Layer 0 magnitude:");
+    print_float(bytesil_magnitude(layer));
+
+    // Operações vetoriais
+    let v1 = state_neutral();
+    let v2 = state_neutral();
+    let v_sum = vector_add(v1, v2);
+
+    print_string("Vector addition complete");
+
+    // Ativação (usando Float direto)
+    let act = 0.5;
+    let scaled = act * 2.0;
+
+    print_string("Scaled activation:");
+    print_float(scaled);
+}

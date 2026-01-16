@@ -1,0 +1,380 @@
+// LIS Example: Funções de Ativação
+// Demonstra: ReLU, Sigmoid, Tanh, GELU, Swish aplicados a State
+// Documentação: Seção 12.5
+
+// =========================================
+// Helper: Criar ByteSil de magnitude
+// =========================================
+
+fn from_mag(mag: Float) -> ByteSil {
+    return bytesil_from_complex(mag, 0.0);
+}
+
+// =========================================
+// ReLU: max(0, x)
+// =========================================
+
+fn relu(x: ByteSil) -> ByteSil {
+    let mag = bytesil_magnitude(x);
+    if mag > 0.0 {
+        return x;
+    }
+    return bytesil_null();
+}
+
+fn relu_state_impl(s: State) -> State {
+    let result = state_vacuum();
+    let idx = 0;
+
+    loop {
+        if idx >= 16 {
+            break;
+        }
+
+        let layer = state_get_layer(s, idx);
+        let activated = relu(layer);
+        let result = state_set_layer(result, idx, activated);
+
+        let idx = idx + 1;
+    }
+
+    return result;
+}
+
+// =========================================
+// Leaky ReLU: max(alpha * x, x)
+// =========================================
+
+fn leaky_relu(x: ByteSil, alpha: Float) -> ByteSil {
+    let mag = bytesil_magnitude(x);
+    if mag > 0.0 {
+        return x;
+    }
+    return from_mag(alpha * mag);
+}
+
+fn leaky_relu_state(s: State, alpha: Float) -> State {
+    let result = state_vacuum();
+    let idx = 0;
+
+    loop {
+        if idx >= 16 {
+            break;
+        }
+
+        let layer = state_get_layer(s, idx);
+        let activated = leaky_relu(layer, alpha);
+        let result = state_set_layer(result, idx, activated);
+
+        let idx = idx + 1;
+    }
+
+    return result;
+}
+
+// =========================================
+// ReLU6: min(max(0, x), 6)
+// =========================================
+
+fn relu6(x: ByteSil) -> ByteSil {
+    let mag = bytesil_magnitude(x);
+    if mag < 0.0 {
+        return bytesil_null();
+    }
+    if mag > 6.0 {
+        return from_mag(6.0);
+    }
+    return x;
+}
+
+// =========================================
+// Sigmoid: 1 / (1 + exp(-x))
+// =========================================
+
+fn sigmoid(x: ByteSil) -> ByteSil {
+    let mag = bytesil_magnitude(x);
+    let sig = 1.0 / (1.0 + exp(0.0 - mag));
+    return from_mag(sig);
+}
+
+fn sigmoid_state_impl(s: State) -> State {
+    let result = state_vacuum();
+    let idx = 0;
+
+    loop {
+        if idx >= 16 {
+            break;
+        }
+
+        let layer = state_get_layer(s, idx);
+        let activated = sigmoid(layer);
+        let result = state_set_layer(result, idx, activated);
+
+        let idx = idx + 1;
+    }
+
+    return result;
+}
+
+// =========================================
+// Tanh: (exp(x) - exp(-x)) / (exp(x) + exp(-x))
+// =========================================
+
+fn tanh_activation(x: ByteSil) -> ByteSil {
+    let mag = bytesil_magnitude(x);
+    let ep = exp(mag);
+    let en = exp(0.0 - mag);
+    let th = (ep - en) / (ep + en);
+    return from_mag(th);
+}
+
+fn tanh_state(s: State) -> State {
+    let result = state_vacuum();
+    let idx = 0;
+
+    loop {
+        if idx >= 16 {
+            break;
+        }
+
+        let layer = state_get_layer(s, idx);
+        let activated = tanh_activation(layer);
+        let result = state_set_layer(result, idx, activated);
+
+        let idx = idx + 1;
+    }
+
+    return result;
+}
+
+// =========================================
+// GELU: x * Φ(x) ≈ 0.5 * x * (1 + tanh(sqrt(2/π) * (x + 0.044715 * x^3)))
+// =========================================
+
+fn gelu(x: ByteSil) -> ByteSil {
+    let mag = bytesil_magnitude(x);
+    let sqrt_2_pi = sqrt(2.0 / pi());
+    let inner = sqrt_2_pi * (mag + 0.044715 * mag * mag * mag);
+    let ep = exp(inner);
+    let en = exp(0.0 - inner);
+    let th = (ep - en) / (ep + en);
+    let result_val = 0.5 * mag * (1.0 + th);
+    return from_mag(result_val);
+}
+
+fn gelu_state(s: State) -> State {
+    let result = state_vacuum();
+    let idx = 0;
+
+    loop {
+        if idx >= 16 {
+            break;
+        }
+
+        let layer = state_get_layer(s, idx);
+        let activated = gelu(layer);
+        let result = state_set_layer(result, idx, activated);
+
+        let idx = idx + 1;
+    }
+
+    return result;
+}
+
+// =========================================
+// Swish: x * sigmoid(x)
+// =========================================
+
+fn swish(x: ByteSil) -> ByteSil {
+    let mag = bytesil_magnitude(x);
+    let sig = 1.0 / (1.0 + exp(0.0 - mag));
+    return from_mag(mag * sig);
+}
+
+fn swish_state(s: State) -> State {
+    let result = state_vacuum();
+    let idx = 0;
+
+    loop {
+        if idx >= 16 {
+            break;
+        }
+
+        let layer = state_get_layer(s, idx);
+        let activated = swish(layer);
+        let result = state_set_layer(result, idx, activated);
+
+        let idx = idx + 1;
+    }
+
+    return result;
+}
+
+// =========================================
+// Softmax (State level)
+// =========================================
+
+fn softmax_state(s: State) -> State {
+    // Encontrar max para estabilidade numérica
+    let max_val = bytesil_magnitude(state_get_layer(s, 0));
+    let idx = 1;
+
+    loop {
+        if idx >= 16 {
+            break;
+        }
+        let mag = bytesil_magnitude(state_get_layer(s, idx));
+        if mag > max_val {
+            let max_val = mag;
+        }
+        let idx = idx + 1;
+    }
+
+    // Calcular exp(x - max) para cada camada e soma
+    let sum_exp = 0.0;
+    let idx2 = 0;
+
+    loop {
+        if idx2 >= 16 {
+            break;
+        }
+        let mag = bytesil_magnitude(state_get_layer(s, idx2));
+        let sum_exp = sum_exp + exp(mag - max_val);
+        let idx2 = idx2 + 1;
+    }
+
+    // Normalizar
+    let result = state_vacuum();
+    let idx3 = 0;
+
+    loop {
+        if idx3 >= 16 {
+            break;
+        }
+        let mag = bytesil_magnitude(state_get_layer(s, idx3));
+        let softmax_val = exp(mag - max_val) / sum_exp;
+        let result = state_set_layer(result, idx3, from_mag(softmax_val));
+        let idx3 = idx3 + 1;
+    }
+
+    return result;
+}
+
+fn main() {
+    print_string("=== Activation Functions Demo ===");
+
+    // =========================================
+    // Criar estado de teste
+    // =========================================
+    let s = state_vacuum();
+    let s = state_set_layer(s, 0, bytesil_new(8, 0));
+    let s = state_set_layer(s, 1, bytesil_new(5, 4));
+    let s = state_set_layer(s, 2, bytesil_new(10, 8));
+
+    print_string("Test state created");
+    print_string("L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(s, 0)));
+
+    // =========================================
+    // ReLU
+    // =========================================
+    print_string("--- ReLU ---");
+
+    let relu_result = relu_state_impl(s);
+    print_string("After ReLU, L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(relu_result, 0)));
+
+    // =========================================
+    // Leaky ReLU
+    // =========================================
+    print_string("--- Leaky ReLU (alpha=0.01) ---");
+
+    let leaky_result = leaky_relu_state(s, 0.01);
+    print_string("After Leaky ReLU, L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(leaky_result, 0)));
+
+    // =========================================
+    // Sigmoid
+    // =========================================
+    print_string("--- Sigmoid ---");
+
+    let sigmoid_result = sigmoid_state_impl(s);
+    print_string("After Sigmoid, L0 magnitude (should be 0-1):");
+    print_float(bytesil_magnitude(state_get_layer(sigmoid_result, 0)));
+
+    // =========================================
+    // Tanh
+    // =========================================
+    print_string("--- Tanh ---");
+
+    let tanh_result = tanh_state(s);
+    print_string("After Tanh, L0 magnitude (should be -1 to 1):");
+    print_float(bytesil_magnitude(state_get_layer(tanh_result, 0)));
+
+    // =========================================
+    // GELU
+    // =========================================
+    print_string("--- GELU ---");
+
+    let gelu_result = gelu_state(s);
+    print_string("After GELU, L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(gelu_result, 0)));
+
+    // =========================================
+    // Swish
+    // =========================================
+    print_string("--- Swish ---");
+
+    let swish_result = swish_state(s);
+    print_string("After Swish, L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(swish_result, 0)));
+
+    // =========================================
+    // Softmax
+    // =========================================
+    print_string("--- Softmax ---");
+
+    let softmax_result = softmax_state(s);
+    print_string("After Softmax:");
+    print_string("L0:");
+    print_float(bytesil_magnitude(state_get_layer(softmax_result, 0)));
+    print_string("L1:");
+    print_float(bytesil_magnitude(state_get_layer(softmax_result, 1)));
+    print_string("L2:");
+    print_float(bytesil_magnitude(state_get_layer(softmax_result, 2)));
+
+    // Verificar que soma = 1
+    let sum = bytesil_magnitude(state_get_layer(softmax_result, 0)) +
+              bytesil_magnitude(state_get_layer(softmax_result, 1)) +
+              bytesil_magnitude(state_get_layer(softmax_result, 2));
+    print_string("Sum of softmax outputs (should be ~1 for active layers):");
+    print_float(sum);
+
+    // =========================================
+    // Comparação de Ativações
+    // =========================================
+    print_string("--- Activation Comparison ---");
+
+    let test_bs = bytesil_new(8, 0);
+    let test_mag = bytesil_magnitude(test_bs);
+
+    print_string("Input magnitude:");
+    print_float(test_mag);
+
+    print_string("ReLU output:");
+    print_float(bytesil_magnitude(relu(test_bs)));
+
+    print_string("Sigmoid output:");
+    print_float(bytesil_magnitude(sigmoid(test_bs)));
+
+    print_string("Tanh output:");
+    print_float(bytesil_magnitude(tanh_activation(test_bs)));
+
+    print_string("GELU output:");
+    print_float(bytesil_magnitude(gelu(test_bs)));
+
+    print_string("Swish output:");
+    print_float(bytesil_magnitude(swish(test_bs)));
+
+    print_string("=== Activation Functions Demo Complete ===");
+}

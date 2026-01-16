@@ -1,0 +1,145 @@
+// Paebiru ML Library - Statistical Functions
+
+fn sum_state(s: State) -> Float {
+    let total = 0.0;
+    let total = total + bytesil_magnitude(state_get_layer(s, 0));
+    let total = total + bytesil_magnitude(state_get_layer(s, 1));
+    let total = total + bytesil_magnitude(state_get_layer(s, 2));
+    let total = total + bytesil_magnitude(state_get_layer(s, 3));
+    let total = total + bytesil_magnitude(state_get_layer(s, 4));
+    let total = total + bytesil_magnitude(state_get_layer(s, 5));
+    let total = total + bytesil_magnitude(state_get_layer(s, 6));
+    let total = total + bytesil_magnitude(state_get_layer(s, 7));
+    let total = total + bytesil_magnitude(state_get_layer(s, 8));
+    let total = total + bytesil_magnitude(state_get_layer(s, 9));
+    let total = total + bytesil_magnitude(state_get_layer(s, 10));
+    let total = total + bytesil_magnitude(state_get_layer(s, 11));
+    let total = total + bytesil_magnitude(state_get_layer(s, 12));
+    let total = total + bytesil_magnitude(state_get_layer(s, 13));
+    let total = total + bytesil_magnitude(state_get_layer(s, 14));
+    let total = total + bytesil_magnitude(state_get_layer(s, 15));
+    return total;
+}
+
+fn mean(s: State) -> Float {
+    return sum_state(s) / 16.0;
+}
+
+fn variance(s: State) -> Float {
+    let m = mean(s);
+    let d0 = bytesil_magnitude(state_get_layer(s, 0)) - m;
+    let d1 = bytesil_magnitude(state_get_layer(s, 1)) - m;
+    let d2 = bytesil_magnitude(state_get_layer(s, 2)) - m;
+    let d3 = bytesil_magnitude(state_get_layer(s, 3)) - m;
+    let d4 = bytesil_magnitude(state_get_layer(s, 4)) - m;
+    let d5 = bytesil_magnitude(state_get_layer(s, 5)) - m;
+    let d6 = bytesil_magnitude(state_get_layer(s, 6)) - m;
+    let d7 = bytesil_magnitude(state_get_layer(s, 7)) - m;
+    let d8 = bytesil_magnitude(state_get_layer(s, 8)) - m;
+    let d9 = bytesil_magnitude(state_get_layer(s, 9)) - m;
+    let d10 = bytesil_magnitude(state_get_layer(s, 10)) - m;
+    let d11 = bytesil_magnitude(state_get_layer(s, 11)) - m;
+    let d12 = bytesil_magnitude(state_get_layer(s, 12)) - m;
+    let d13 = bytesil_magnitude(state_get_layer(s, 13)) - m;
+    let d14 = bytesil_magnitude(state_get_layer(s, 14)) - m;
+    let d15 = bytesil_magnitude(state_get_layer(s, 15)) - m;
+    let sum = d0*d0 + d1*d1 + d2*d2 + d3*d3 + d4*d4 + d5*d5 + d6*d6 + d7*d7;
+    let sum = sum + d8*d8 + d9*d9 + d10*d10 + d11*d11 + d12*d12 + d13*d13 + d14*d14 + d15*d15;
+    return sum / 16.0;
+}
+
+fn std_dev(s: State) -> Float {
+    return sqrt(variance(s));
+}
+
+fn max_magnitude(s: State) -> Float {
+    let mv = bytesil_magnitude(state_get_layer(s, 0));
+    let mv = max_float(mv, bytesil_magnitude(state_get_layer(s, 1)));
+    let mv = max_float(mv, bytesil_magnitude(state_get_layer(s, 2)));
+    let mv = max_float(mv, bytesil_magnitude(state_get_layer(s, 3)));
+    let mv = max_float(mv, bytesil_magnitude(state_get_layer(s, 4)));
+    let mv = max_float(mv, bytesil_magnitude(state_get_layer(s, 5)));
+    let mv = max_float(mv, bytesil_magnitude(state_get_layer(s, 6)));
+    let mv = max_float(mv, bytesil_magnitude(state_get_layer(s, 7)));
+    let mv = max_float(mv, bytesil_magnitude(state_get_layer(s, 8)));
+    let mv = max_float(mv, bytesil_magnitude(state_get_layer(s, 9)));
+    let mv = max_float(mv, bytesil_magnitude(state_get_layer(s, 10)));
+    let mv = max_float(mv, bytesil_magnitude(state_get_layer(s, 11)));
+    let mv = max_float(mv, bytesil_magnitude(state_get_layer(s, 12)));
+    let mv = max_float(mv, bytesil_magnitude(state_get_layer(s, 13)));
+    let mv = max_float(mv, bytesil_magnitude(state_get_layer(s, 14)));
+    let mv = max_float(mv, bytesil_magnitude(state_get_layer(s, 15)));
+    return mv;
+}
+
+fn min_magnitude(s: State) -> Float {
+    let mv = bytesil_magnitude(state_get_layer(s, 0));
+    let mv = min_float(mv, bytesil_magnitude(state_get_layer(s, 1)));
+    let mv = min_float(mv, bytesil_magnitude(state_get_layer(s, 2)));
+    let mv = min_float(mv, bytesil_magnitude(state_get_layer(s, 3)));
+    let mv = min_float(mv, bytesil_magnitude(state_get_layer(s, 4)));
+    let mv = min_float(mv, bytesil_magnitude(state_get_layer(s, 5)));
+    let mv = min_float(mv, bytesil_magnitude(state_get_layer(s, 6)));
+    let mv = min_float(mv, bytesil_magnitude(state_get_layer(s, 7)));
+    let mv = min_float(mv, bytesil_magnitude(state_get_layer(s, 8)));
+    let mv = min_float(mv, bytesil_magnitude(state_get_layer(s, 9)));
+    let mv = min_float(mv, bytesil_magnitude(state_get_layer(s, 10)));
+    let mv = min_float(mv, bytesil_magnitude(state_get_layer(s, 11)));
+    let mv = min_float(mv, bytesil_magnitude(state_get_layer(s, 12)));
+    let mv = min_float(mv, bytesil_magnitude(state_get_layer(s, 13)));
+    let mv = min_float(mv, bytesil_magnitude(state_get_layer(s, 14)));
+    let mv = min_float(mv, bytesil_magnitude(state_get_layer(s, 15)));
+    return mv;
+}
+
+fn entropy(s: State) -> Float {
+    let total = sum_state(s);
+    if total < 0.0000001 {
+        return 0.0;
+    }
+    let eps = 0.0000001;
+    let p0 = max_float(bytesil_magnitude(state_get_layer(s, 0)) / total, eps);
+    let p1 = max_float(bytesil_magnitude(state_get_layer(s, 1)) / total, eps);
+    let p2 = max_float(bytesil_magnitude(state_get_layer(s, 2)) / total, eps);
+    let p3 = max_float(bytesil_magnitude(state_get_layer(s, 3)) / total, eps);
+    let p4 = max_float(bytesil_magnitude(state_get_layer(s, 4)) / total, eps);
+    let p5 = max_float(bytesil_magnitude(state_get_layer(s, 5)) / total, eps);
+    let p6 = max_float(bytesil_magnitude(state_get_layer(s, 6)) / total, eps);
+    let p7 = max_float(bytesil_magnitude(state_get_layer(s, 7)) / total, eps);
+    let p8 = max_float(bytesil_magnitude(state_get_layer(s, 8)) / total, eps);
+    let p9 = max_float(bytesil_magnitude(state_get_layer(s, 9)) / total, eps);
+    let p10 = max_float(bytesil_magnitude(state_get_layer(s, 10)) / total, eps);
+    let p11 = max_float(bytesil_magnitude(state_get_layer(s, 11)) / total, eps);
+    let p12 = max_float(bytesil_magnitude(state_get_layer(s, 12)) / total, eps);
+    let p13 = max_float(bytesil_magnitude(state_get_layer(s, 13)) / total, eps);
+    let p14 = max_float(bytesil_magnitude(state_get_layer(s, 14)) / total, eps);
+    let p15 = max_float(bytesil_magnitude(state_get_layer(s, 15)) / total, eps);
+    let ent = 0.0 - p0 * ln(p0) - p1 * ln(p1) - p2 * ln(p2) - p3 * ln(p3);
+    let ent = ent - p4 * ln(p4) - p5 * ln(p5) - p6 * ln(p6) - p7 * ln(p7);
+    let ent = ent - p8 * ln(p8) - p9 * ln(p9) - p10 * ln(p10) - p11 * ln(p11);
+    let ent = ent - p12 * ln(p12) - p13 * ln(p13) - p14 * ln(p14) - p15 * ln(p15);
+    return ent;
+}
+
+fn entropy_normalized(s: State) -> Float {
+    return entropy(s) / ln(16.0);
+}
+
+fn median_3(a: Float, b: Float, c: Float) -> Float {
+    if a <= b {
+        if b <= c {
+            return b;
+        }
+        if a <= c {
+            return c;
+        }
+        return a;
+    }
+    if a <= c {
+        return a;
+    }
+    if b <= c {
+        return c;
+    }
+    return b;
+}

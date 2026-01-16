@@ -1,0 +1,30 @@
+[package]
+name = "sil-benches"
+version = "2026.1.16"
+edition = "2024"
+publish = false
+
+[dependencies]
+sil-core = { path = "../sil-core" }
+sil-orchestration = { path = "../sil-orchestration" }
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "bytesil_bench"
+harness = false
+
+[[bench]]
+name = "state_bench"
+harness = false
+
+[[bench]]
+name = "transform_bench"
+harness = false
+
+[[bench]]
+name = "orchestrator_bench"
+harness = false
+
+[[bench]]
+name = "layer_bench"
+harness = false

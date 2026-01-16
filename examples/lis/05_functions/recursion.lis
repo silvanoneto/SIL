@@ -1,0 +1,217 @@
+// LIS Example: Recursão
+// Demonstra: Funções recursivas
+// Documentação: Seção 12.2
+
+// =========================================
+// Recursão Simples
+// =========================================
+
+fn factorial(n: Int) -> Int {
+    if n <= 1 {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}
+
+fn sum_to_n(n: Int) -> Int {
+    if n <= 0 {
+        return 0;
+    }
+    return n + sum_to_n(n - 1);
+}
+
+// =========================================
+// Fibonacci Recursivo
+// =========================================
+
+fn fibonacci(n: Int) -> Int {
+    if n <= 1 {
+        return n;
+    }
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+// =========================================
+// Potência Recursiva
+// =========================================
+
+fn power(base: Int, exp: Int) -> Int {
+    if exp == 0 {
+        return 1;
+    }
+    return base * power(base, exp - 1);
+}
+
+// Versão otimizada (divide and conquer)
+fn power_fast(base: Int, exp: Int) -> Int {
+    if exp == 0 {
+        return 1;
+    }
+    if exp == 1 {
+        return base;
+    }
+
+    let half_exp = exp / 2;
+    let half_power = power_fast(base, half_exp);
+
+    // exp é par
+    let remainder = exp - (exp / 2) * 2;
+    if remainder == 0 {
+        return half_power * half_power;
+    }
+    // exp é ímpar
+    return base * half_power * half_power;
+}
+
+// =========================================
+// GCD (Máximo Divisor Comum) - Euclid
+// =========================================
+
+fn gcd(a: Int, b: Int) -> Int {
+    if b == 0 {
+        return a;
+    }
+    let remainder = a - (a / b) * b;
+    return gcd(b, remainder);
+}
+
+// =========================================
+// Contagem Recursiva
+// =========================================
+
+fn count_digits(n: Int) -> Int {
+    if n < 10 {
+        return 1;
+    }
+    return 1 + count_digits(n / 10);
+}
+
+fn sum_digits(n: Int) -> Int {
+    if n < 10 {
+        return n;
+    }
+    let last_digit = n - (n / 10) * 10;
+    return last_digit + sum_digits(n / 10);
+}
+
+// =========================================
+// Recursão com Acumulador
+// =========================================
+
+fn factorial_tail(n: Int, acc: Int) -> Int {
+    if n <= 1 {
+        return acc;
+    }
+    return factorial_tail(n - 1, n * acc);
+}
+
+fn factorial_optimized(n: Int) -> Int {
+    return factorial_tail(n, 1);
+}
+
+// =========================================
+// Recursão com State
+// =========================================
+
+fn recursive_transform(s: State, iterations: Int) -> State {
+    if iterations <= 0 {
+        return s;
+    }
+
+    // Aplicar transformação
+    let transformed = transform_magnitude_scale(s, 0.9);
+
+    // Recursão
+    return recursive_transform(transformed, iterations - 1);
+}
+
+fn recursive_layer_sum(s: State, layer: Int) -> Float {
+    if layer < 0 {
+        return 0.0;
+    }
+
+    let current = bytesil_magnitude(state_get_layer(s, layer));
+    return current + recursive_layer_sum(s, layer - 1);
+}
+
+// =========================================
+// Sequência de Tribonacci
+// =========================================
+
+fn tribonacci(n: Int) -> Int {
+    if n == 0 {
+        return 0;
+    }
+    if n == 1 {
+        return 0;
+    }
+    if n == 2 {
+        return 1;
+    }
+    return tribonacci(n - 1) + tribonacci(n - 2) + tribonacci(n - 3);
+}
+
+fn main() {
+    print_string("=== Recursion Examples ===");
+
+    // Factorial
+    print_string("--- Factorial ---");
+    let fact5 = factorial(5);
+    print_string("5! =");
+    print_int(fact5);  // 120
+
+    let fact10 = factorial(10);
+    print_string("10! =");
+    print_int(fact10);  // 3628800
+
+    // Sum to N
+    print_string("--- Sum to N ---");
+    let sum100 = sum_to_n(100);
+    print_string("sum(1..100) =");
+    print_int(sum100);  // 5050
+
+    // Fibonacci
+    print_string("--- Fibonacci ---");
+    let fib10 = fibonacci(10);
+    print_string("fib(10) =");
+    print_int(fib10);  // 55
+
+    // Power
+    print_string("--- Power ---");
+    let pow_result = power(2, 10);
+    print_string("2^10 =");
+    print_int(pow_result);  // 1024
+
+    let pow_fast_result = power_fast(2, 20);
+    print_string("2^20 (fast) =");
+    print_int(pow_fast_result);  // 1048576
+
+    // GCD
+    print_string("--- GCD ---");
+    let gcd_result = gcd(48, 18);
+    print_string("gcd(48, 18) =");
+    print_int(gcd_result);  // 6
+
+    // Digit operations
+    print_string("--- Digit Operations ---");
+    let digits = count_digits(12345);
+    print_string("count_digits(12345) =");
+    print_int(digits);  // 5
+
+    let digit_sum = sum_digits(12345);
+    print_string("sum_digits(12345) =");
+    print_int(digit_sum);  // 15
+
+    // Tail recursion
+    print_string("--- Tail Recursion ---");
+    let fact_opt = factorial_optimized(7);
+    print_string("7! (optimized) =");
+    print_int(fact_opt);  // 5040
+
+    // State recursion
+    print_string("--- State Recursion ---");
+    let s = state_neutral();
+    let layer_sum = recursive_layer_sum(s, 15);
+    print_string("Sum of all layer magnitudes:");
+    print_float(layer_sum);
+}

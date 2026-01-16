@@ -1,0 +1,22 @@
+pkgname=lis-api
+pkgver=@PKGVER@
+pkgrel=1
+pkgdesc="REST API server for LIS (Language for Intelligent Systems)"
+arch=('x86_64' 'aarch64')
+url="https://github.com/silvanoneto/SIL"
+license=('AGPL3')
+depends=()
+makedepends=('rust' 'cargo')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/ecosystem-v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  cd "SIL-ecosystem-v$pkgver"
+  cargo build --release -p lis-api
+}
+
+package() {
+  cd "SIL-ecosystem-v$pkgver"
+  install -Dm755 "target/release/lis-api" "$pkgdir/usr/bin/lis-api"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

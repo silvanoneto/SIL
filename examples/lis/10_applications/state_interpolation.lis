@@ -1,0 +1,160 @@
+// LIS Example: Interpolação de Estados
+// Demonstra: Interpolação linear e outras técnicas
+// Documentação: Seção 12.10
+
+// =========================================
+// Função de Clamp
+// =========================================
+
+fn clamp(x: Float, min_val: Float, max_val: Float) -> Float {
+    if x < min_val {
+        return min_val;
+    }
+    if x > max_val {
+        return max_val;
+    }
+    return x;
+}
+
+// =========================================
+// Interpolação Linear de ByteSil
+// =========================================
+
+fn interpolate_bytesil(a: ByteSil, b: ByteSil, t: Float) -> ByteSil {
+    return complex_lerp(a, b, t);
+}
+
+// =========================================
+// Interpolação Linear de State
+// =========================================
+
+fn interpolate_state(a: State, b: State, t: Float) -> State {
+    let tc = clamp(t, 0.0, 1.0);
+    let result = state_vacuum();
+
+    let idx = 0;
+    loop {
+        if idx >= 16 {
+            break;
+        }
+
+        let layer_a = state_get_layer(a, idx);
+        let layer_b = state_get_layer(b, idx);
+        let interpolated = complex_lerp(layer_a, layer_b, tc);
+        let result = state_set_layer(result, idx, interpolated);
+
+        let idx = idx + 1;
+    }
+
+    return result;
+}
+
+// =========================================
+// Interpolação Suave (Smoothstep)
+// =========================================
+
+fn smoothstep(t: Float) -> Float {
+    // 3t^2 - 2t^3
+    let tc = clamp(t, 0.0, 1.0);
+    return tc * tc * (3.0 - 2.0 * tc);
+}
+
+fn interpolate_smooth(a: State, b: State, t: Float) -> State {
+    let smooth_t = smoothstep(t);
+    return interpolate_state(a, b, smooth_t);
+}
+
+// =========================================
+// Easing Functions
+// =========================================
+
+fn ease_in_quad(t: Float) -> Float {
+    return t * t;
+}
+
+fn ease_out_quad(t: Float) -> Float {
+    return t * (2.0 - t);
+}
+
+fn ease_in_out_quad(t: Float) -> Float {
+    if t < 0.5 {
+        return 2.0 * t * t;
+    }
+    return 1.0 - 2.0 * (1.0 - t) * (1.0 - t);
+}
+
+fn main() {
+    print_string("=== State Interpolation ===");
+
+    // =========================================
+    // Interpolação Linear de ByteSil
+    // =========================================
+    print_string("--- ByteSil Linear Interpolation ---");
+
+    let bs_a = bytesil_new(5, 0);   // Fase 0
+    let bs_b = bytesil_new(10, 8);  // Fase 180°
+
+    let lerp_0 = interpolate_bytesil(bs_a, bs_b, 0.0);
+    print_string("lerp(a, b, 0.0) magnitude (should be |a|):");
+    print_float(bytesil_magnitude(lerp_0));
+
+    let lerp_1 = interpolate_bytesil(bs_a, bs_b, 1.0);
+    print_string("lerp(a, b, 1.0) magnitude (should be |b|):");
+    print_float(bytesil_magnitude(lerp_1));
+
+    let lerp_half = interpolate_bytesil(bs_a, bs_b, 0.5);
+    print_string("lerp(a, b, 0.5) magnitude (midpoint):");
+    print_float(bytesil_magnitude(lerp_half));
+
+    // =========================================
+    // Interpolação Linear de State
+    // =========================================
+    print_string("--- State Linear Interpolation ---");
+
+    let state_a = state_neutral();
+    let state_b = state_vacuum();
+    let state_b = state_set_layer(state_b, 0, bytesil_new(15, 0));
+
+    print_string("Interpolating between neutral and modified state:");
+
+    let interp_0 = interpolate_state(state_a, state_b, 0.0);
+    print_string("t=0.0, L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(interp_0, 0)));
+
+    let interp_50 = interpolate_state(state_a, state_b, 0.5);
+    print_string("t=0.5, L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(interp_50, 0)));
+
+    let interp_100 = interpolate_state(state_a, state_b, 1.0);
+    print_string("t=1.0, L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(interp_100, 0)));
+
+    // =========================================
+    // Interpolação Suave (Smoothstep)
+    // =========================================
+    print_string("--- Smoothstep Interpolation ---");
+
+    print_string("Smoothstep values:");
+    print_string("smoothstep(0.0):");
+    print_float(smoothstep(0.0));
+    print_string("smoothstep(0.5):");
+    print_float(smoothstep(0.5));
+    print_string("smoothstep(1.0):");
+    print_float(smoothstep(1.0));
+
+    // =========================================
+    // Easing Functions
+    // =========================================
+    print_string("--- Easing Functions ---");
+
+    print_string("Ease-in-quad at t=0.5:");
+    print_float(ease_in_quad(0.5));
+
+    print_string("Ease-out-quad at t=0.5:");
+    print_float(ease_out_quad(0.5));
+
+    print_string("Ease-in-out-quad at t=0.5:");
+    print_float(ease_in_out_quad(0.5));
+
+    print_string("=== Interpolation Demo Complete ===");
+}

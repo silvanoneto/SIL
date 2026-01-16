@@ -1,0 +1,463 @@
+// Paebiru Distributed ML - Gradient Compression
+// Techniques to reduce communication bandwidth in distributed training
+//
+// Methods include:
+// - Top-K sparsification
+// - Random sparsification
+// - Quantization (int8, int4)
+// - Error feedback (for accumulating compression errors)
+
+// Helper: Create ByteSil from magnitude
+fn from_mag(m: Float) -> ByteSil {
+    return bytesil_new(floor(clamp_float(ln(max_float(m, 0.0001)), -8.0, 7.0)), 0);
+}
+
+// Helper: Absolute value
+fn abs_f(x: Float) -> Float {
+    if x < 0.0 {
+        return 0.0 - x;
+    }
+    return x;
+}
+
+// Helper: Add two states
+fn add_st(a: State, b: State) -> State {
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, complex_add(state_get_layer(a, 0), state_get_layer(b, 0)));
+    let r = state_set_layer(r, 1, complex_add(state_get_layer(a, 1), state_get_layer(b, 1)));
+    let r = state_set_layer(r, 2, complex_add(state_get_layer(a, 2), state_get_layer(b, 2)));
+    let r = state_set_layer(r, 3, complex_add(state_get_layer(a, 3), state_get_layer(b, 3)));
+    let r = state_set_layer(r, 4, complex_add(state_get_layer(a, 4), state_get_layer(b, 4)));
+    let r = state_set_layer(r, 5, complex_add(state_get_layer(a, 5), state_get_layer(b, 5)));
+    let r = state_set_layer(r, 6, complex_add(state_get_layer(a, 6), state_get_layer(b, 6)));
+    let r = state_set_layer(r, 7, complex_add(state_get_layer(a, 7), state_get_layer(b, 7)));
+    let r = state_set_layer(r, 8, complex_add(state_get_layer(a, 8), state_get_layer(b, 8)));
+    let r = state_set_layer(r, 9, complex_add(state_get_layer(a, 9), state_get_layer(b, 9)));
+    let r = state_set_layer(r, 10, complex_add(state_get_layer(a, 10), state_get_layer(b, 10)));
+    let r = state_set_layer(r, 11, complex_add(state_get_layer(a, 11), state_get_layer(b, 11)));
+    let r = state_set_layer(r, 12, complex_add(state_get_layer(a, 12), state_get_layer(b, 12)));
+    let r = state_set_layer(r, 13, complex_add(state_get_layer(a, 13), state_get_layer(b, 13)));
+    let r = state_set_layer(r, 14, complex_add(state_get_layer(a, 14), state_get_layer(b, 14)));
+    let r = state_set_layer(r, 15, complex_add(state_get_layer(a, 15), state_get_layer(b, 15)));
+    return r;
+}
+
+// Helper: Subtract two states
+fn sub_st(a: State, b: State) -> State {
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, complex_sub(state_get_layer(a, 0), state_get_layer(b, 0)));
+    let r = state_set_layer(r, 1, complex_sub(state_get_layer(a, 1), state_get_layer(b, 1)));
+    let r = state_set_layer(r, 2, complex_sub(state_get_layer(a, 2), state_get_layer(b, 2)));
+    let r = state_set_layer(r, 3, complex_sub(state_get_layer(a, 3), state_get_layer(b, 3)));
+    let r = state_set_layer(r, 4, complex_sub(state_get_layer(a, 4), state_get_layer(b, 4)));
+    let r = state_set_layer(r, 5, complex_sub(state_get_layer(a, 5), state_get_layer(b, 5)));
+    let r = state_set_layer(r, 6, complex_sub(state_get_layer(a, 6), state_get_layer(b, 6)));
+    let r = state_set_layer(r, 7, complex_sub(state_get_layer(a, 7), state_get_layer(b, 7)));
+    let r = state_set_layer(r, 8, complex_sub(state_get_layer(a, 8), state_get_layer(b, 8)));
+    let r = state_set_layer(r, 9, complex_sub(state_get_layer(a, 9), state_get_layer(b, 9)));
+    let r = state_set_layer(r, 10, complex_sub(state_get_layer(a, 10), state_get_layer(b, 10)));
+    let r = state_set_layer(r, 11, complex_sub(state_get_layer(a, 11), state_get_layer(b, 11)));
+    let r = state_set_layer(r, 12, complex_sub(state_get_layer(a, 12), state_get_layer(b, 12)));
+    let r = state_set_layer(r, 13, complex_sub(state_get_layer(a, 13), state_get_layer(b, 13)));
+    let r = state_set_layer(r, 14, complex_sub(state_get_layer(a, 14), state_get_layer(b, 14)));
+    let r = state_set_layer(r, 15, complex_sub(state_get_layer(a, 15), state_get_layer(b, 15)));
+    return r;
+}
+
+// Helper: Scale state by scalar
+fn scale_st(s: State, scalar: Float) -> State {
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, complex_scale(state_get_layer(s, 0), scalar));
+    let r = state_set_layer(r, 1, complex_scale(state_get_layer(s, 1), scalar));
+    let r = state_set_layer(r, 2, complex_scale(state_get_layer(s, 2), scalar));
+    let r = state_set_layer(r, 3, complex_scale(state_get_layer(s, 3), scalar));
+    let r = state_set_layer(r, 4, complex_scale(state_get_layer(s, 4), scalar));
+    let r = state_set_layer(r, 5, complex_scale(state_get_layer(s, 5), scalar));
+    let r = state_set_layer(r, 6, complex_scale(state_get_layer(s, 6), scalar));
+    let r = state_set_layer(r, 7, complex_scale(state_get_layer(s, 7), scalar));
+    let r = state_set_layer(r, 8, complex_scale(state_get_layer(s, 8), scalar));
+    let r = state_set_layer(r, 9, complex_scale(state_get_layer(s, 9), scalar));
+    let r = state_set_layer(r, 10, complex_scale(state_get_layer(s, 10), scalar));
+    let r = state_set_layer(r, 11, complex_scale(state_get_layer(s, 11), scalar));
+    let r = state_set_layer(r, 12, complex_scale(state_get_layer(s, 12), scalar));
+    let r = state_set_layer(r, 13, complex_scale(state_get_layer(s, 13), scalar));
+    let r = state_set_layer(r, 14, complex_scale(state_get_layer(s, 14), scalar));
+    let r = state_set_layer(r, 15, complex_scale(state_get_layer(s, 15), scalar));
+    return r;
+}
+
+// ============ Top-K Sparsification ============
+
+// Find k-th largest magnitude (approximate for State)
+// k: number of elements to keep (1-16)
+fn find_topk_threshold(s: State, k: Int) -> Float {
+    // Collect all magnitudes and find threshold
+    // Using simple bubble sort partial approach for small k
+
+    let m0 = bytesil_magnitude(state_get_layer(s, 0));
+    let m1 = bytesil_magnitude(state_get_layer(s, 1));
+    let m2 = bytesil_magnitude(state_get_layer(s, 2));
+    let m3 = bytesil_magnitude(state_get_layer(s, 3));
+    let m4 = bytesil_magnitude(state_get_layer(s, 4));
+    let m5 = bytesil_magnitude(state_get_layer(s, 5));
+    let m6 = bytesil_magnitude(state_get_layer(s, 6));
+    let m7 = bytesil_magnitude(state_get_layer(s, 7));
+    let m8 = bytesil_magnitude(state_get_layer(s, 8));
+    let m9 = bytesil_magnitude(state_get_layer(s, 9));
+    let m10 = bytesil_magnitude(state_get_layer(s, 10));
+    let m11 = bytesil_magnitude(state_get_layer(s, 11));
+    let m12 = bytesil_magnitude(state_get_layer(s, 12));
+    let m13 = bytesil_magnitude(state_get_layer(s, 13));
+    let m14 = bytesil_magnitude(state_get_layer(s, 14));
+    let m15 = bytesil_magnitude(state_get_layer(s, 15));
+
+    // Find max value
+    let max_val = max_float(max_float(max_float(m0, m1), max_float(m2, m3)),
+                           max_float(max_float(m4, m5), max_float(m6, m7)));
+    let max_val = max_float(max_val,
+                           max_float(max_float(max_float(m8, m9), max_float(m10, m11)),
+                                    max_float(max_float(m12, m13), max_float(m14, m15))));
+
+    // For k=4 (25% sparsity), use threshold at 75% of max
+    // For k=8 (50% sparsity), use threshold at 50% of max
+    // For k=12 (75% sparsity), use threshold at 25% of max
+    let ratio = 1.0 - (k * 1.0 / 16.0);
+    return max_val * ratio;
+}
+
+// Top-K sparsification: keep only k largest magnitude elements
+fn topk_sparsify(gradients: State, k: Int) -> State {
+    let threshold = find_topk_threshold(gradients, k);
+    let r = state_vacuum();
+
+    let m0 = bytesil_magnitude(state_get_layer(gradients, 0));
+    if m0 >= threshold {
+        let r = state_set_layer(r, 0, state_get_layer(gradients, 0));
+    }
+
+    let m1 = bytesil_magnitude(state_get_layer(gradients, 1));
+    if m1 >= threshold {
+        let r = state_set_layer(r, 1, state_get_layer(gradients, 1));
+    }
+
+    let m2 = bytesil_magnitude(state_get_layer(gradients, 2));
+    if m2 >= threshold {
+        let r = state_set_layer(r, 2, state_get_layer(gradients, 2));
+    }
+
+    let m3 = bytesil_magnitude(state_get_layer(gradients, 3));
+    if m3 >= threshold {
+        let r = state_set_layer(r, 3, state_get_layer(gradients, 3));
+    }
+
+    let m4 = bytesil_magnitude(state_get_layer(gradients, 4));
+    if m4 >= threshold {
+        let r = state_set_layer(r, 4, state_get_layer(gradients, 4));
+    }
+
+    let m5 = bytesil_magnitude(state_get_layer(gradients, 5));
+    if m5 >= threshold {
+        let r = state_set_layer(r, 5, state_get_layer(gradients, 5));
+    }
+
+    let m6 = bytesil_magnitude(state_get_layer(gradients, 6));
+    if m6 >= threshold {
+        let r = state_set_layer(r, 6, state_get_layer(gradients, 6));
+    }
+
+    let m7 = bytesil_magnitude(state_get_layer(gradients, 7));
+    if m7 >= threshold {
+        let r = state_set_layer(r, 7, state_get_layer(gradients, 7));
+    }
+
+    let m8 = bytesil_magnitude(state_get_layer(gradients, 8));
+    if m8 >= threshold {
+        let r = state_set_layer(r, 8, state_get_layer(gradients, 8));
+    }
+
+    let m9 = bytesil_magnitude(state_get_layer(gradients, 9));
+    if m9 >= threshold {
+        let r = state_set_layer(r, 9, state_get_layer(gradients, 9));
+    }
+
+    let m10 = bytesil_magnitude(state_get_layer(gradients, 10));
+    if m10 >= threshold {
+        let r = state_set_layer(r, 10, state_get_layer(gradients, 10));
+    }
+
+    let m11 = bytesil_magnitude(state_get_layer(gradients, 11));
+    if m11 >= threshold {
+        let r = state_set_layer(r, 11, state_get_layer(gradients, 11));
+    }
+
+    let m12 = bytesil_magnitude(state_get_layer(gradients, 12));
+    if m12 >= threshold {
+        let r = state_set_layer(r, 12, state_get_layer(gradients, 12));
+    }
+
+    let m13 = bytesil_magnitude(state_get_layer(gradients, 13));
+    if m13 >= threshold {
+        let r = state_set_layer(r, 13, state_get_layer(gradients, 13));
+    }
+
+    let m14 = bytesil_magnitude(state_get_layer(gradients, 14));
+    if m14 >= threshold {
+        let r = state_set_layer(r, 14, state_get_layer(gradients, 14));
+    }
+
+    let m15 = bytesil_magnitude(state_get_layer(gradients, 15));
+    if m15 >= threshold {
+        let r = state_set_layer(r, 15, state_get_layer(gradients, 15));
+    }
+
+    return r;
+}
+
+// ============ Random Sparsification ============
+
+// Simple hash for pseudo-random selection
+fn hash_select(seed: Float, idx: Float) -> Float {
+    let x = (seed + idx) * 0.6180339887;
+    return x - floor(x);
+}
+
+// Random sparsification: keep elements with probability p
+fn random_sparsify(gradients: State, p: Float, seed: Float) -> State {
+    let scale = 1.0 / p;  // Scale up kept values to maintain expected value
+    let r = state_vacuum();
+
+    if hash_select(seed, 0.0) < p {
+        let r = state_set_layer(r, 0, complex_scale(state_get_layer(gradients, 0), scale));
+    }
+    if hash_select(seed, 1.0) < p {
+        let r = state_set_layer(r, 1, complex_scale(state_get_layer(gradients, 1), scale));
+    }
+    if hash_select(seed, 2.0) < p {
+        let r = state_set_layer(r, 2, complex_scale(state_get_layer(gradients, 2), scale));
+    }
+    if hash_select(seed, 3.0) < p {
+        let r = state_set_layer(r, 3, complex_scale(state_get_layer(gradients, 3), scale));
+    }
+    if hash_select(seed, 4.0) < p {
+        let r = state_set_layer(r, 4, complex_scale(state_get_layer(gradients, 4), scale));
+    }
+    if hash_select(seed, 5.0) < p {
+        let r = state_set_layer(r, 5, complex_scale(state_get_layer(gradients, 5), scale));
+    }
+    if hash_select(seed, 6.0) < p {
+        let r = state_set_layer(r, 6, complex_scale(state_get_layer(gradients, 6), scale));
+    }
+    if hash_select(seed, 7.0) < p {
+        let r = state_set_layer(r, 7, complex_scale(state_get_layer(gradients, 7), scale));
+    }
+    if hash_select(seed, 8.0) < p {
+        let r = state_set_layer(r, 8, complex_scale(state_get_layer(gradients, 8), scale));
+    }
+    if hash_select(seed, 9.0) < p {
+        let r = state_set_layer(r, 9, complex_scale(state_get_layer(gradients, 9), scale));
+    }
+    if hash_select(seed, 10.0) < p {
+        let r = state_set_layer(r, 10, complex_scale(state_get_layer(gradients, 10), scale));
+    }
+    if hash_select(seed, 11.0) < p {
+        let r = state_set_layer(r, 11, complex_scale(state_get_layer(gradients, 11), scale));
+    }
+    if hash_select(seed, 12.0) < p {
+        let r = state_set_layer(r, 12, complex_scale(state_get_layer(gradients, 12), scale));
+    }
+    if hash_select(seed, 13.0) < p {
+        let r = state_set_layer(r, 13, complex_scale(state_get_layer(gradients, 13), scale));
+    }
+    if hash_select(seed, 14.0) < p {
+        let r = state_set_layer(r, 14, complex_scale(state_get_layer(gradients, 14), scale));
+    }
+    if hash_select(seed, 15.0) < p {
+        let r = state_set_layer(r, 15, complex_scale(state_get_layer(gradients, 15), scale));
+    }
+
+    return r;
+}
+
+// ============ Quantization ============
+
+// Find max magnitude for scale computation
+fn max_magnitude(s: State) -> Float {
+    let m0 = bytesil_magnitude(state_get_layer(s, 0));
+    let m1 = bytesil_magnitude(state_get_layer(s, 1));
+    let m2 = bytesil_magnitude(state_get_layer(s, 2));
+    let m3 = bytesil_magnitude(state_get_layer(s, 3));
+    let m4 = bytesil_magnitude(state_get_layer(s, 4));
+    let m5 = bytesil_magnitude(state_get_layer(s, 5));
+    let m6 = bytesil_magnitude(state_get_layer(s, 6));
+    let m7 = bytesil_magnitude(state_get_layer(s, 7));
+    let m8 = bytesil_magnitude(state_get_layer(s, 8));
+    let m9 = bytesil_magnitude(state_get_layer(s, 9));
+    let m10 = bytesil_magnitude(state_get_layer(s, 10));
+    let m11 = bytesil_magnitude(state_get_layer(s, 11));
+    let m12 = bytesil_magnitude(state_get_layer(s, 12));
+    let m13 = bytesil_magnitude(state_get_layer(s, 13));
+    let m14 = bytesil_magnitude(state_get_layer(s, 14));
+    let m15 = bytesil_magnitude(state_get_layer(s, 15));
+
+    let max1 = max_float(max_float(m0, m1), max_float(m2, m3));
+    let max2 = max_float(max_float(m4, m5), max_float(m6, m7));
+    let max3 = max_float(max_float(m8, m9), max_float(m10, m11));
+    let max4 = max_float(max_float(m12, m13), max_float(m14, m15));
+
+    return max_float(max_float(max1, max2), max_float(max3, max4));
+}
+
+// Quantize to int8 equivalent (scale factor returned separately)
+// Returns quantized state and scale factor
+fn quantize_int8(gradients: State) -> State {
+    let max_mag = max_magnitude(gradients) + 0.0001;
+    let scale = max_mag / 127.0;  // int8 range: -128 to 127
+    let inv_scale = 1.0 / scale;
+
+    let r = state_vacuum();
+
+    let q0 = floor(bytesil_magnitude(state_get_layer(gradients, 0)) * inv_scale + 0.5);
+    let r = state_set_layer(r, 0, from_mag(clamp_float(q0, -128.0, 127.0)));
+
+    let q1 = floor(bytesil_magnitude(state_get_layer(gradients, 1)) * inv_scale + 0.5);
+    let r = state_set_layer(r, 1, from_mag(clamp_float(q1, -128.0, 127.0)));
+
+    let q2 = floor(bytesil_magnitude(state_get_layer(gradients, 2)) * inv_scale + 0.5);
+    let r = state_set_layer(r, 2, from_mag(clamp_float(q2, -128.0, 127.0)));
+
+    let q3 = floor(bytesil_magnitude(state_get_layer(gradients, 3)) * inv_scale + 0.5);
+    let r = state_set_layer(r, 3, from_mag(clamp_float(q3, -128.0, 127.0)));
+
+    let q4 = floor(bytesil_magnitude(state_get_layer(gradients, 4)) * inv_scale + 0.5);
+    let r = state_set_layer(r, 4, from_mag(clamp_float(q4, -128.0, 127.0)));
+
+    let q5 = floor(bytesil_magnitude(state_get_layer(gradients, 5)) * inv_scale + 0.5);
+    let r = state_set_layer(r, 5, from_mag(clamp_float(q5, -128.0, 127.0)));
+
+    let q6 = floor(bytesil_magnitude(state_get_layer(gradients, 6)) * inv_scale + 0.5);
+    let r = state_set_layer(r, 6, from_mag(clamp_float(q6, -128.0, 127.0)));
+
+    let q7 = floor(bytesil_magnitude(state_get_layer(gradients, 7)) * inv_scale + 0.5);
+    let r = state_set_layer(r, 7, from_mag(clamp_float(q7, -128.0, 127.0)));
+
+    let q8 = floor(bytesil_magnitude(state_get_layer(gradients, 8)) * inv_scale + 0.5);
+    let r = state_set_layer(r, 8, from_mag(clamp_float(q8, -128.0, 127.0)));
+
+    let q9 = floor(bytesil_magnitude(state_get_layer(gradients, 9)) * inv_scale + 0.5);
+    let r = state_set_layer(r, 9, from_mag(clamp_float(q9, -128.0, 127.0)));
+
+    let q10 = floor(bytesil_magnitude(state_get_layer(gradients, 10)) * inv_scale + 0.5);
+    let r = state_set_layer(r, 10, from_mag(clamp_float(q10, -128.0, 127.0)));
+
+    let q11 = floor(bytesil_magnitude(state_get_layer(gradients, 11)) * inv_scale + 0.5);
+    let r = state_set_layer(r, 11, from_mag(clamp_float(q11, -128.0, 127.0)));
+
+    let q12 = floor(bytesil_magnitude(state_get_layer(gradients, 12)) * inv_scale + 0.5);
+    let r = state_set_layer(r, 12, from_mag(clamp_float(q12, -128.0, 127.0)));
+
+    let q13 = floor(bytesil_magnitude(state_get_layer(gradients, 13)) * inv_scale + 0.5);
+    let r = state_set_layer(r, 13, from_mag(clamp_float(q13, -128.0, 127.0)));
+
+    let q14 = floor(bytesil_magnitude(state_get_layer(gradients, 14)) * inv_scale + 0.5);
+    let r = state_set_layer(r, 14, from_mag(clamp_float(q14, -128.0, 127.0)));
+
+    let q15 = floor(bytesil_magnitude(state_get_layer(gradients, 15)) * inv_scale + 0.5);
+    let r = state_set_layer(r, 15, from_mag(clamp_float(q15, -128.0, 127.0)));
+
+    return r;
+}
+
+// Get scale factor for int8 quantization
+fn get_int8_scale(gradients: State) -> Float {
+    let max_mag = max_magnitude(gradients) + 0.0001;
+    return max_mag / 127.0;
+}
+
+// Dequantize from int8
+fn dequantize_int8(quantized: State, scale: Float) -> State {
+    return scale_st(quantized, scale);
+}
+
+// ============ Error Feedback ============
+
+// Compute compression error: error = original - compressed
+fn compression_error(original: State, compressed: State) -> State {
+    return sub_st(original, compressed);
+}
+
+// Apply error feedback: gradient_with_error = gradient + accumulated_error
+fn apply_error_feedback(gradient: State, accumulated_error: State) -> State {
+    return add_st(gradient, accumulated_error);
+}
+
+// Update accumulated error after compression
+fn update_error(prev_error: State, new_error: State, decay: Float) -> State {
+    let decayed = scale_st(prev_error, decay);
+    return add_st(decayed, new_error);
+}
+
+// ============ Compression Pipeline ============
+
+// Full compression with error feedback
+fn compress_with_feedback(
+    gradient: State,
+    accumulated_error: State,
+    k: Int
+) -> State {
+    // Add accumulated error to gradient
+    let corrected = apply_error_feedback(gradient, accumulated_error);
+
+    // Apply Top-K sparsification
+    let compressed = topk_sparsify(corrected, k);
+
+    return compressed;
+}
+
+// Compute new accumulated error
+fn compute_new_error(
+    gradient: State,
+    accumulated_error: State,
+    compressed: State,
+    decay: Float
+) -> State {
+    let corrected = apply_error_feedback(gradient, accumulated_error);
+    let new_error = compression_error(corrected, compressed);
+    return update_error(accumulated_error, new_error, decay);
+}
+
+// ============ Compression Ratio ============
+
+// Compute sparsity (fraction of zeros)
+fn compute_sparsity(s: State) -> Float {
+    let zero_count = 0.0;
+    let threshold = 0.0001;
+
+    if bytesil_magnitude(state_get_layer(s, 0)) < threshold { let zero_count = zero_count + 1.0; }
+    if bytesil_magnitude(state_get_layer(s, 1)) < threshold { let zero_count = zero_count + 1.0; }
+    if bytesil_magnitude(state_get_layer(s, 2)) < threshold { let zero_count = zero_count + 1.0; }
+    if bytesil_magnitude(state_get_layer(s, 3)) < threshold { let zero_count = zero_count + 1.0; }
+    if bytesil_magnitude(state_get_layer(s, 4)) < threshold { let zero_count = zero_count + 1.0; }
+    if bytesil_magnitude(state_get_layer(s, 5)) < threshold { let zero_count = zero_count + 1.0; }
+    if bytesil_magnitude(state_get_layer(s, 6)) < threshold { let zero_count = zero_count + 1.0; }
+    if bytesil_magnitude(state_get_layer(s, 7)) < threshold { let zero_count = zero_count + 1.0; }
+    if bytesil_magnitude(state_get_layer(s, 8)) < threshold { let zero_count = zero_count + 1.0; }
+    if bytesil_magnitude(state_get_layer(s, 9)) < threshold { let zero_count = zero_count + 1.0; }
+    if bytesil_magnitude(state_get_layer(s, 10)) < threshold { let zero_count = zero_count + 1.0; }
+    if bytesil_magnitude(state_get_layer(s, 11)) < threshold { let zero_count = zero_count + 1.0; }
+    if bytesil_magnitude(state_get_layer(s, 12)) < threshold { let zero_count = zero_count + 1.0; }
+    if bytesil_magnitude(state_get_layer(s, 13)) < threshold { let zero_count = zero_count + 1.0; }
+    if bytesil_magnitude(state_get_layer(s, 14)) < threshold { let zero_count = zero_count + 1.0; }
+    if bytesil_magnitude(state_get_layer(s, 15)) < threshold { let zero_count = zero_count + 1.0; }
+
+    return zero_count / 16.0;
+}
+
+// Estimated compression ratio (for bandwidth calculation)
+fn compression_ratio(sparsity: Float) -> Float {
+    // Non-zero elements need storage for value + index
+    // Zero elements need no storage in sparse format
+    let non_zero_fraction = 1.0 - sparsity;
+    // Each non-zero needs ~1.5x storage (value + index overhead)
+    return 1.0 / (non_zero_fraction * 1.5 + 0.1);
+}
+

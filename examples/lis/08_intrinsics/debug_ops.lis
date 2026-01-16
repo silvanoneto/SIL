@@ -1,0 +1,194 @@
+// LIS Example: Operações de Debug
+// Demonstra: assert, debug_print, trace_state, timestamp_millis
+// Documentação: Seção 8.7
+
+// =========================================
+// Padrões de Debug
+// =========================================
+
+// Função com debug logging
+fn compute_with_debug(n: Int) -> Int {
+    let bs = bytesil_new(n, 0);
+    debug_print("compute_with_debug called", bs);
+
+    let result = n * n;
+
+    let result_bs = bytesil_new(result, 0);
+    debug_print("Result computed", result_bs);
+    return result;
+}
+
+// Timing wrapper
+fn timed_operation() -> Int {
+    let start_t = timestamp_millis();
+
+    // Operação
+    let sum2 = 0;
+    let j = 0;
+    loop {
+        if j >= 5000 {
+            break;
+        }
+        let sum2 = sum2 + j;
+        let j = j + 1;
+    }
+
+    let end_t = timestamp_millis();
+    let elapsed_bs = bytesil_new(end_t - start_t, 0);
+    debug_print("Operation took (ms)", elapsed_bs);
+    print_int(end_t - start_t);
+
+    return sum2;
+}
+
+// =========================================
+// Asserts para Validação
+// =========================================
+
+fn process_positive(n: Int) -> Int {
+    assert(n > 0, "Input must be positive");
+    return n * 2;
+}
+
+fn validate_range(value: Int, min_v: Int, max_v: Int) {
+    assert(value >= min_v, "Value below minimum");
+    assert(value <= max_v, "Value above maximum");
+    print_string("Value is in valid range");
+}
+
+// =========================================
+// State Debugging
+// =========================================
+
+fn debug_state_operation(input: State) -> State {
+    trace_state("Input state", input);
+
+    let output = state_normalize(input);
+
+    trace_state("Output state after normalize", output);
+
+    return output;
+}
+
+fn main() {
+    print_string("=== Debug Operations ===");
+
+    // =========================================
+    // Assert (assert)
+    // =========================================
+    print_string("--- assert ---");
+
+    // Assert verifica uma condição e falha se for falsa
+    assert(true, "This should pass");
+    print_string("First assert passed");
+
+    assert(2 + 2 == 4, "Math should work");
+    print_string("Math assert passed");
+
+    let x = 10;
+    assert(x > 0, "x should be positive");
+    print_string("Positivity assert passed");
+
+    // Assert com condições compostas
+    let a = 5;
+    let b = 10;
+    assert(a < b && b > 0, "a < b and b > 0");
+    print_string("Composite assert passed");
+
+    // =========================================
+    // Debug Print (debug_print)
+    // =========================================
+    print_string("--- debug_print ---");
+
+    // debug_print requires 2 args: (String, ByteSil)
+    let bs1 = bytesil_new(1, 0);
+    let bs2 = bytesil_new(2, 0);
+    let bs3 = bytesil_new(3, 0);
+    let bs4 = bytesil_new(4, 0);
+
+    debug_print("Starting function...", bs1);
+    debug_print("Processing step 1", bs2);
+    debug_print("Processing step 2", bs3);
+    debug_print("Function complete", bs4);
+
+    // =========================================
+    // Trace State (trace_state)
+    // =========================================
+    print_string("--- trace_state ---");
+
+    // trace_state requires 2 args: (String, State)
+    let s1 = state_vacuum();
+    print_string("Tracing vacuum state:");
+    trace_state("vacuum state", s1);
+
+    let s2 = state_neutral();
+    print_string("Tracing neutral state:");
+    trace_state("neutral state", s2);
+
+    // State modificado
+    let s3 = state_vacuum();
+    let s3 = state_set_layer(s3, 0, bytesil_new(10, 4));
+    let s3 = state_set_layer(s3, 5, bytesil_new(8, 8));
+    print_string("Tracing modified state (layers 0 and 5 set):");
+    trace_state("modified state", s3);
+
+    // =========================================
+    // Timestamp (timestamp_millis)
+    // =========================================
+    print_string("--- timestamp_millis ---");
+
+    let start_time = timestamp_millis();
+    print_string("Start timestamp (ms):");
+    print_int(start_time);
+
+    // Simular algum trabalho
+    let sum = 0;
+    let i = 0;
+    loop {
+        if i >= 10000 {
+            break;
+        }
+        let sum = sum + i;
+        let i = i + 1;
+    }
+
+    let end_time = timestamp_millis();
+    print_string("End timestamp (ms):");
+    print_int(end_time);
+
+    let elapsed = end_time - start_time;
+    print_string("Elapsed time (ms):");
+    print_int(elapsed);
+
+    // =========================================
+    // Padrões de Debug
+    // =========================================
+    print_string("--- Debug Patterns ---");
+
+    let result = compute_with_debug(7);
+    print_string("Result of compute_with_debug(7):");
+    print_int(result);
+
+    let timed_result = timed_operation();
+
+    // =========================================
+    // Asserts para Validação
+    // =========================================
+    print_string("--- Validation Asserts ---");
+
+    let valid_result = process_positive(5);
+    print_string("process_positive(5) =");
+    print_int(valid_result);
+
+    validate_range(50, 0, 100);
+
+    // =========================================
+    // State Debugging
+    // =========================================
+    print_string("--- State Debugging ---");
+
+    let test_state = state_neutral();
+    let debug_result = debug_state_operation(test_state);
+
+    print_string("=== Debug Operations Complete ===");
+}

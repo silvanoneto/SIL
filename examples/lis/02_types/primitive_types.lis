@@ -1,0 +1,63 @@
+// LIS Example: Tipos Primitivos
+// Demonstra: Int, Float, Bool, String
+// Documentação: Seção 4.1
+
+fn main() {
+    // =========================================
+    // Int - Inteiro de 64 bits
+    // =========================================
+    let int_positive: Int = 42;
+    let int_negative: Int = -100;
+    let int_zero: Int = 0;
+    let int_max: Int = 9223372036854775807;  // Max i64
+
+    print_string("=== Int (64-bit integer) ===");
+    print_int(int_positive);
+    print_int(int_negative);
+    print_int(int_zero);
+
+    // =========================================
+    // Float - Ponto flutuante de 64 bits
+    // =========================================
+    let float_pi: Float = 3.14159265358979;
+    let float_neg: Float = -273.15;
+    let float_small: Float = 0.000001;
+    let float_scientific: Float = 6.022e23;  // Notação científica
+
+    print_string("=== Float (64-bit float) ===");
+    print_float(float_pi);
+    print_float(float_neg);
+    print_float(float_small);
+
+    // =========================================
+    // Bool - Booleano
+    // =========================================
+    let bool_true: Bool = true;
+    let bool_false: Bool = false;
+
+    print_string("=== Bool ===");
+    if bool_true {
+        print_string("bool_true is true");
+    }
+    if bool_false {
+        print_string("bool_false is true");
+    } else {
+        print_string("bool_false is false");
+    }
+
+    // =========================================
+    // String - Cadeia de caracteres
+    // =========================================
+    let str_hello: String = "Hello, LIS!";
+    let str_empty: String = "";
+    let str_unicode: String = "Unicode: ABC 123";
+
+    print_string("=== String ===");
+    print_string(str_hello);
+    print_string(str_unicode);
+
+    // Comprimento de string
+    let len = string_length(str_hello);
+    print_string("Length of str_hello:");
+    print_int(len);
+}

@@ -1,0 +1,609 @@
+// Paebiru ML Library - Transformer Architecture
+// Encoder and decoder blocks for transformer models
+
+// ============ Helper Functions ============
+
+// tanh approximation using exp
+fn tanh_approx(x: Float) -> Float {
+    let exp_x = exp(x);
+    let exp_neg_x = exp(0.0 - x);
+    return (exp_x - exp_neg_x) / (exp_x + exp_neg_x);
+}
+
+// Create ByteSil from magnitude
+fn from_mag(m: Float) -> ByteSil {
+    return bytesil_new(floor(clamp_float(ln(max_float(m, 0.0001)), -8.0, 7.0)), 0);
+}
+
+// Scale state by scalar
+fn scale_st(s: State, scalar: Float) -> State {
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, complex_scale(state_get_layer(s, 0), scalar));
+    let r = state_set_layer(r, 1, complex_scale(state_get_layer(s, 1), scalar));
+    let r = state_set_layer(r, 2, complex_scale(state_get_layer(s, 2), scalar));
+    let r = state_set_layer(r, 3, complex_scale(state_get_layer(s, 3), scalar));
+    let r = state_set_layer(r, 4, complex_scale(state_get_layer(s, 4), scalar));
+    let r = state_set_layer(r, 5, complex_scale(state_get_layer(s, 5), scalar));
+    let r = state_set_layer(r, 6, complex_scale(state_get_layer(s, 6), scalar));
+    let r = state_set_layer(r, 7, complex_scale(state_get_layer(s, 7), scalar));
+    let r = state_set_layer(r, 8, complex_scale(state_get_layer(s, 8), scalar));
+    let r = state_set_layer(r, 9, complex_scale(state_get_layer(s, 9), scalar));
+    let r = state_set_layer(r, 10, complex_scale(state_get_layer(s, 10), scalar));
+    let r = state_set_layer(r, 11, complex_scale(state_get_layer(s, 11), scalar));
+    let r = state_set_layer(r, 12, complex_scale(state_get_layer(s, 12), scalar));
+    let r = state_set_layer(r, 13, complex_scale(state_get_layer(s, 13), scalar));
+    let r = state_set_layer(r, 14, complex_scale(state_get_layer(s, 14), scalar));
+    let r = state_set_layer(r, 15, complex_scale(state_get_layer(s, 15), scalar));
+    return r;
+}
+
+// Add two states
+fn add_st(a: State, b: State) -> State {
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, complex_add(state_get_layer(a, 0), state_get_layer(b, 0)));
+    let r = state_set_layer(r, 1, complex_add(state_get_layer(a, 1), state_get_layer(b, 1)));
+    let r = state_set_layer(r, 2, complex_add(state_get_layer(a, 2), state_get_layer(b, 2)));
+    let r = state_set_layer(r, 3, complex_add(state_get_layer(a, 3), state_get_layer(b, 3)));
+    let r = state_set_layer(r, 4, complex_add(state_get_layer(a, 4), state_get_layer(b, 4)));
+    let r = state_set_layer(r, 5, complex_add(state_get_layer(a, 5), state_get_layer(b, 5)));
+    let r = state_set_layer(r, 6, complex_add(state_get_layer(a, 6), state_get_layer(b, 6)));
+    let r = state_set_layer(r, 7, complex_add(state_get_layer(a, 7), state_get_layer(b, 7)));
+    let r = state_set_layer(r, 8, complex_add(state_get_layer(a, 8), state_get_layer(b, 8)));
+    let r = state_set_layer(r, 9, complex_add(state_get_layer(a, 9), state_get_layer(b, 9)));
+    let r = state_set_layer(r, 10, complex_add(state_get_layer(a, 10), state_get_layer(b, 10)));
+    let r = state_set_layer(r, 11, complex_add(state_get_layer(a, 11), state_get_layer(b, 11)));
+    let r = state_set_layer(r, 12, complex_add(state_get_layer(a, 12), state_get_layer(b, 12)));
+    let r = state_set_layer(r, 13, complex_add(state_get_layer(a, 13), state_get_layer(b, 13)));
+    let r = state_set_layer(r, 14, complex_add(state_get_layer(a, 14), state_get_layer(b, 14)));
+    let r = state_set_layer(r, 15, complex_add(state_get_layer(a, 15), state_get_layer(b, 15)));
+    return r;
+}
+
+// Hadamard (element-wise) product
+fn hadamard(a: State, b: State) -> State {
+    let r = state_vacuum();
+    let m0 = bytesil_magnitude(state_get_layer(a, 0)) * bytesil_magnitude(state_get_layer(b, 0));
+    let r = state_set_layer(r, 0, from_mag(m0));
+    let m1 = bytesil_magnitude(state_get_layer(a, 1)) * bytesil_magnitude(state_get_layer(b, 1));
+    let r = state_set_layer(r, 1, from_mag(m1));
+    let m2 = bytesil_magnitude(state_get_layer(a, 2)) * bytesil_magnitude(state_get_layer(b, 2));
+    let r = state_set_layer(r, 2, from_mag(m2));
+    let m3 = bytesil_magnitude(state_get_layer(a, 3)) * bytesil_magnitude(state_get_layer(b, 3));
+    let r = state_set_layer(r, 3, from_mag(m3));
+    let m4 = bytesil_magnitude(state_get_layer(a, 4)) * bytesil_magnitude(state_get_layer(b, 4));
+    let r = state_set_layer(r, 4, from_mag(m4));
+    let m5 = bytesil_magnitude(state_get_layer(a, 5)) * bytesil_magnitude(state_get_layer(b, 5));
+    let r = state_set_layer(r, 5, from_mag(m5));
+    let m6 = bytesil_magnitude(state_get_layer(a, 6)) * bytesil_magnitude(state_get_layer(b, 6));
+    let r = state_set_layer(r, 6, from_mag(m6));
+    let m7 = bytesil_magnitude(state_get_layer(a, 7)) * bytesil_magnitude(state_get_layer(b, 7));
+    let r = state_set_layer(r, 7, from_mag(m7));
+    let m8 = bytesil_magnitude(state_get_layer(a, 8)) * bytesil_magnitude(state_get_layer(b, 8));
+    let r = state_set_layer(r, 8, from_mag(m8));
+    let m9 = bytesil_magnitude(state_get_layer(a, 9)) * bytesil_magnitude(state_get_layer(b, 9));
+    let r = state_set_layer(r, 9, from_mag(m9));
+    let m10 = bytesil_magnitude(state_get_layer(a, 10)) * bytesil_magnitude(state_get_layer(b, 10));
+    let r = state_set_layer(r, 10, from_mag(m10));
+    let m11 = bytesil_magnitude(state_get_layer(a, 11)) * bytesil_magnitude(state_get_layer(b, 11));
+    let r = state_set_layer(r, 11, from_mag(m11));
+    let m12 = bytesil_magnitude(state_get_layer(a, 12)) * bytesil_magnitude(state_get_layer(b, 12));
+    let r = state_set_layer(r, 12, from_mag(m12));
+    let m13 = bytesil_magnitude(state_get_layer(a, 13)) * bytesil_magnitude(state_get_layer(b, 13));
+    let r = state_set_layer(r, 13, from_mag(m13));
+    let m14 = bytesil_magnitude(state_get_layer(a, 14)) * bytesil_magnitude(state_get_layer(b, 14));
+    let r = state_set_layer(r, 14, from_mag(m14));
+    let m15 = bytesil_magnitude(state_get_layer(a, 15)) * bytesil_magnitude(state_get_layer(b, 15));
+    let r = state_set_layer(r, 15, from_mag(m15));
+    return r;
+}
+
+// Dot product of two states
+fn dot(a: State, b: State) -> Float {
+    let sum = 0.0;
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 0)) * bytesil_magnitude(state_get_layer(b, 0));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 1)) * bytesil_magnitude(state_get_layer(b, 1));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 2)) * bytesil_magnitude(state_get_layer(b, 2));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 3)) * bytesil_magnitude(state_get_layer(b, 3));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 4)) * bytesil_magnitude(state_get_layer(b, 4));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 5)) * bytesil_magnitude(state_get_layer(b, 5));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 6)) * bytesil_magnitude(state_get_layer(b, 6));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 7)) * bytesil_magnitude(state_get_layer(b, 7));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 8)) * bytesil_magnitude(state_get_layer(b, 8));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 9)) * bytesil_magnitude(state_get_layer(b, 9));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 10)) * bytesil_magnitude(state_get_layer(b, 10));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 11)) * bytesil_magnitude(state_get_layer(b, 11));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 12)) * bytesil_magnitude(state_get_layer(b, 12));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 13)) * bytesil_magnitude(state_get_layer(b, 13));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 14)) * bytesil_magnitude(state_get_layer(b, 14));
+    let sum = sum + bytesil_magnitude(state_get_layer(a, 15)) * bytesil_magnitude(state_get_layer(b, 15));
+    return sum;
+}
+
+// Matrix multiplication 4x4
+fn matmul_4x4(a: State, b: State) -> State {
+    let r = state_vacuum();
+
+    let a00 = bytesil_magnitude(state_get_layer(a, 0));
+    let a01 = bytesil_magnitude(state_get_layer(a, 1));
+    let a02 = bytesil_magnitude(state_get_layer(a, 2));
+    let a03 = bytesil_magnitude(state_get_layer(a, 3));
+
+    let b00 = bytesil_magnitude(state_get_layer(b, 0));
+    let b10 = bytesil_magnitude(state_get_layer(b, 4));
+    let b20 = bytesil_magnitude(state_get_layer(b, 8));
+    let b30 = bytesil_magnitude(state_get_layer(b, 12));
+    let b01 = bytesil_magnitude(state_get_layer(b, 1));
+    let b11 = bytesil_magnitude(state_get_layer(b, 5));
+    let b21 = bytesil_magnitude(state_get_layer(b, 9));
+    let b31 = bytesil_magnitude(state_get_layer(b, 13));
+    let b02 = bytesil_magnitude(state_get_layer(b, 2));
+    let b12 = bytesil_magnitude(state_get_layer(b, 6));
+    let b22 = bytesil_magnitude(state_get_layer(b, 10));
+    let b32 = bytesil_magnitude(state_get_layer(b, 14));
+    let b03 = bytesil_magnitude(state_get_layer(b, 3));
+    let b13 = bytesil_magnitude(state_get_layer(b, 7));
+    let b23 = bytesil_magnitude(state_get_layer(b, 11));
+    let b33 = bytesil_magnitude(state_get_layer(b, 15));
+
+    let r = state_set_layer(r, 0, from_mag(a00 * b00 + a01 * b10 + a02 * b20 + a03 * b30));
+    let r = state_set_layer(r, 1, from_mag(a00 * b01 + a01 * b11 + a02 * b21 + a03 * b31));
+    let r = state_set_layer(r, 2, from_mag(a00 * b02 + a01 * b12 + a02 * b22 + a03 * b32));
+    let r = state_set_layer(r, 3, from_mag(a00 * b03 + a01 * b13 + a02 * b23 + a03 * b33));
+
+    let a10 = bytesil_magnitude(state_get_layer(a, 4));
+    let a11 = bytesil_magnitude(state_get_layer(a, 5));
+    let a12 = bytesil_magnitude(state_get_layer(a, 6));
+    let a13 = bytesil_magnitude(state_get_layer(a, 7));
+
+    let r = state_set_layer(r, 4, from_mag(a10 * b00 + a11 * b10 + a12 * b20 + a13 * b30));
+    let r = state_set_layer(r, 5, from_mag(a10 * b01 + a11 * b11 + a12 * b21 + a13 * b31));
+    let r = state_set_layer(r, 6, from_mag(a10 * b02 + a11 * b12 + a12 * b22 + a13 * b32));
+    let r = state_set_layer(r, 7, from_mag(a10 * b03 + a11 * b13 + a12 * b23 + a13 * b33));
+
+    let a20 = bytesil_magnitude(state_get_layer(a, 8));
+    let a21 = bytesil_magnitude(state_get_layer(a, 9));
+    let a22 = bytesil_magnitude(state_get_layer(a, 10));
+    let a23 = bytesil_magnitude(state_get_layer(a, 11));
+
+    let r = state_set_layer(r, 8, from_mag(a20 * b00 + a21 * b10 + a22 * b20 + a23 * b30));
+    let r = state_set_layer(r, 9, from_mag(a20 * b01 + a21 * b11 + a22 * b21 + a23 * b31));
+    let r = state_set_layer(r, 10, from_mag(a20 * b02 + a21 * b12 + a22 * b22 + a23 * b32));
+    let r = state_set_layer(r, 11, from_mag(a20 * b03 + a21 * b13 + a22 * b23 + a23 * b33));
+
+    let a30 = bytesil_magnitude(state_get_layer(a, 12));
+    let a31 = bytesil_magnitude(state_get_layer(a, 13));
+    let a32 = bytesil_magnitude(state_get_layer(a, 14));
+    let a33 = bytesil_magnitude(state_get_layer(a, 15));
+
+    let r = state_set_layer(r, 12, from_mag(a30 * b00 + a31 * b10 + a32 * b20 + a33 * b30));
+    let r = state_set_layer(r, 13, from_mag(a30 * b01 + a31 * b11 + a32 * b21 + a33 * b31));
+    let r = state_set_layer(r, 14, from_mag(a30 * b02 + a31 * b12 + a32 * b22 + a33 * b32));
+    let r = state_set_layer(r, 15, from_mag(a30 * b03 + a31 * b13 + a32 * b23 + a33 * b33));
+
+    return r;
+}
+
+// Transpose 4x4 matrix
+fn transpose_4x4(a: State) -> State {
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, state_get_layer(a, 0));
+    let r = state_set_layer(r, 1, state_get_layer(a, 4));
+    let r = state_set_layer(r, 2, state_get_layer(a, 8));
+    let r = state_set_layer(r, 3, state_get_layer(a, 12));
+    let r = state_set_layer(r, 4, state_get_layer(a, 1));
+    let r = state_set_layer(r, 5, state_get_layer(a, 5));
+    let r = state_set_layer(r, 6, state_get_layer(a, 9));
+    let r = state_set_layer(r, 7, state_get_layer(a, 13));
+    let r = state_set_layer(r, 8, state_get_layer(a, 2));
+    let r = state_set_layer(r, 9, state_get_layer(a, 6));
+    let r = state_set_layer(r, 10, state_get_layer(a, 10));
+    let r = state_set_layer(r, 11, state_get_layer(a, 14));
+    let r = state_set_layer(r, 12, state_get_layer(a, 3));
+    let r = state_set_layer(r, 13, state_get_layer(a, 7));
+    let r = state_set_layer(r, 14, state_get_layer(a, 11));
+    let r = state_set_layer(r, 15, state_get_layer(a, 15));
+    return r;
+}
+
+// ============ Normalization ============
+
+// RMS Normalization
+fn rms_norm(input: State, gamma: State, eps: Float) -> State {
+    let sum_sq = 0.0;
+    let sum_sq = sum_sq + bytesil_magnitude(state_get_layer(input, 0)) * bytesil_magnitude(state_get_layer(input, 0));
+    let sum_sq = sum_sq + bytesil_magnitude(state_get_layer(input, 1)) * bytesil_magnitude(state_get_layer(input, 1));
+    let sum_sq = sum_sq + bytesil_magnitude(state_get_layer(input, 2)) * bytesil_magnitude(state_get_layer(input, 2));
+    let sum_sq = sum_sq + bytesil_magnitude(state_get_layer(input, 3)) * bytesil_magnitude(state_get_layer(input, 3));
+    let sum_sq = sum_sq + bytesil_magnitude(state_get_layer(input, 4)) * bytesil_magnitude(state_get_layer(input, 4));
+    let sum_sq = sum_sq + bytesil_magnitude(state_get_layer(input, 5)) * bytesil_magnitude(state_get_layer(input, 5));
+    let sum_sq = sum_sq + bytesil_magnitude(state_get_layer(input, 6)) * bytesil_magnitude(state_get_layer(input, 6));
+    let sum_sq = sum_sq + bytesil_magnitude(state_get_layer(input, 7)) * bytesil_magnitude(state_get_layer(input, 7));
+    let sum_sq = sum_sq + bytesil_magnitude(state_get_layer(input, 8)) * bytesil_magnitude(state_get_layer(input, 8));
+    let sum_sq = sum_sq + bytesil_magnitude(state_get_layer(input, 9)) * bytesil_magnitude(state_get_layer(input, 9));
+    let sum_sq = sum_sq + bytesil_magnitude(state_get_layer(input, 10)) * bytesil_magnitude(state_get_layer(input, 10));
+    let sum_sq = sum_sq + bytesil_magnitude(state_get_layer(input, 11)) * bytesil_magnitude(state_get_layer(input, 11));
+    let sum_sq = sum_sq + bytesil_magnitude(state_get_layer(input, 12)) * bytesil_magnitude(state_get_layer(input, 12));
+    let sum_sq = sum_sq + bytesil_magnitude(state_get_layer(input, 13)) * bytesil_magnitude(state_get_layer(input, 13));
+    let sum_sq = sum_sq + bytesil_magnitude(state_get_layer(input, 14)) * bytesil_magnitude(state_get_layer(input, 14));
+    let sum_sq = sum_sq + bytesil_magnitude(state_get_layer(input, 15)) * bytesil_magnitude(state_get_layer(input, 15));
+
+    let rms = sqrt(sum_sq / 16.0 + eps);
+    let inv_rms = 1.0 / rms;
+
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, from_mag(bytesil_magnitude(state_get_layer(input, 0)) * inv_rms * bytesil_magnitude(state_get_layer(gamma, 0))));
+    let r = state_set_layer(r, 1, from_mag(bytesil_magnitude(state_get_layer(input, 1)) * inv_rms * bytesil_magnitude(state_get_layer(gamma, 1))));
+    let r = state_set_layer(r, 2, from_mag(bytesil_magnitude(state_get_layer(input, 2)) * inv_rms * bytesil_magnitude(state_get_layer(gamma, 2))));
+    let r = state_set_layer(r, 3, from_mag(bytesil_magnitude(state_get_layer(input, 3)) * inv_rms * bytesil_magnitude(state_get_layer(gamma, 3))));
+    let r = state_set_layer(r, 4, from_mag(bytesil_magnitude(state_get_layer(input, 4)) * inv_rms * bytesil_magnitude(state_get_layer(gamma, 4))));
+    let r = state_set_layer(r, 5, from_mag(bytesil_magnitude(state_get_layer(input, 5)) * inv_rms * bytesil_magnitude(state_get_layer(gamma, 5))));
+    let r = state_set_layer(r, 6, from_mag(bytesil_magnitude(state_get_layer(input, 6)) * inv_rms * bytesil_magnitude(state_get_layer(gamma, 6))));
+    let r = state_set_layer(r, 7, from_mag(bytesil_magnitude(state_get_layer(input, 7)) * inv_rms * bytesil_magnitude(state_get_layer(gamma, 7))));
+    let r = state_set_layer(r, 8, from_mag(bytesil_magnitude(state_get_layer(input, 8)) * inv_rms * bytesil_magnitude(state_get_layer(gamma, 8))));
+    let r = state_set_layer(r, 9, from_mag(bytesil_magnitude(state_get_layer(input, 9)) * inv_rms * bytesil_magnitude(state_get_layer(gamma, 9))));
+    let r = state_set_layer(r, 10, from_mag(bytesil_magnitude(state_get_layer(input, 10)) * inv_rms * bytesil_magnitude(state_get_layer(gamma, 10))));
+    let r = state_set_layer(r, 11, from_mag(bytesil_magnitude(state_get_layer(input, 11)) * inv_rms * bytesil_magnitude(state_get_layer(gamma, 11))));
+    let r = state_set_layer(r, 12, from_mag(bytesil_magnitude(state_get_layer(input, 12)) * inv_rms * bytesil_magnitude(state_get_layer(gamma, 12))));
+    let r = state_set_layer(r, 13, from_mag(bytesil_magnitude(state_get_layer(input, 13)) * inv_rms * bytesil_magnitude(state_get_layer(gamma, 13))));
+    let r = state_set_layer(r, 14, from_mag(bytesil_magnitude(state_get_layer(input, 14)) * inv_rms * bytesil_magnitude(state_get_layer(gamma, 14))));
+    let r = state_set_layer(r, 15, from_mag(bytesil_magnitude(state_get_layer(input, 15)) * inv_rms * bytesil_magnitude(state_get_layer(gamma, 15))));
+    return r;
+}
+
+// ============ Activations ============
+
+// Swish activation
+fn swish_state(s: State) -> State {
+    let r = state_vacuum();
+    let x0 = bytesil_magnitude(state_get_layer(s, 0));
+    let r = state_set_layer(r, 0, from_mag(x0 / (1.0 + exp(0.0 - x0))));
+    let x1 = bytesil_magnitude(state_get_layer(s, 1));
+    let r = state_set_layer(r, 1, from_mag(x1 / (1.0 + exp(0.0 - x1))));
+    let x2 = bytesil_magnitude(state_get_layer(s, 2));
+    let r = state_set_layer(r, 2, from_mag(x2 / (1.0 + exp(0.0 - x2))));
+    let x3 = bytesil_magnitude(state_get_layer(s, 3));
+    let r = state_set_layer(r, 3, from_mag(x3 / (1.0 + exp(0.0 - x3))));
+    let x4 = bytesil_magnitude(state_get_layer(s, 4));
+    let r = state_set_layer(r, 4, from_mag(x4 / (1.0 + exp(0.0 - x4))));
+    let x5 = bytesil_magnitude(state_get_layer(s, 5));
+    let r = state_set_layer(r, 5, from_mag(x5 / (1.0 + exp(0.0 - x5))));
+    let x6 = bytesil_magnitude(state_get_layer(s, 6));
+    let r = state_set_layer(r, 6, from_mag(x6 / (1.0 + exp(0.0 - x6))));
+    let x7 = bytesil_magnitude(state_get_layer(s, 7));
+    let r = state_set_layer(r, 7, from_mag(x7 / (1.0 + exp(0.0 - x7))));
+    let x8 = bytesil_magnitude(state_get_layer(s, 8));
+    let r = state_set_layer(r, 8, from_mag(x8 / (1.0 + exp(0.0 - x8))));
+    let x9 = bytesil_magnitude(state_get_layer(s, 9));
+    let r = state_set_layer(r, 9, from_mag(x9 / (1.0 + exp(0.0 - x9))));
+    let x10 = bytesil_magnitude(state_get_layer(s, 10));
+    let r = state_set_layer(r, 10, from_mag(x10 / (1.0 + exp(0.0 - x10))));
+    let x11 = bytesil_magnitude(state_get_layer(s, 11));
+    let r = state_set_layer(r, 11, from_mag(x11 / (1.0 + exp(0.0 - x11))));
+    let x12 = bytesil_magnitude(state_get_layer(s, 12));
+    let r = state_set_layer(r, 12, from_mag(x12 / (1.0 + exp(0.0 - x12))));
+    let x13 = bytesil_magnitude(state_get_layer(s, 13));
+    let r = state_set_layer(r, 13, from_mag(x13 / (1.0 + exp(0.0 - x13))));
+    let x14 = bytesil_magnitude(state_get_layer(s, 14));
+    let r = state_set_layer(r, 14, from_mag(x14 / (1.0 + exp(0.0 - x14))));
+    let x15 = bytesil_magnitude(state_get_layer(s, 15));
+    let r = state_set_layer(r, 15, from_mag(x15 / (1.0 + exp(0.0 - x15))));
+    return r;
+}
+
+// ============ Attention ============
+
+// Softmax over 4 elements (for 4x4 attention)
+fn softmax_4(v0: Float, v1: Float, v2: Float, v3: Float) -> State {
+    let max_v = max_float(max_float(v0, v1), max_float(v2, v3));
+    let e0 = exp(v0 - max_v);
+    let e1 = exp(v1 - max_v);
+    let e2 = exp(v2 - max_v);
+    let e3 = exp(v3 - max_v);
+    let sum = e0 + e1 + e2 + e3 + 0.0001;
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, from_mag(e0 / sum));
+    let r = state_set_layer(r, 1, from_mag(e1 / sum));
+    let r = state_set_layer(r, 2, from_mag(e2 / sum));
+    let r = state_set_layer(r, 3, from_mag(e3 / sum));
+    return r;
+}
+
+// Scaled dot-product attention for 4x4 matrices
+// Attention(Q, K, V) = softmax(QK^T / sqrt(d_k)) * V
+fn scaled_dot_attention_4x4(q: State, k: State, v: State) -> State {
+    let scale = 0.5;  // 1/sqrt(4) = 0.5
+
+    let k_t = transpose_4x4(k);
+    let scores = matmul_4x4(q, k_t);
+    let scores = scale_st(scores, scale);
+
+    // Apply softmax row-wise and multiply with V
+    let r = state_vacuum();
+
+    // Row 0
+    let s00 = bytesil_magnitude(state_get_layer(scores, 0));
+    let s01 = bytesil_magnitude(state_get_layer(scores, 1));
+    let s02 = bytesil_magnitude(state_get_layer(scores, 2));
+    let s03 = bytesil_magnitude(state_get_layer(scores, 3));
+    let attn0 = softmax_4(s00, s01, s02, s03);
+
+    let a00 = bytesil_magnitude(state_get_layer(attn0, 0));
+    let a01 = bytesil_magnitude(state_get_layer(attn0, 1));
+    let a02 = bytesil_magnitude(state_get_layer(attn0, 2));
+    let a03 = bytesil_magnitude(state_get_layer(attn0, 3));
+
+    let v0 = bytesil_magnitude(state_get_layer(v, 0));
+    let v1 = bytesil_magnitude(state_get_layer(v, 4));
+    let v2 = bytesil_magnitude(state_get_layer(v, 8));
+    let v3 = bytesil_magnitude(state_get_layer(v, 12));
+    let r = state_set_layer(r, 0, from_mag(a00 * v0 + a01 * v1 + a02 * v2 + a03 * v3));
+
+    let v0 = bytesil_magnitude(state_get_layer(v, 1));
+    let v1 = bytesil_magnitude(state_get_layer(v, 5));
+    let v2 = bytesil_magnitude(state_get_layer(v, 9));
+    let v3 = bytesil_magnitude(state_get_layer(v, 13));
+    let r = state_set_layer(r, 1, from_mag(a00 * v0 + a01 * v1 + a02 * v2 + a03 * v3));
+
+    let v0 = bytesil_magnitude(state_get_layer(v, 2));
+    let v1 = bytesil_magnitude(state_get_layer(v, 6));
+    let v2 = bytesil_magnitude(state_get_layer(v, 10));
+    let v3 = bytesil_magnitude(state_get_layer(v, 14));
+    let r = state_set_layer(r, 2, from_mag(a00 * v0 + a01 * v1 + a02 * v2 + a03 * v3));
+
+    let v0 = bytesil_magnitude(state_get_layer(v, 3));
+    let v1 = bytesil_magnitude(state_get_layer(v, 7));
+    let v2 = bytesil_magnitude(state_get_layer(v, 11));
+    let v3 = bytesil_magnitude(state_get_layer(v, 15));
+    let r = state_set_layer(r, 3, from_mag(a00 * v0 + a01 * v1 + a02 * v2 + a03 * v3));
+
+    // Row 1
+    let s10 = bytesil_magnitude(state_get_layer(scores, 4));
+    let s11 = bytesil_magnitude(state_get_layer(scores, 5));
+    let s12 = bytesil_magnitude(state_get_layer(scores, 6));
+    let s13 = bytesil_magnitude(state_get_layer(scores, 7));
+    let attn1 = softmax_4(s10, s11, s12, s13);
+
+    let a10 = bytesil_magnitude(state_get_layer(attn1, 0));
+    let a11 = bytesil_magnitude(state_get_layer(attn1, 1));
+    let a12 = bytesil_magnitude(state_get_layer(attn1, 2));
+    let a13 = bytesil_magnitude(state_get_layer(attn1, 3));
+
+    let v0 = bytesil_magnitude(state_get_layer(v, 0));
+    let v1 = bytesil_magnitude(state_get_layer(v, 4));
+    let v2 = bytesil_magnitude(state_get_layer(v, 8));
+    let v3 = bytesil_magnitude(state_get_layer(v, 12));
+    let r = state_set_layer(r, 4, from_mag(a10 * v0 + a11 * v1 + a12 * v2 + a13 * v3));
+
+    let v0 = bytesil_magnitude(state_get_layer(v, 1));
+    let v1 = bytesil_magnitude(state_get_layer(v, 5));
+    let v2 = bytesil_magnitude(state_get_layer(v, 9));
+    let v3 = bytesil_magnitude(state_get_layer(v, 13));
+    let r = state_set_layer(r, 5, from_mag(a10 * v0 + a11 * v1 + a12 * v2 + a13 * v3));
+
+    let v0 = bytesil_magnitude(state_get_layer(v, 2));
+    let v1 = bytesil_magnitude(state_get_layer(v, 6));
+    let v2 = bytesil_magnitude(state_get_layer(v, 10));
+    let v3 = bytesil_magnitude(state_get_layer(v, 14));
+    let r = state_set_layer(r, 6, from_mag(a10 * v0 + a11 * v1 + a12 * v2 + a13 * v3));
+
+    let v0 = bytesil_magnitude(state_get_layer(v, 3));
+    let v1 = bytesil_magnitude(state_get_layer(v, 7));
+    let v2 = bytesil_magnitude(state_get_layer(v, 11));
+    let v3 = bytesil_magnitude(state_get_layer(v, 15));
+    let r = state_set_layer(r, 7, from_mag(a10 * v0 + a11 * v1 + a12 * v2 + a13 * v3));
+
+    // Row 2
+    let s20 = bytesil_magnitude(state_get_layer(scores, 8));
+    let s21 = bytesil_magnitude(state_get_layer(scores, 9));
+    let s22 = bytesil_magnitude(state_get_layer(scores, 10));
+    let s23 = bytesil_magnitude(state_get_layer(scores, 11));
+    let attn2 = softmax_4(s20, s21, s22, s23);
+
+    let a20 = bytesil_magnitude(state_get_layer(attn2, 0));
+    let a21 = bytesil_magnitude(state_get_layer(attn2, 1));
+    let a22 = bytesil_magnitude(state_get_layer(attn2, 2));
+    let a23 = bytesil_magnitude(state_get_layer(attn2, 3));
+
+    let v0 = bytesil_magnitude(state_get_layer(v, 0));
+    let v1 = bytesil_magnitude(state_get_layer(v, 4));
+    let v2 = bytesil_magnitude(state_get_layer(v, 8));
+    let v3 = bytesil_magnitude(state_get_layer(v, 12));
+    let r = state_set_layer(r, 8, from_mag(a20 * v0 + a21 * v1 + a22 * v2 + a23 * v3));
+
+    let v0 = bytesil_magnitude(state_get_layer(v, 1));
+    let v1 = bytesil_magnitude(state_get_layer(v, 5));
+    let v2 = bytesil_magnitude(state_get_layer(v, 9));
+    let v3 = bytesil_magnitude(state_get_layer(v, 13));
+    let r = state_set_layer(r, 9, from_mag(a20 * v0 + a21 * v1 + a22 * v2 + a23 * v3));
+
+    let v0 = bytesil_magnitude(state_get_layer(v, 2));
+    let v1 = bytesil_magnitude(state_get_layer(v, 6));
+    let v2 = bytesil_magnitude(state_get_layer(v, 10));
+    let v3 = bytesil_magnitude(state_get_layer(v, 14));
+    let r = state_set_layer(r, 10, from_mag(a20 * v0 + a21 * v1 + a22 * v2 + a23 * v3));
+
+    let v0 = bytesil_magnitude(state_get_layer(v, 3));
+    let v1 = bytesil_magnitude(state_get_layer(v, 7));
+    let v2 = bytesil_magnitude(state_get_layer(v, 11));
+    let v3 = bytesil_magnitude(state_get_layer(v, 15));
+    let r = state_set_layer(r, 11, from_mag(a20 * v0 + a21 * v1 + a22 * v2 + a23 * v3));
+
+    // Row 3
+    let s30 = bytesil_magnitude(state_get_layer(scores, 12));
+    let s31 = bytesil_magnitude(state_get_layer(scores, 13));
+    let s32 = bytesil_magnitude(state_get_layer(scores, 14));
+    let s33 = bytesil_magnitude(state_get_layer(scores, 15));
+    let attn3 = softmax_4(s30, s31, s32, s33);
+
+    let a30 = bytesil_magnitude(state_get_layer(attn3, 0));
+    let a31 = bytesil_magnitude(state_get_layer(attn3, 1));
+    let a32 = bytesil_magnitude(state_get_layer(attn3, 2));
+    let a33 = bytesil_magnitude(state_get_layer(attn3, 3));
+
+    let v0 = bytesil_magnitude(state_get_layer(v, 0));
+    let v1 = bytesil_magnitude(state_get_layer(v, 4));
+    let v2 = bytesil_magnitude(state_get_layer(v, 8));
+    let v3 = bytesil_magnitude(state_get_layer(v, 12));
+    let r = state_set_layer(r, 12, from_mag(a30 * v0 + a31 * v1 + a32 * v2 + a33 * v3));
+
+    let v0 = bytesil_magnitude(state_get_layer(v, 1));
+    let v1 = bytesil_magnitude(state_get_layer(v, 5));
+    let v2 = bytesil_magnitude(state_get_layer(v, 9));
+    let v3 = bytesil_magnitude(state_get_layer(v, 13));
+    let r = state_set_layer(r, 13, from_mag(a30 * v0 + a31 * v1 + a32 * v2 + a33 * v3));
+
+    let v0 = bytesil_magnitude(state_get_layer(v, 2));
+    let v1 = bytesil_magnitude(state_get_layer(v, 6));
+    let v2 = bytesil_magnitude(state_get_layer(v, 10));
+    let v3 = bytesil_magnitude(state_get_layer(v, 14));
+    let r = state_set_layer(r, 14, from_mag(a30 * v0 + a31 * v1 + a32 * v2 + a33 * v3));
+
+    let v0 = bytesil_magnitude(state_get_layer(v, 3));
+    let v1 = bytesil_magnitude(state_get_layer(v, 7));
+    let v2 = bytesil_magnitude(state_get_layer(v, 11));
+    let v3 = bytesil_magnitude(state_get_layer(v, 15));
+    let r = state_set_layer(r, 15, from_mag(a30 * v0 + a31 * v1 + a32 * v2 + a33 * v3));
+
+    return r;
+}
+
+// ============ Feed-Forward Network ============
+
+// SwiGLU FFN (used in LLaMA)
+fn swiglu_ffn(input: State, w_gate: State, w_up: State, w_down: State) -> State {
+    let gate = matmul_4x4(w_gate, input);
+    let up = matmul_4x4(w_up, input);
+    let up_swish = swish_state(up);
+    let gated = hadamard(gate, up_swish);
+    return matmul_4x4(w_down, gated);
+}
+
+// ============ Transformer Blocks ============
+
+// Pre-LayerNorm Transformer Encoder Block (GPT-style)
+// x = x + Attention(Norm(x))
+// x = x + FFN(Norm(x))
+fn transformer_encoder_block(
+    input: State,
+    norm1_gamma: State,
+    wq: State, wk: State, wv: State, wo: State,
+    norm2_gamma: State,
+    ffn_w_gate: State, ffn_w_up: State, ffn_w_down: State,
+    eps: Float
+) -> State {
+    // Self-attention with pre-norm
+    let normed1 = rms_norm(input, norm1_gamma, eps);
+
+    let q = matmul_4x4(wq, normed1);
+    let k = matmul_4x4(wk, normed1);
+    let v = matmul_4x4(wv, normed1);
+
+    let attn_out = scaled_dot_attention_4x4(q, k, v);
+    let attn_proj = matmul_4x4(wo, attn_out);
+
+    let x = add_st(input, attn_proj);
+
+    // FFN with pre-norm
+    let normed2 = rms_norm(x, norm2_gamma, eps);
+    let ffn_out = swiglu_ffn(normed2, ffn_w_gate, ffn_w_up, ffn_w_down);
+
+    return add_st(x, ffn_out);
+}
+
+// Post-LayerNorm Transformer Encoder Block (BERT-style)
+// x = Norm(x + Attention(x))
+// x = Norm(x + FFN(x))
+fn transformer_encoder_block_post(
+    input: State,
+    norm1_gamma: State,
+    wq: State, wk: State, wv: State, wo: State,
+    norm2_gamma: State,
+    ffn_w_gate: State, ffn_w_up: State, ffn_w_down: State,
+    eps: Float
+) -> State {
+    // Self-attention
+    let q = matmul_4x4(wq, input);
+    let k = matmul_4x4(wk, input);
+    let v = matmul_4x4(wv, input);
+
+    let attn_out = scaled_dot_attention_4x4(q, k, v);
+    let attn_proj = matmul_4x4(wo, attn_out);
+
+    let x = rms_norm(add_st(input, attn_proj), norm1_gamma, eps);
+
+    // FFN
+    let ffn_out = swiglu_ffn(x, ffn_w_gate, ffn_w_up, ffn_w_down);
+
+    return rms_norm(add_st(x, ffn_out), norm2_gamma, eps);
+}
+
+// Transformer Decoder Block with Cross-Attention
+// x = x + SelfAttn(Norm(x))
+// x = x + CrossAttn(Norm(x), encoder_output)
+// x = x + FFN(Norm(x))
+fn transformer_decoder_block(
+    input: State,
+    encoder_output: State,
+    norm1_gamma: State,
+    wq_self: State, wk_self: State, wv_self: State, wo_self: State,
+    norm2_gamma: State,
+    wq_cross: State, wk_cross: State, wv_cross: State, wo_cross: State,
+    norm3_gamma: State,
+    ffn_w_gate: State, ffn_w_up: State, ffn_w_down: State,
+    eps: Float
+) -> State {
+    // Self-attention
+    let normed1 = rms_norm(input, norm1_gamma, eps);
+    let q_self = matmul_4x4(wq_self, normed1);
+    let k_self = matmul_4x4(wk_self, normed1);
+    let v_self = matmul_4x4(wv_self, normed1);
+    let self_attn = scaled_dot_attention_4x4(q_self, k_self, v_self);
+    let self_attn_proj = matmul_4x4(wo_self, self_attn);
+    let x = add_st(input, self_attn_proj);
+
+    // Cross-attention
+    let normed2 = rms_norm(x, norm2_gamma, eps);
+    let q_cross = matmul_4x4(wq_cross, normed2);
+    let k_cross = matmul_4x4(wk_cross, encoder_output);
+    let v_cross = matmul_4x4(wv_cross, encoder_output);
+    let cross_attn = scaled_dot_attention_4x4(q_cross, k_cross, v_cross);
+    let cross_attn_proj = matmul_4x4(wo_cross, cross_attn);
+    let x = add_st(x, cross_attn_proj);
+
+    // FFN
+    let normed3 = rms_norm(x, norm3_gamma, eps);
+    let ffn_out = swiglu_ffn(normed3, ffn_w_gate, ffn_w_up, ffn_w_down);
+
+    return add_st(x, ffn_out);
+}
+
+// Simplified encoder block without output projection (fewer parameters)
+fn transformer_encoder_simple(
+    input: State,
+    norm_gamma: State,
+    wq: State, wk: State, wv: State,
+    ffn_w1: State, ffn_w2: State,
+    eps: Float
+) -> State {
+    // Self-attention
+    let normed = rms_norm(input, norm_gamma, eps);
+    let q = matmul_4x4(wq, normed);
+    let k = matmul_4x4(wk, normed);
+    let v = matmul_4x4(wv, normed);
+    let attn_out = scaled_dot_attention_4x4(q, k, v);
+    let x = add_st(input, attn_out);
+
+    // Simple 2-layer FFN with swish
+    let normed2 = rms_norm(x, norm_gamma, eps);
+    let h = matmul_4x4(ffn_w1, normed2);
+    let h = swish_state(h);
+    let ffn_out = matmul_4x4(ffn_w2, h);
+
+    return add_st(x, ffn_out);
+}
+
+// Final layer normalization (for output)
+fn final_norm(input: State, gamma: State, eps: Float) -> State {
+    return rms_norm(input, gamma, eps);
+}
+

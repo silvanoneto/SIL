@@ -1,0 +1,171 @@
+// LIS Example: Acesso a Camadas
+// Demonstra: Acesso via .L0-.LF e state_get_layer
+// Documentação: Seções 3.4, 6.7
+
+// =========================================
+// Padrões de Acesso
+// =========================================
+
+// Acessar grupo de camadas
+fn sum_perception_layers(s: State) -> Float {
+    let m0 = bytesil_magnitude(s.L0);
+    let m1 = bytesil_magnitude(s.L1);
+    let m2 = bytesil_magnitude(s.L2);
+    let m3 = bytesil_magnitude(s.L3);
+    return m0 + m1 + m2 + m3;
+}
+
+// Encontrar camada com maior magnitude
+fn find_max_layer(s: State) -> Int {
+    let max_mag = 0.0;
+    let max_idx = 0;
+    let idx = 0;
+
+    loop {
+        if idx >= 16 {
+            break;
+        }
+
+        let mag = bytesil_magnitude(state_get_layer(s, idx));
+        if mag > max_mag {
+            let max_mag = mag;
+            let max_idx = idx;
+        }
+
+        let idx = idx + 1;
+    }
+
+    return max_idx;
+}
+
+fn main() {
+    print_string("=== Layer Access ===");
+
+    // =========================================
+    // Criar Estado de Teste
+    // =========================================
+    let s = state_neutral();
+
+    // =========================================
+    // Acesso via state_get_layer(state, index)
+    // =========================================
+    print_string("--- state_get_layer(state, index) ---");
+
+    let layer0 = state_get_layer(s, 0);
+    let layer5 = state_get_layer(s, 5);
+    let layer15 = state_get_layer(s, 15);
+
+    print_string("Layer 0 magnitude:");
+    print_float(bytesil_magnitude(layer0));
+
+    print_string("Layer 5 magnitude:");
+    print_float(bytesil_magnitude(layer5));
+
+    print_string("Layer 15 magnitude:");
+    print_float(bytesil_magnitude(layer15));
+
+    // =========================================
+    // Acesso via Notação de Ponto (.L0-.LF)
+    // =========================================
+    print_string("--- Dot Notation (.L0-.LF) ---");
+
+    // Camadas de Percepção (L0-L3)
+    let perception0 = s.L0;
+    let perception1 = s.L1;
+    let perception2 = s.L2;
+    let perception3 = s.L3;
+
+    print_string("Perception layers (L0-L3):");
+    print_float(bytesil_magnitude(perception0));
+
+    // Fronteira (L4)
+    let boundary = s.L4;
+    print_string("Boundary layer (L4):");
+    print_float(bytesil_magnitude(boundary));
+
+    // Camadas de Processamento (L5-L7)
+    let process5 = s.L5;
+    let process6 = s.L6;
+    let process7 = s.L7;
+
+    print_string("Processing layers (L5-L7):");
+    print_float(bytesil_magnitude(process5));
+
+    // Camadas de Interação (L8-LA)
+    let interact8 = s.L8;
+    let interact9 = s.L9;
+    let interactA = s.LA;
+
+    print_string("Interaction layers (L8-LA):");
+    print_float(bytesil_magnitude(interact8));
+
+    // Camadas de Emergência (LB-LC)
+    let emergeB = s.LB;
+    let emergeC = s.LC;
+
+    print_string("Emergence layers (LB-LC):");
+    print_float(bytesil_magnitude(emergeB));
+
+    // Camadas Meta (LD-LF)
+    let metaD = s.LD;
+    let metaE = s.LE;
+    let metaF = s.LF;
+
+    print_string("Meta layers (LD-LF):");
+    print_float(bytesil_magnitude(metaD));
+
+    // =========================================
+    // Equivalência das Notações
+    // =========================================
+    print_string("--- Notation Equivalence ---");
+
+    // s.L0 é equivalente a state_get_layer(s, 0)
+    let via_dot = s.L5;
+    let via_func = state_get_layer(s, 5);
+
+    print_string("s.L5 magnitude:");
+    print_float(bytesil_magnitude(via_dot));
+
+    print_string("state_get_layer(s, 5) magnitude:");
+    print_float(bytesil_magnitude(via_func));
+
+    // =========================================
+    // Iteração sobre Camadas
+    // =========================================
+    print_string("--- Iterating Over Layers ---");
+
+    let total_magnitude = 0.0;
+    let idx = 0;
+
+    loop {
+        if idx >= 16 {
+            break;
+        }
+
+        let layer = state_get_layer(s, idx);
+        let mag = bytesil_magnitude(layer);
+        let total_magnitude = total_magnitude + mag;
+
+        let idx = idx + 1;
+    }
+
+    print_string("Total magnitude of all layers:");
+    print_float(total_magnitude);
+
+    // =========================================
+    // Padrões de Acesso
+    // =========================================
+    print_string("--- Access Patterns ---");
+
+    let perc_sum = sum_perception_layers(s);
+    print_string("Sum of perception layer magnitudes:");
+    print_float(perc_sum);
+
+    // Modificar e testar
+    let test_s = state_vacuum();
+    let test_s = state_set_layer(test_s, 7, bytesil_new(15, 0));
+
+    let max_layer = find_max_layer(test_s);
+    print_string("Layer with max magnitude:");
+    print_int(max_layer);  // Should be 7
+}

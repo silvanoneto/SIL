@@ -1,0 +1,553 @@
+// Paebiru Distributed ML - Byzantine-Resilient Aggregation
+// Implements robust aggregation methods that tolerate malicious clients
+//
+// Methods include:
+// - Coordinate-wise median
+// - Trimmed mean
+// - Krum
+// - Geometric median approximation
+
+// Helper: Create ByteSil from magnitude
+fn from_mag(m: Float) -> ByteSil {
+    return bytesil_new(floor(clamp_float(ln(max_float(m, 0.0001)), -8.0, 7.0)), 0);
+}
+
+// Helper: Absolute value
+fn abs_f(x: Float) -> Float {
+    if x < 0.0 {
+        return 0.0 - x;
+    }
+    return x;
+}
+
+// Helper: Add two states
+fn add_st(a: State, b: State) -> State {
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, complex_add(state_get_layer(a, 0), state_get_layer(b, 0)));
+    let r = state_set_layer(r, 1, complex_add(state_get_layer(a, 1), state_get_layer(b, 1)));
+    let r = state_set_layer(r, 2, complex_add(state_get_layer(a, 2), state_get_layer(b, 2)));
+    let r = state_set_layer(r, 3, complex_add(state_get_layer(a, 3), state_get_layer(b, 3)));
+    let r = state_set_layer(r, 4, complex_add(state_get_layer(a, 4), state_get_layer(b, 4)));
+    let r = state_set_layer(r, 5, complex_add(state_get_layer(a, 5), state_get_layer(b, 5)));
+    let r = state_set_layer(r, 6, complex_add(state_get_layer(a, 6), state_get_layer(b, 6)));
+    let r = state_set_layer(r, 7, complex_add(state_get_layer(a, 7), state_get_layer(b, 7)));
+    let r = state_set_layer(r, 8, complex_add(state_get_layer(a, 8), state_get_layer(b, 8)));
+    let r = state_set_layer(r, 9, complex_add(state_get_layer(a, 9), state_get_layer(b, 9)));
+    let r = state_set_layer(r, 10, complex_add(state_get_layer(a, 10), state_get_layer(b, 10)));
+    let r = state_set_layer(r, 11, complex_add(state_get_layer(a, 11), state_get_layer(b, 11)));
+    let r = state_set_layer(r, 12, complex_add(state_get_layer(a, 12), state_get_layer(b, 12)));
+    let r = state_set_layer(r, 13, complex_add(state_get_layer(a, 13), state_get_layer(b, 13)));
+    let r = state_set_layer(r, 14, complex_add(state_get_layer(a, 14), state_get_layer(b, 14)));
+    let r = state_set_layer(r, 15, complex_add(state_get_layer(a, 15), state_get_layer(b, 15)));
+    return r;
+}
+
+// Helper: Subtract two states
+fn sub_st(a: State, b: State) -> State {
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, complex_sub(state_get_layer(a, 0), state_get_layer(b, 0)));
+    let r = state_set_layer(r, 1, complex_sub(state_get_layer(a, 1), state_get_layer(b, 1)));
+    let r = state_set_layer(r, 2, complex_sub(state_get_layer(a, 2), state_get_layer(b, 2)));
+    let r = state_set_layer(r, 3, complex_sub(state_get_layer(a, 3), state_get_layer(b, 3)));
+    let r = state_set_layer(r, 4, complex_sub(state_get_layer(a, 4), state_get_layer(b, 4)));
+    let r = state_set_layer(r, 5, complex_sub(state_get_layer(a, 5), state_get_layer(b, 5)));
+    let r = state_set_layer(r, 6, complex_sub(state_get_layer(a, 6), state_get_layer(b, 6)));
+    let r = state_set_layer(r, 7, complex_sub(state_get_layer(a, 7), state_get_layer(b, 7)));
+    let r = state_set_layer(r, 8, complex_sub(state_get_layer(a, 8), state_get_layer(b, 8)));
+    let r = state_set_layer(r, 9, complex_sub(state_get_layer(a, 9), state_get_layer(b, 9)));
+    let r = state_set_layer(r, 10, complex_sub(state_get_layer(a, 10), state_get_layer(b, 10)));
+    let r = state_set_layer(r, 11, complex_sub(state_get_layer(a, 11), state_get_layer(b, 11)));
+    let r = state_set_layer(r, 12, complex_sub(state_get_layer(a, 12), state_get_layer(b, 12)));
+    let r = state_set_layer(r, 13, complex_sub(state_get_layer(a, 13), state_get_layer(b, 13)));
+    let r = state_set_layer(r, 14, complex_sub(state_get_layer(a, 14), state_get_layer(b, 14)));
+    let r = state_set_layer(r, 15, complex_sub(state_get_layer(a, 15), state_get_layer(b, 15)));
+    return r;
+}
+
+// Helper: Scale state by scalar
+fn scale_st(s: State, scalar: Float) -> State {
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, complex_scale(state_get_layer(s, 0), scalar));
+    let r = state_set_layer(r, 1, complex_scale(state_get_layer(s, 1), scalar));
+    let r = state_set_layer(r, 2, complex_scale(state_get_layer(s, 2), scalar));
+    let r = state_set_layer(r, 3, complex_scale(state_get_layer(s, 3), scalar));
+    let r = state_set_layer(r, 4, complex_scale(state_get_layer(s, 4), scalar));
+    let r = state_set_layer(r, 5, complex_scale(state_get_layer(s, 5), scalar));
+    let r = state_set_layer(r, 6, complex_scale(state_get_layer(s, 6), scalar));
+    let r = state_set_layer(r, 7, complex_scale(state_get_layer(s, 7), scalar));
+    let r = state_set_layer(r, 8, complex_scale(state_get_layer(s, 8), scalar));
+    let r = state_set_layer(r, 9, complex_scale(state_get_layer(s, 9), scalar));
+    let r = state_set_layer(r, 10, complex_scale(state_get_layer(s, 10), scalar));
+    let r = state_set_layer(r, 11, complex_scale(state_get_layer(s, 11), scalar));
+    let r = state_set_layer(r, 12, complex_scale(state_get_layer(s, 12), scalar));
+    let r = state_set_layer(r, 13, complex_scale(state_get_layer(s, 13), scalar));
+    let r = state_set_layer(r, 14, complex_scale(state_get_layer(s, 14), scalar));
+    let r = state_set_layer(r, 15, complex_scale(state_get_layer(s, 15), scalar));
+    return r;
+}
+
+// ============ Median Computation ============
+
+// Median of 3 values
+fn median_3(a: Float, b: Float, c: Float) -> Float {
+    if a <= b {
+        if b <= c {
+            return b;
+        }
+        if a <= c {
+            return c;
+        }
+        return a;
+    }
+    // a > b
+    if a <= c {
+        return a;
+    }
+    if b <= c {
+        return c;
+    }
+    return b;
+}
+
+// Coordinate-wise median of 3 models
+fn byzantine_median_3(m1: State, m2: State, m3: State) -> State {
+    let r = state_vacuum();
+
+    let v0 = median_3(
+        bytesil_magnitude(state_get_layer(m1, 0)),
+        bytesil_magnitude(state_get_layer(m2, 0)),
+        bytesil_magnitude(state_get_layer(m3, 0))
+    );
+    let r = state_set_layer(r, 0, from_mag(v0));
+
+    let v1 = median_3(
+        bytesil_magnitude(state_get_layer(m1, 1)),
+        bytesil_magnitude(state_get_layer(m2, 1)),
+        bytesil_magnitude(state_get_layer(m3, 1))
+    );
+    let r = state_set_layer(r, 1, from_mag(v1));
+
+    let v2 = median_3(
+        bytesil_magnitude(state_get_layer(m1, 2)),
+        bytesil_magnitude(state_get_layer(m2, 2)),
+        bytesil_magnitude(state_get_layer(m3, 2))
+    );
+    let r = state_set_layer(r, 2, from_mag(v2));
+
+    let v3 = median_3(
+        bytesil_magnitude(state_get_layer(m1, 3)),
+        bytesil_magnitude(state_get_layer(m2, 3)),
+        bytesil_magnitude(state_get_layer(m3, 3))
+    );
+    let r = state_set_layer(r, 3, from_mag(v3));
+
+    let v4 = median_3(
+        bytesil_magnitude(state_get_layer(m1, 4)),
+        bytesil_magnitude(state_get_layer(m2, 4)),
+        bytesil_magnitude(state_get_layer(m3, 4))
+    );
+    let r = state_set_layer(r, 4, from_mag(v4));
+
+    let v5 = median_3(
+        bytesil_magnitude(state_get_layer(m1, 5)),
+        bytesil_magnitude(state_get_layer(m2, 5)),
+        bytesil_magnitude(state_get_layer(m3, 5))
+    );
+    let r = state_set_layer(r, 5, from_mag(v5));
+
+    let v6 = median_3(
+        bytesil_magnitude(state_get_layer(m1, 6)),
+        bytesil_magnitude(state_get_layer(m2, 6)),
+        bytesil_magnitude(state_get_layer(m3, 6))
+    );
+    let r = state_set_layer(r, 6, from_mag(v6));
+
+    let v7 = median_3(
+        bytesil_magnitude(state_get_layer(m1, 7)),
+        bytesil_magnitude(state_get_layer(m2, 7)),
+        bytesil_magnitude(state_get_layer(m3, 7))
+    );
+    let r = state_set_layer(r, 7, from_mag(v7));
+
+    let v8 = median_3(
+        bytesil_magnitude(state_get_layer(m1, 8)),
+        bytesil_magnitude(state_get_layer(m2, 8)),
+        bytesil_magnitude(state_get_layer(m3, 8))
+    );
+    let r = state_set_layer(r, 8, from_mag(v8));
+
+    let v9 = median_3(
+        bytesil_magnitude(state_get_layer(m1, 9)),
+        bytesil_magnitude(state_get_layer(m2, 9)),
+        bytesil_magnitude(state_get_layer(m3, 9))
+    );
+    let r = state_set_layer(r, 9, from_mag(v9));
+
+    let v10 = median_3(
+        bytesil_magnitude(state_get_layer(m1, 10)),
+        bytesil_magnitude(state_get_layer(m2, 10)),
+        bytesil_magnitude(state_get_layer(m3, 10))
+    );
+    let r = state_set_layer(r, 10, from_mag(v10));
+
+    let v11 = median_3(
+        bytesil_magnitude(state_get_layer(m1, 11)),
+        bytesil_magnitude(state_get_layer(m2, 11)),
+        bytesil_magnitude(state_get_layer(m3, 11))
+    );
+    let r = state_set_layer(r, 11, from_mag(v11));
+
+    let v12 = median_3(
+        bytesil_magnitude(state_get_layer(m1, 12)),
+        bytesil_magnitude(state_get_layer(m2, 12)),
+        bytesil_magnitude(state_get_layer(m3, 12))
+    );
+    let r = state_set_layer(r, 12, from_mag(v12));
+
+    let v13 = median_3(
+        bytesil_magnitude(state_get_layer(m1, 13)),
+        bytesil_magnitude(state_get_layer(m2, 13)),
+        bytesil_magnitude(state_get_layer(m3, 13))
+    );
+    let r = state_set_layer(r, 13, from_mag(v13));
+
+    let v14 = median_3(
+        bytesil_magnitude(state_get_layer(m1, 14)),
+        bytesil_magnitude(state_get_layer(m2, 14)),
+        bytesil_magnitude(state_get_layer(m3, 14))
+    );
+    let r = state_set_layer(r, 14, from_mag(v14));
+
+    let v15 = median_3(
+        bytesil_magnitude(state_get_layer(m1, 15)),
+        bytesil_magnitude(state_get_layer(m2, 15)),
+        bytesil_magnitude(state_get_layer(m3, 15))
+    );
+    let r = state_set_layer(r, 15, from_mag(v15));
+
+    return r;
+}
+
+// ============ Trimmed Mean ============
+
+// Trimmed mean of 3 values (removes max and min, returns middle)
+// For 3 values, this is equivalent to median
+fn trimmed_mean_3(a: Float, b: Float, c: Float) -> Float {
+    return median_3(a, b, c);
+}
+
+// Trimmed mean of 4 values (removes 1 max and 1 min)
+fn trimmed_mean_4(a: Float, b: Float, c: Float, d: Float) -> Float {
+    // Find min and max
+    let min_val = min_float(min_float(a, b), min_float(c, d));
+    let max_val = max_float(max_float(a, b), max_float(c, d));
+
+    // Sum all and subtract min and max
+    let sum = a + b + c + d - min_val - max_val;
+
+    return sum / 2.0;
+}
+
+// Coordinate-wise trimmed mean of 4 models
+fn byzantine_trimmed_4(m1: State, m2: State, m3: State, m4: State) -> State {
+    let r = state_vacuum();
+
+    let v0 = trimmed_mean_4(
+        bytesil_magnitude(state_get_layer(m1, 0)),
+        bytesil_magnitude(state_get_layer(m2, 0)),
+        bytesil_magnitude(state_get_layer(m3, 0)),
+        bytesil_magnitude(state_get_layer(m4, 0))
+    );
+    let r = state_set_layer(r, 0, from_mag(v0));
+
+    let v1 = trimmed_mean_4(
+        bytesil_magnitude(state_get_layer(m1, 1)),
+        bytesil_magnitude(state_get_layer(m2, 1)),
+        bytesil_magnitude(state_get_layer(m3, 1)),
+        bytesil_magnitude(state_get_layer(m4, 1))
+    );
+    let r = state_set_layer(r, 1, from_mag(v1));
+
+    let v2 = trimmed_mean_4(
+        bytesil_magnitude(state_get_layer(m1, 2)),
+        bytesil_magnitude(state_get_layer(m2, 2)),
+        bytesil_magnitude(state_get_layer(m3, 2)),
+        bytesil_magnitude(state_get_layer(m4, 2))
+    );
+    let r = state_set_layer(r, 2, from_mag(v2));
+
+    let v3 = trimmed_mean_4(
+        bytesil_magnitude(state_get_layer(m1, 3)),
+        bytesil_magnitude(state_get_layer(m2, 3)),
+        bytesil_magnitude(state_get_layer(m3, 3)),
+        bytesil_magnitude(state_get_layer(m4, 3))
+    );
+    let r = state_set_layer(r, 3, from_mag(v3));
+
+    let v4 = trimmed_mean_4(
+        bytesil_magnitude(state_get_layer(m1, 4)),
+        bytesil_magnitude(state_get_layer(m2, 4)),
+        bytesil_magnitude(state_get_layer(m3, 4)),
+        bytesil_magnitude(state_get_layer(m4, 4))
+    );
+    let r = state_set_layer(r, 4, from_mag(v4));
+
+    let v5 = trimmed_mean_4(
+        bytesil_magnitude(state_get_layer(m1, 5)),
+        bytesil_magnitude(state_get_layer(m2, 5)),
+        bytesil_magnitude(state_get_layer(m3, 5)),
+        bytesil_magnitude(state_get_layer(m4, 5))
+    );
+    let r = state_set_layer(r, 5, from_mag(v5));
+
+    let v6 = trimmed_mean_4(
+        bytesil_magnitude(state_get_layer(m1, 6)),
+        bytesil_magnitude(state_get_layer(m2, 6)),
+        bytesil_magnitude(state_get_layer(m3, 6)),
+        bytesil_magnitude(state_get_layer(m4, 6))
+    );
+    let r = state_set_layer(r, 6, from_mag(v6));
+
+    let v7 = trimmed_mean_4(
+        bytesil_magnitude(state_get_layer(m1, 7)),
+        bytesil_magnitude(state_get_layer(m2, 7)),
+        bytesil_magnitude(state_get_layer(m3, 7)),
+        bytesil_magnitude(state_get_layer(m4, 7))
+    );
+    let r = state_set_layer(r, 7, from_mag(v7));
+
+    let v8 = trimmed_mean_4(
+        bytesil_magnitude(state_get_layer(m1, 8)),
+        bytesil_magnitude(state_get_layer(m2, 8)),
+        bytesil_magnitude(state_get_layer(m3, 8)),
+        bytesil_magnitude(state_get_layer(m4, 8))
+    );
+    let r = state_set_layer(r, 8, from_mag(v8));
+
+    let v9 = trimmed_mean_4(
+        bytesil_magnitude(state_get_layer(m1, 9)),
+        bytesil_magnitude(state_get_layer(m2, 9)),
+        bytesil_magnitude(state_get_layer(m3, 9)),
+        bytesil_magnitude(state_get_layer(m4, 9))
+    );
+    let r = state_set_layer(r, 9, from_mag(v9));
+
+    let v10 = trimmed_mean_4(
+        bytesil_magnitude(state_get_layer(m1, 10)),
+        bytesil_magnitude(state_get_layer(m2, 10)),
+        bytesil_magnitude(state_get_layer(m3, 10)),
+        bytesil_magnitude(state_get_layer(m4, 10))
+    );
+    let r = state_set_layer(r, 10, from_mag(v10));
+
+    let v11 = trimmed_mean_4(
+        bytesil_magnitude(state_get_layer(m1, 11)),
+        bytesil_magnitude(state_get_layer(m2, 11)),
+        bytesil_magnitude(state_get_layer(m3, 11)),
+        bytesil_magnitude(state_get_layer(m4, 11))
+    );
+    let r = state_set_layer(r, 11, from_mag(v11));
+
+    let v12 = trimmed_mean_4(
+        bytesil_magnitude(state_get_layer(m1, 12)),
+        bytesil_magnitude(state_get_layer(m2, 12)),
+        bytesil_magnitude(state_get_layer(m3, 12)),
+        bytesil_magnitude(state_get_layer(m4, 12))
+    );
+    let r = state_set_layer(r, 12, from_mag(v12));
+
+    let v13 = trimmed_mean_4(
+        bytesil_magnitude(state_get_layer(m1, 13)),
+        bytesil_magnitude(state_get_layer(m2, 13)),
+        bytesil_magnitude(state_get_layer(m3, 13)),
+        bytesil_magnitude(state_get_layer(m4, 13))
+    );
+    let r = state_set_layer(r, 13, from_mag(v13));
+
+    let v14 = trimmed_mean_4(
+        bytesil_magnitude(state_get_layer(m1, 14)),
+        bytesil_magnitude(state_get_layer(m2, 14)),
+        bytesil_magnitude(state_get_layer(m3, 14)),
+        bytesil_magnitude(state_get_layer(m4, 14))
+    );
+    let r = state_set_layer(r, 14, from_mag(v14));
+
+    let v15 = trimmed_mean_4(
+        bytesil_magnitude(state_get_layer(m1, 15)),
+        bytesil_magnitude(state_get_layer(m2, 15)),
+        bytesil_magnitude(state_get_layer(m3, 15)),
+        bytesil_magnitude(state_get_layer(m4, 15))
+    );
+    let r = state_set_layer(r, 15, from_mag(v15));
+
+    return r;
+}
+
+// ============ Krum ============
+// Krum: select the model with minimum sum of distances to nearest neighbors
+// Blanchard et al., "Machine Learning with Adversaries", NeurIPS 2017
+
+// L2 distance between two states
+fn state_distance(a: State, b: State) -> Float {
+    let diff = sub_st(a, b);
+    let sum_sq = 0.0;
+
+    let d0 = bytesil_magnitude(state_get_layer(diff, 0));
+    let sum_sq = sum_sq + d0 * d0;
+    let d1 = bytesil_magnitude(state_get_layer(diff, 1));
+    let sum_sq = sum_sq + d1 * d1;
+    let d2 = bytesil_magnitude(state_get_layer(diff, 2));
+    let sum_sq = sum_sq + d2 * d2;
+    let d3 = bytesil_magnitude(state_get_layer(diff, 3));
+    let sum_sq = sum_sq + d3 * d3;
+    let d4 = bytesil_magnitude(state_get_layer(diff, 4));
+    let sum_sq = sum_sq + d4 * d4;
+    let d5 = bytesil_magnitude(state_get_layer(diff, 5));
+    let sum_sq = sum_sq + d5 * d5;
+    let d6 = bytesil_magnitude(state_get_layer(diff, 6));
+    let sum_sq = sum_sq + d6 * d6;
+    let d7 = bytesil_magnitude(state_get_layer(diff, 7));
+    let sum_sq = sum_sq + d7 * d7;
+    let d8 = bytesil_magnitude(state_get_layer(diff, 8));
+    let sum_sq = sum_sq + d8 * d8;
+    let d9 = bytesil_magnitude(state_get_layer(diff, 9));
+    let sum_sq = sum_sq + d9 * d9;
+    let d10 = bytesil_magnitude(state_get_layer(diff, 10));
+    let sum_sq = sum_sq + d10 * d10;
+    let d11 = bytesil_magnitude(state_get_layer(diff, 11));
+    let sum_sq = sum_sq + d11 * d11;
+    let d12 = bytesil_magnitude(state_get_layer(diff, 12));
+    let sum_sq = sum_sq + d12 * d12;
+    let d13 = bytesil_magnitude(state_get_layer(diff, 13));
+    let sum_sq = sum_sq + d13 * d13;
+    let d14 = bytesil_magnitude(state_get_layer(diff, 14));
+    let sum_sq = sum_sq + d14 * d14;
+    let d15 = bytesil_magnitude(state_get_layer(diff, 15));
+    let sum_sq = sum_sq + d15 * d15;
+
+    return sqrt(sum_sq);
+}
+
+// Krum for 3 models (select 1 with min distance to others)
+fn krum_3(m1: State, m2: State, m3: State) -> State {
+    let d12 = state_distance(m1, m2);
+    let d13 = state_distance(m1, m3);
+    let d23 = state_distance(m2, m3);
+
+    // Score = sum of distances to all others
+    let score1 = d12 + d13;
+    let score2 = d12 + d23;
+    let score3 = d13 + d23;
+
+    // Select model with minimum score
+    if score1 <= score2 {
+        if score1 <= score3 {
+            return m1;
+        }
+        return m3;
+    }
+    if score2 <= score3 {
+        return m2;
+    }
+    return m3;
+}
+
+// Krum for 4 models
+fn krum_4(m1: State, m2: State, m3: State, m4: State) -> State {
+    let d12 = state_distance(m1, m2);
+    let d13 = state_distance(m1, m3);
+    let d14 = state_distance(m1, m4);
+    let d23 = state_distance(m2, m3);
+    let d24 = state_distance(m2, m4);
+    let d34 = state_distance(m3, m4);
+
+    let score1 = d12 + d13 + d14;
+    let score2 = d12 + d23 + d24;
+    let score3 = d13 + d23 + d34;
+    let score4 = d14 + d24 + d34;
+
+    let min_score = min_float(min_float(score1, score2), min_float(score3, score4));
+
+    if score1 == min_score {
+        return m1;
+    }
+    if score2 == min_score {
+        return m2;
+    }
+    if score3 == min_score {
+        return m3;
+    }
+    return m4;
+}
+
+// ============ Geometric Median Approximation ============
+// Weiszfeld's algorithm for 1 iteration (starting from mean)
+
+fn geometric_median_step(current: State, m1: State, m2: State, m3: State) -> State {
+    let eps = 0.0001;
+
+    let d1 = max_float(state_distance(current, m1), eps);
+    let d2 = max_float(state_distance(current, m2), eps);
+    let d3 = max_float(state_distance(current, m3), eps);
+
+    let w1 = 1.0 / d1;
+    let w2 = 1.0 / d2;
+    let w3 = 1.0 / d3;
+
+    let total_w = w1 + w2 + w3;
+
+    let scaled1 = scale_st(m1, w1 / total_w);
+    let scaled2 = scale_st(m2, w2 / total_w);
+    let scaled3 = scale_st(m3, w3 / total_w);
+
+    return add_st(add_st(scaled1, scaled2), scaled3);
+}
+
+// Approximate geometric median of 3 models (2 Weiszfeld iterations)
+fn geometric_median_3(m1: State, m2: State, m3: State) -> State {
+    // Start from arithmetic mean
+    let mean = add_st(add_st(m1, m2), m3);
+    let mean = scale_st(mean, 0.333333);
+
+    // Weiszfeld iterations
+    let step1 = geometric_median_step(mean, m1, m2, m3);
+    let step2 = geometric_median_step(step1, m1, m2, m3);
+
+    return step2;
+}
+
+// ============ Outlier Detection ============
+
+// Check if model is an outlier (far from mean)
+fn is_outlier(model: State, mean: State, threshold: Float) -> Bool {
+    let dist = state_distance(model, mean);
+    return dist > threshold;
+}
+
+// Compute mean distance to centroid
+fn mean_distance_to_centroid(m1: State, m2: State, m3: State, centroid: State) -> Float {
+    let d1 = state_distance(m1, centroid);
+    let d2 = state_distance(m2, centroid);
+    let d3 = state_distance(m3, centroid);
+    return (d1 + d2 + d3) / 3.0;
+}
+
+// Adaptive threshold based on distribution
+fn adaptive_threshold(mean_dist: Float, std_multiplier: Float) -> Float {
+    return mean_dist * (1.0 + std_multiplier);
+}
+
+// ============ Robust Aggregation Wrapper ============
+
+// Combined robust aggregation using Krum followed by trimmed mean
+fn robust_aggregate_3(m1: State, m2: State, m3: State) -> State {
+    // Use median for Byzantine resilience
+    return byzantine_median_3(m1, m2, m3);
+}
+
+// Combined robust aggregation for 4 models
+fn robust_aggregate_4(m1: State, m2: State, m3: State, m4: State) -> State {
+    // Use trimmed mean (removes extremes)
+    return byzantine_trimmed_4(m1, m2, m3, m4);
+}
+

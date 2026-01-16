@@ -1,0 +1,78 @@
+name: Release Debian packages (ecosystem)
+
+on:
+  push:
+    tags:
+      - 'deb-v*'
+
+jobs:
+  build-debs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Derive version from tag
+        id: meta
+        if: startsWith(github.ref, 'refs/tags/deb-v')
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          ver="${tag#deb-v}"
+          echo "version=$ver" >> "$GITHUB_OUTPUT"
+
+      - name: Pin Debian meta depends to tag version
+        if: steps.meta.outputs.version != ''
+        run: |
+          VER="${{ steps.meta.outputs.version }}"
+          sed -i -E "s/^version = \"[^"]+\"/version = \"${VER}\"/" sil-ecosystem/Cargo.toml
+          sed -i -E "s/(lis-cli \(>= )[^)]+(\))/\1${VER}\2/" sil-ecosystem/Cargo.toml
+          sed -i -E "s/(lis-format \(>= )[^)]+(\))/\1${VER}\2/" sil-ecosystem/Cargo.toml
+          sed -i -E "s/(lis-runtime \(>= )[^)]+(\))/\1${VER}\2/" sil-ecosystem/Cargo.toml
+          sed -i -E "s/(lis-api \(>= )[^)]+(\))/\1${VER}\2/" sil-ecosystem/Cargo.toml
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev
+
+      - name: Install cargo-deb
+        run: cargo install cargo-deb
+
+      - name: Build release binaries
+        run: |
+          cargo build --release -p lis-cli -p lis-format -p lis-runtime -p lis-api -p sil-ecosystem
+
+      - name: Build .deb packages
+        run: |
+          cargo deb -p lis-cli --no-build
+          cargo deb -p lis-format --no-build
+          cargo deb -p lis-runtime --no-build
+          cargo deb -p lis-api --no-build
+          cargo deb -p sil-ecosystem --no-build
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p dist
+          cp target/debian/*.deb dist/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: debian-packages
+          path: dist/*.deb
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Ecosystem Debian packages ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: |
+            dist/*.deb

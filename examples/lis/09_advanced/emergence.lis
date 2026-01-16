@@ -1,0 +1,220 @@
+// LIS Example: Emergencia
+// Demonstra: keyword 'emerge', detect_emergence
+// Documentacao: Secao 6.12
+
+// Helper function to create swarm member
+fn create_swarm_member(id: Int) -> State {
+    // Criar membro do swarm com caracteristicas unicas
+    let s = state_vacuum();
+    let phase = id * 1;  // Fase baseada no ID
+    let val = bytesil_new(8, phase);
+    return state_set_layer(s, 0, val);
+}
+
+// Iterate emergence over multiple iterations
+fn iterate_emergence(initial: State, iterations: Int) -> State {
+    let current = initial;
+    let i = 0;
+
+    loop {
+        if i >= iterations {
+            break;
+        }
+
+        // Verificar emergencia
+        let has_em = detect_emergence(current, 0.5);
+        if has_em {
+            print_string("Emergence detected at iteration:");
+            print_int(i);
+        }
+
+        // Aplicar emerge
+        let current = emerge(current);
+
+        // Normalizar
+        let current = state_normalize(current);
+
+        let i = i + 1;
+    }
+
+    return current;
+}
+
+// Set emergence layers LB and LC
+fn set_emergence_layers(s: State, value: ByteSil) -> State {
+    let result = s;
+    let result = state_set_layer(result, 11, value);  // LB
+    let result = state_set_layer(result, 12, value);  // LC
+    return result;
+}
+
+// Autonomous agent step function
+fn agent_step(agent_state: State, environment: State) -> State {
+    // Perceber ambiente
+    let perception = state_xor(agent_state, environment);
+
+    // Processar (camadas L5-L7)
+    let processed = state_normalize(perception);
+
+    // Verificar emergencia
+    let has_em = detect_emergence(processed, 0.5);
+
+    // Se emergencia detectada, reagir
+    if has_em {
+        let emerged_behavior = emerge(processed);
+        return emerged_behavior;
+    }
+
+    return processed;
+}
+
+// Swarm consensus function
+fn swarm_consensus(members: State, iterations: Int) -> State {
+    let consensus = members;
+    let i = 0;
+
+    loop {
+        if i >= iterations {
+            break;
+        }
+
+        // Aplicar emerge para encontrar consenso
+        let consensus = emerge(consensus);
+
+        // Normalizar
+        let consensus = state_normalize(consensus);
+
+        let i = i + 1;
+    }
+
+    return consensus;
+}
+
+fn main() {
+    print_string("=== Emergence ===");
+
+    // =========================================
+    // Conceito de Emergencia
+    // =========================================
+    // 'emerge' e uma keyword para comportamentos
+    // emergentes em sistemas de swarm computing.
+    //
+    // Emergencia ocorre quando comportamentos
+    // complexos surgem da interacao de
+    // componentes simples.
+    //
+    // Em LIS:
+    // - emerge(state) processa estado para emergencia
+    // - detect_emergence(state) verifica se ha emergencia
+
+    // =========================================
+    // Emerge Basico
+    // =========================================
+    print_string("--- Basic Emerge ---");
+
+    let collective = state_neutral();
+    let emerged = emerge(collective);
+
+    print_string("Applied emerge to collective state");
+    print_string("Collective L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(collective, 0)));
+    print_string("Emerged L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(emerged, 0)));
+
+    // =========================================
+    // Detectar Emergencia
+    // =========================================
+    print_string("--- detect_emergence ---");
+
+    let test_state1 = state_vacuum();
+    let has_emergence1 = detect_emergence(test_state1, 0.5);
+    if has_emergence1 {
+        print_string("Vacuum state has emergence: true");
+    } else {
+        print_string("Vacuum state has emergence: false");
+    }
+
+    let test_state2 = state_neutral();
+    let has_emergence2 = detect_emergence(test_state2, 0.5);
+    if has_emergence2 {
+        print_string("Neutral state has emergence: true");
+    } else {
+        print_string("Neutral state has emergence: false");
+    }
+
+    // =========================================
+    // Simular Swarm de Estados
+    // =========================================
+    print_string("--- Swarm Simulation ---");
+
+    // Criar 4 membros do swarm
+    let member1 = create_swarm_member(0);
+    let member2 = create_swarm_member(4);
+    let member3 = create_swarm_member(8);
+    let member4 = create_swarm_member(12);
+
+    // Combinar em estado coletivo
+    let collective_s = state_xor(member1, member2);
+    let collective_s = state_xor(collective_s, member3);
+    let collective_s = state_xor(collective_s, member4);
+
+    print_string("Created swarm with 4 members");
+
+    // Aplicar emergencia
+    let emerged_swarm = emerge(collective_s);
+    print_string("Applied emergence to swarm");
+
+    // =========================================
+    // Iteracao de Emergencia
+    // =========================================
+    print_string("--- Emergence Iteration ---");
+
+    let initial_swarm = collective_s;
+    let final_swarm = iterate_emergence(initial_swarm, 5);
+
+    print_string("After 5 emergence iterations:");
+    print_string("Final L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(final_swarm, 0)));
+
+    // =========================================
+    // Emergencia nas Camadas LB-LC
+    // =========================================
+    print_string("--- Emergence Layers (LB-LC) ---");
+
+    // LB-LC sao as camadas de emergencia no State
+    let em_state = state_vacuum();
+    let em_value = bytesil_new(10, 8);
+    let em_state = set_emergence_layers(em_state, em_value);
+
+    print_string("Set emergence layers LB, LC");
+    print_string("LB magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(em_state, 11)));
+    print_string("LC magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(em_state, 12)));
+
+    // =========================================
+    // Padrao: Agente Autonomo
+    // =========================================
+    print_string("--- Autonomous Agent Pattern ---");
+
+    let agent = state_neutral();
+    let env = state_vacuum();
+    let env = state_set_layer(env, 0, bytesil_new(12, 4));
+
+    let next_agent = agent_step(agent, env);
+    print_string("Agent took one step");
+
+    // =========================================
+    // Consenso de Swarm
+    // =========================================
+    print_string("--- Swarm Consensus ---");
+
+    let swarm_members = collective_s;
+    let consensus_state = swarm_consensus(swarm_members, 3);
+
+    print_string("Swarm consensus after 3 iterations:");
+    print_string("Consensus L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(consensus_state, 0)));
+
+    print_string("=== Emergence Demo Complete ===");
+}

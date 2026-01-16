@@ -1,0 +1,25 @@
+[package]
+name = "sil-ecosystem"
+version = "2026.1.16"
+edition = "2024"
+authors = ["SIL Contributors"]
+license = "AGPL-3.0"
+description = "Meta package for SIL/LIS CLI tools (Debian meta)."
+
+[package.metadata.deb]
+maintainer = "SIL Contributors <dev@silvanoneto.com>"
+section = "metapackages"
+priority = "optional"
+depends = [
+  "lis-cli (>= 2026.1.16)",
+  "lis-format (>= 2026.1.16)",
+  "lis-runtime (>= 2026.1.16)",
+  "lis-api (>= 2026.1.16)"
+]
+assets = [
+  ["README.md", "/usr/share/doc/sil-ecosystem/README", "644"]
+]
+extended-description = "Meta package that installs lis, lis-lsp, lis-format, lis-run, and lis-api."
+
+[lib]
+path = "src/lib.rs"

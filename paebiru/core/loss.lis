@@ -1,0 +1,148 @@
+// Paebiru ML Library - Loss Functions
+
+fn mse(pred: State, target: State) -> Float {
+    let d0 = bytesil_magnitude(state_get_layer(pred, 0)) - bytesil_magnitude(state_get_layer(target, 0));
+    let d1 = bytesil_magnitude(state_get_layer(pred, 1)) - bytesil_magnitude(state_get_layer(target, 1));
+    let d2 = bytesil_magnitude(state_get_layer(pred, 2)) - bytesil_magnitude(state_get_layer(target, 2));
+    let d3 = bytesil_magnitude(state_get_layer(pred, 3)) - bytesil_magnitude(state_get_layer(target, 3));
+    let d4 = bytesil_magnitude(state_get_layer(pred, 4)) - bytesil_magnitude(state_get_layer(target, 4));
+    let d5 = bytesil_magnitude(state_get_layer(pred, 5)) - bytesil_magnitude(state_get_layer(target, 5));
+    let d6 = bytesil_magnitude(state_get_layer(pred, 6)) - bytesil_magnitude(state_get_layer(target, 6));
+    let d7 = bytesil_magnitude(state_get_layer(pred, 7)) - bytesil_magnitude(state_get_layer(target, 7));
+    let d8 = bytesil_magnitude(state_get_layer(pred, 8)) - bytesil_magnitude(state_get_layer(target, 8));
+    let d9 = bytesil_magnitude(state_get_layer(pred, 9)) - bytesil_magnitude(state_get_layer(target, 9));
+    let d10 = bytesil_magnitude(state_get_layer(pred, 10)) - bytesil_magnitude(state_get_layer(target, 10));
+    let d11 = bytesil_magnitude(state_get_layer(pred, 11)) - bytesil_magnitude(state_get_layer(target, 11));
+    let d12 = bytesil_magnitude(state_get_layer(pred, 12)) - bytesil_magnitude(state_get_layer(target, 12));
+    let d13 = bytesil_magnitude(state_get_layer(pred, 13)) - bytesil_magnitude(state_get_layer(target, 13));
+    let d14 = bytesil_magnitude(state_get_layer(pred, 14)) - bytesil_magnitude(state_get_layer(target, 14));
+    let d15 = bytesil_magnitude(state_get_layer(pred, 15)) - bytesil_magnitude(state_get_layer(target, 15));
+    let sum = d0*d0 + d1*d1 + d2*d2 + d3*d3 + d4*d4 + d5*d5 + d6*d6 + d7*d7;
+    let sum = sum + d8*d8 + d9*d9 + d10*d10 + d11*d11 + d12*d12 + d13*d13 + d14*d14 + d15*d15;
+    return sum / 16.0;
+}
+
+fn rmse(pred: State, target: State) -> Float {
+    return sqrt(mse(pred, target));
+}
+
+fn mae(pred: State, target: State) -> Float {
+    let sum = 0.0;
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(pred, 0)) - bytesil_magnitude(state_get_layer(target, 0)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(pred, 1)) - bytesil_magnitude(state_get_layer(target, 1)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(pred, 2)) - bytesil_magnitude(state_get_layer(target, 2)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(pred, 3)) - bytesil_magnitude(state_get_layer(target, 3)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(pred, 4)) - bytesil_magnitude(state_get_layer(target, 4)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(pred, 5)) - bytesil_magnitude(state_get_layer(target, 5)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(pred, 6)) - bytesil_magnitude(state_get_layer(target, 6)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(pred, 7)) - bytesil_magnitude(state_get_layer(target, 7)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(pred, 8)) - bytesil_magnitude(state_get_layer(target, 8)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(pred, 9)) - bytesil_magnitude(state_get_layer(target, 9)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(pred, 10)) - bytesil_magnitude(state_get_layer(target, 10)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(pred, 11)) - bytesil_magnitude(state_get_layer(target, 11)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(pred, 12)) - bytesil_magnitude(state_get_layer(target, 12)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(pred, 13)) - bytesil_magnitude(state_get_layer(target, 13)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(pred, 14)) - bytesil_magnitude(state_get_layer(target, 14)));
+    let sum = sum + abs_float(bytesil_magnitude(state_get_layer(pred, 15)) - bytesil_magnitude(state_get_layer(target, 15)));
+    return sum / 16.0;
+}
+
+fn cross_entropy(pred: State, target: State) -> Float {
+    let eps = 0.0000001;
+    let p0 = max_float(bytesil_magnitude(state_get_layer(pred, 0)), eps);
+    let p1 = max_float(bytesil_magnitude(state_get_layer(pred, 1)), eps);
+    let p2 = max_float(bytesil_magnitude(state_get_layer(pred, 2)), eps);
+    let p3 = max_float(bytesil_magnitude(state_get_layer(pred, 3)), eps);
+    let p4 = max_float(bytesil_magnitude(state_get_layer(pred, 4)), eps);
+    let p5 = max_float(bytesil_magnitude(state_get_layer(pred, 5)), eps);
+    let p6 = max_float(bytesil_magnitude(state_get_layer(pred, 6)), eps);
+    let p7 = max_float(bytesil_magnitude(state_get_layer(pred, 7)), eps);
+    let p8 = max_float(bytesil_magnitude(state_get_layer(pred, 8)), eps);
+    let p9 = max_float(bytesil_magnitude(state_get_layer(pred, 9)), eps);
+    let p10 = max_float(bytesil_magnitude(state_get_layer(pred, 10)), eps);
+    let p11 = max_float(bytesil_magnitude(state_get_layer(pred, 11)), eps);
+    let p12 = max_float(bytesil_magnitude(state_get_layer(pred, 12)), eps);
+    let p13 = max_float(bytesil_magnitude(state_get_layer(pred, 13)), eps);
+    let p14 = max_float(bytesil_magnitude(state_get_layer(pred, 14)), eps);
+    let p15 = max_float(bytesil_magnitude(state_get_layer(pred, 15)), eps);
+    let t0 = bytesil_magnitude(state_get_layer(target, 0));
+    let t1 = bytesil_magnitude(state_get_layer(target, 1));
+    let t2 = bytesil_magnitude(state_get_layer(target, 2));
+    let t3 = bytesil_magnitude(state_get_layer(target, 3));
+    let t4 = bytesil_magnitude(state_get_layer(target, 4));
+    let t5 = bytesil_magnitude(state_get_layer(target, 5));
+    let t6 = bytesil_magnitude(state_get_layer(target, 6));
+    let t7 = bytesil_magnitude(state_get_layer(target, 7));
+    let t8 = bytesil_magnitude(state_get_layer(target, 8));
+    let t9 = bytesil_magnitude(state_get_layer(target, 9));
+    let t10 = bytesil_magnitude(state_get_layer(target, 10));
+    let t11 = bytesil_magnitude(state_get_layer(target, 11));
+    let t12 = bytesil_magnitude(state_get_layer(target, 12));
+    let t13 = bytesil_magnitude(state_get_layer(target, 13));
+    let t14 = bytesil_magnitude(state_get_layer(target, 14));
+    let t15 = bytesil_magnitude(state_get_layer(target, 15));
+    let loss = t0 * ln(p0) + t1 * ln(p1) + t2 * ln(p2) + t3 * ln(p3);
+    let loss = loss + t4 * ln(p4) + t5 * ln(p5) + t6 * ln(p6) + t7 * ln(p7);
+    let loss = loss + t8 * ln(p8) + t9 * ln(p9) + t10 * ln(p10) + t11 * ln(p11);
+    let loss = loss + t12 * ln(p12) + t13 * ln(p13) + t14 * ln(p14) + t15 * ln(p15);
+    return 0.0 - loss;
+}
+
+fn cosine_loss(pred: State, target: State) -> Float {
+    let dot_val = 0.0;
+    let dot_val = dot_val + bytesil_magnitude(state_get_layer(pred, 0)) * bytesil_magnitude(state_get_layer(target, 0));
+    let dot_val = dot_val + bytesil_magnitude(state_get_layer(pred, 1)) * bytesil_magnitude(state_get_layer(target, 1));
+    let dot_val = dot_val + bytesil_magnitude(state_get_layer(pred, 2)) * bytesil_magnitude(state_get_layer(target, 2));
+    let dot_val = dot_val + bytesil_magnitude(state_get_layer(pred, 3)) * bytesil_magnitude(state_get_layer(target, 3));
+    let dot_val = dot_val + bytesil_magnitude(state_get_layer(pred, 4)) * bytesil_magnitude(state_get_layer(target, 4));
+    let dot_val = dot_val + bytesil_magnitude(state_get_layer(pred, 5)) * bytesil_magnitude(state_get_layer(target, 5));
+    let dot_val = dot_val + bytesil_magnitude(state_get_layer(pred, 6)) * bytesil_magnitude(state_get_layer(target, 6));
+    let dot_val = dot_val + bytesil_magnitude(state_get_layer(pred, 7)) * bytesil_magnitude(state_get_layer(target, 7));
+    let dot_val = dot_val + bytesil_magnitude(state_get_layer(pred, 8)) * bytesil_magnitude(state_get_layer(target, 8));
+    let dot_val = dot_val + bytesil_magnitude(state_get_layer(pred, 9)) * bytesil_magnitude(state_get_layer(target, 9));
+    let dot_val = dot_val + bytesil_magnitude(state_get_layer(pred, 10)) * bytesil_magnitude(state_get_layer(target, 10));
+    let dot_val = dot_val + bytesil_magnitude(state_get_layer(pred, 11)) * bytesil_magnitude(state_get_layer(target, 11));
+    let dot_val = dot_val + bytesil_magnitude(state_get_layer(pred, 12)) * bytesil_magnitude(state_get_layer(target, 12));
+    let dot_val = dot_val + bytesil_magnitude(state_get_layer(pred, 13)) * bytesil_magnitude(state_get_layer(target, 13));
+    let dot_val = dot_val + bytesil_magnitude(state_get_layer(pred, 14)) * bytesil_magnitude(state_get_layer(target, 14));
+    let dot_val = dot_val + bytesil_magnitude(state_get_layer(pred, 15)) * bytesil_magnitude(state_get_layer(target, 15));
+    let np_sq = 0.0;
+    let np_sq = np_sq + bytesil_magnitude(state_get_layer(pred, 0)) * bytesil_magnitude(state_get_layer(pred, 0));
+    let np_sq = np_sq + bytesil_magnitude(state_get_layer(pred, 1)) * bytesil_magnitude(state_get_layer(pred, 1));
+    let np_sq = np_sq + bytesil_magnitude(state_get_layer(pred, 2)) * bytesil_magnitude(state_get_layer(pred, 2));
+    let np_sq = np_sq + bytesil_magnitude(state_get_layer(pred, 3)) * bytesil_magnitude(state_get_layer(pred, 3));
+    let np_sq = np_sq + bytesil_magnitude(state_get_layer(pred, 4)) * bytesil_magnitude(state_get_layer(pred, 4));
+    let np_sq = np_sq + bytesil_magnitude(state_get_layer(pred, 5)) * bytesil_magnitude(state_get_layer(pred, 5));
+    let np_sq = np_sq + bytesil_magnitude(state_get_layer(pred, 6)) * bytesil_magnitude(state_get_layer(pred, 6));
+    let np_sq = np_sq + bytesil_magnitude(state_get_layer(pred, 7)) * bytesil_magnitude(state_get_layer(pred, 7));
+    let np_sq = np_sq + bytesil_magnitude(state_get_layer(pred, 8)) * bytesil_magnitude(state_get_layer(pred, 8));
+    let np_sq = np_sq + bytesil_magnitude(state_get_layer(pred, 9)) * bytesil_magnitude(state_get_layer(pred, 9));
+    let np_sq = np_sq + bytesil_magnitude(state_get_layer(pred, 10)) * bytesil_magnitude(state_get_layer(pred, 10));
+    let np_sq = np_sq + bytesil_magnitude(state_get_layer(pred, 11)) * bytesil_magnitude(state_get_layer(pred, 11));
+    let np_sq = np_sq + bytesil_magnitude(state_get_layer(pred, 12)) * bytesil_magnitude(state_get_layer(pred, 12));
+    let np_sq = np_sq + bytesil_magnitude(state_get_layer(pred, 13)) * bytesil_magnitude(state_get_layer(pred, 13));
+    let np_sq = np_sq + bytesil_magnitude(state_get_layer(pred, 14)) * bytesil_magnitude(state_get_layer(pred, 14));
+    let np_sq = np_sq + bytesil_magnitude(state_get_layer(pred, 15)) * bytesil_magnitude(state_get_layer(pred, 15));
+    let nt_sq = 0.0;
+    let nt_sq = nt_sq + bytesil_magnitude(state_get_layer(target, 0)) * bytesil_magnitude(state_get_layer(target, 0));
+    let nt_sq = nt_sq + bytesil_magnitude(state_get_layer(target, 1)) * bytesil_magnitude(state_get_layer(target, 1));
+    let nt_sq = nt_sq + bytesil_magnitude(state_get_layer(target, 2)) * bytesil_magnitude(state_get_layer(target, 2));
+    let nt_sq = nt_sq + bytesil_magnitude(state_get_layer(target, 3)) * bytesil_magnitude(state_get_layer(target, 3));
+    let nt_sq = nt_sq + bytesil_magnitude(state_get_layer(target, 4)) * bytesil_magnitude(state_get_layer(target, 4));
+    let nt_sq = nt_sq + bytesil_magnitude(state_get_layer(target, 5)) * bytesil_magnitude(state_get_layer(target, 5));
+    let nt_sq = nt_sq + bytesil_magnitude(state_get_layer(target, 6)) * bytesil_magnitude(state_get_layer(target, 6));
+    let nt_sq = nt_sq + bytesil_magnitude(state_get_layer(target, 7)) * bytesil_magnitude(state_get_layer(target, 7));
+    let nt_sq = nt_sq + bytesil_magnitude(state_get_layer(target, 8)) * bytesil_magnitude(state_get_layer(target, 8));
+    let nt_sq = nt_sq + bytesil_magnitude(state_get_layer(target, 9)) * bytesil_magnitude(state_get_layer(target, 9));
+    let nt_sq = nt_sq + bytesil_magnitude(state_get_layer(target, 10)) * bytesil_magnitude(state_get_layer(target, 10));
+    let nt_sq = nt_sq + bytesil_magnitude(state_get_layer(target, 11)) * bytesil_magnitude(state_get_layer(target, 11));
+    let nt_sq = nt_sq + bytesil_magnitude(state_get_layer(target, 12)) * bytesil_magnitude(state_get_layer(target, 12));
+    let nt_sq = nt_sq + bytesil_magnitude(state_get_layer(target, 13)) * bytesil_magnitude(state_get_layer(target, 13));
+    let nt_sq = nt_sq + bytesil_magnitude(state_get_layer(target, 14)) * bytesil_magnitude(state_get_layer(target, 14));
+    let nt_sq = nt_sq + bytesil_magnitude(state_get_layer(target, 15)) * bytesil_magnitude(state_get_layer(target, 15));
+    let denom = sqrt(np_sq) * sqrt(nt_sq);
+    if denom < 0.0000001 {
+        return 1.0;
+    }
+    return 1.0 - dot_val / denom;
+}

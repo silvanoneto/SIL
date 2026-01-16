@@ -1,0 +1,171 @@
+// LIS Example: Fibonacci
+// Demonstra: Recursão e iteração com exemplo clássico
+// Documentação: Seção 12.2
+
+// =========================================
+// Fibonacci Recursivo
+// =========================================
+fn fibonacci_recursive(n: Int) -> Int {
+    if n <= 1 {
+        return n;
+    }
+    return fibonacci_recursive(n - 1) + fibonacci_recursive(n - 2);
+}
+
+// =========================================
+// Fibonacci Iterativo
+// =========================================
+fn fibonacci_iterative(n: Int) -> Int {
+    if n <= 1 {
+        return n;
+    }
+
+    let a = 0;
+    let b = 1;
+    let i = 2;
+
+    loop {
+        if i > n {
+            break;
+        }
+
+        let temp = a + b;
+        let a = b;
+        let b = temp;
+        let i = i + 1;
+    }
+
+    return b;
+}
+
+// =========================================
+// Imprimir Sequência
+// =========================================
+fn print_fibonacci_sequence(count: Int) {
+    print_string("Fibonacci sequence:");
+
+    let i = 0;
+    loop {
+        if i >= count {
+            break;
+        }
+
+        let fib = fibonacci_iterative(i);
+        print_int(fib);
+
+        let i = i + 1;
+    }
+}
+
+// =========================================
+// Verificar se é Fibonacci
+// =========================================
+fn is_perfect_square(n: Int) -> Bool {
+    let root = 1;
+    loop {
+        if root * root > n {
+            break;
+        }
+
+        if root * root == n {
+            return true;
+        }
+
+        let root = root + 1;
+    }
+    return false;
+}
+
+fn is_fibonacci(n: Int) -> Bool {
+    // Um número é Fibonacci se 5*n^2 + 4 ou 5*n^2 - 4 é quadrado perfeito
+    let test1 = 5 * n * n + 4;
+    let test2 = 5 * n * n - 4;
+
+    return is_perfect_square(test1) || is_perfect_square(test2);
+}
+
+// =========================================
+// Golden Ratio Approximation
+// =========================================
+fn golden_ratio_approx(iterations: Int) -> Float {
+    // phi ≈ fib(n+1) / fib(n) quando n é grande
+    let fib_n = fibonacci_iterative(iterations);
+    let fib_n1 = fibonacci_iterative(iterations + 1);
+
+    return fib_n1 * 1.0 / fib_n * 1.0;
+}
+
+fn main() {
+    print_string("=== Fibonacci Examples ===");
+
+    // =========================================
+    // Fibonacci Recursivo
+    // =========================================
+    print_string("--- Recursive Fibonacci ---");
+
+    let n = 10;
+    let result = fibonacci_recursive(n);
+    print_string("fibonacci_recursive(10) =");
+    print_int(result);  // 55
+
+    // =========================================
+    // Fibonacci Iterativo
+    // =========================================
+    print_string("--- Iterative Fibonacci ---");
+
+    let result2 = fibonacci_iterative(n);
+    print_string("fibonacci_iterative(10) =");
+    print_int(result2);  // 55
+
+    // =========================================
+    // Imprimir Sequência
+    // =========================================
+    print_string("--- Fibonacci Sequence (first 15) ---");
+    print_fibonacci_sequence(15);
+
+    // =========================================
+    // Verificar Números Fibonacci
+    // =========================================
+    print_string("--- Check if Fibonacci ---");
+
+    let test_nums = 13;  // É Fibonacci
+    if is_fibonacci(test_nums) {
+        print_string("13 is a Fibonacci number");
+    }
+
+    let test_nums2 = 14;  // Não é Fibonacci
+    if is_fibonacci(test_nums2) {
+        print_string("14 is a Fibonacci number");
+    } else {
+        print_string("14 is NOT a Fibonacci number");
+    }
+
+    // =========================================
+    // Aproximação da Proporção Áurea
+    // =========================================
+    print_string("--- Golden Ratio Approximation ---");
+
+    let phi_approx = golden_ratio_approx(20);
+    print_string("phi (via fib(21)/fib(20)):");
+    print_float(phi_approx);  // ~1.618...
+
+    print_string("Actual phi = 1.6180339887...");
+
+    // =========================================
+    // Soma de Fibonacci
+    // =========================================
+    print_string("--- Sum of Fibonacci Numbers ---");
+
+    let sum = 0;
+    let k = 0;
+    loop {
+        if k > 10 {
+            break;
+        }
+        let sum = sum + fibonacci_iterative(k);
+        let k = k + 1;
+    }
+
+    print_string("Sum of fib(0) to fib(10):");
+    print_int(sum);  // 143
+}

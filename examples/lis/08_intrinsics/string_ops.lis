@@ -1,0 +1,212 @@
+// LIS Example: Operações de String
+// Demonstra: concat, length, contains, upper, lower, trim
+// Documentação: Seção 8.5
+
+// =========================================
+// Funções Compostas
+// =========================================
+
+// Normalizar string (trim + lower)
+fn normalize(s: String) -> String {
+    let trimmed_s = string_trim(s);
+    return string_to_lower(trimmed_s);
+}
+
+// Case-insensitive contains
+fn contains_ignore_case(haystack: String, needle: String) -> Bool {
+    let h_lower = string_to_lower(haystack);
+    let n_lower = string_to_lower(needle);
+    return string_contains(h_lower, n_lower);
+}
+
+// Construir mensagem
+fn build_greeting(name: String, greeting: String) -> String {
+    let g = string_concat(greeting, ", ");
+    let g = string_concat(g, name);
+    return string_concat(g, "!");
+}
+
+// =========================================
+// Aplicações
+// =========================================
+
+// Verificar se string está vazia ou só tem espaços
+fn is_blank(s: String) -> Bool {
+    let trimmed_s = string_trim(s);
+    return string_length(trimmed_s) == 0;
+}
+
+// Repetir string (simplificado)
+fn repeat_string(s: String, times: Int) -> String {
+    let result = "";
+    let i = 0;
+    loop {
+        if i >= times {
+            break;
+        }
+        let result = string_concat(result, s);
+        let i = i + 1;
+    }
+    return result;
+}
+
+fn main() {
+    print_string("=== String Operations ===");
+
+    // =========================================
+    // Concatenação (string_concat)
+    // =========================================
+    print_string("--- string_concat ---");
+
+    let s1 = "Hello";
+    let s2 = " World";
+
+    let concatenated = string_concat(s1, s2);
+    print_string("string_concat(Hello, World):");
+    print_string(concatenated);
+
+    // Concatenação múltipla
+    let greeting = string_concat("Good ", "morning");
+    let full = string_concat(greeting, "!");
+    print_string("Multi-concat:");
+    print_string(full);
+
+    // Concatenar com string vazia
+    let empty = "";
+    let with_empty = string_concat(s1, empty);
+    print_string("Concat with empty:");
+    print_string(with_empty);
+
+    // =========================================
+    // Comprimento (string_length)
+    // =========================================
+    print_string("--- string_length ---");
+
+    let text = "Hello, World!";
+    let len = string_length(text);
+    print_string("Length of 'Hello, World!':");
+    print_int(len);  // 13
+
+    let empty_len = string_length("");
+    print_string("Length of empty string:");
+    print_int(empty_len);  // 0
+
+    let spaces = "   ";
+    let space_len = string_length(spaces);
+    print_string("Length of '   ' (3 spaces):");
+    print_int(space_len);  // 3
+
+    // =========================================
+    // Contém Substring (string_contains)
+    // =========================================
+    print_string("--- string_contains ---");
+
+    let haystack = "The quick brown fox";
+
+    let has_quick = string_contains(haystack, "quick");
+    if has_quick {
+        print_string("'The quick brown fox' contains 'quick': true");
+    }
+
+    let has_slow = string_contains(haystack, "slow");
+    if has_slow {
+        print_string("Contains 'slow': true");
+    } else {
+        print_string("Contains 'slow': false");
+    }
+
+    // Case sensitive
+    let has_Quick = string_contains(haystack, "Quick");
+    if has_Quick {
+        print_string("Contains 'Quick' (capital): true");
+    } else {
+        print_string("Contains 'Quick' (capital): false (case sensitive)");
+    }
+
+    // =========================================
+    // Maiúsculas (string_to_upper)
+    // =========================================
+    print_string("--- string_to_upper ---");
+
+    let lower = "hello world";
+    let upper = string_to_upper(lower);
+    print_string("Upper of 'hello world':");
+    print_string(upper);  // HELLO WORLD
+
+    let mixed = "Hello World";
+    let mixed_upper = string_to_upper(mixed);
+    print_string("Upper of 'Hello World':");
+    print_string(mixed_upper);  // HELLO WORLD
+
+    // =========================================
+    // Minúsculas (string_to_lower)
+    // =========================================
+    print_string("--- string_to_lower ---");
+
+    let upper_str = "HELLO WORLD";
+    let lower_str = string_to_lower(upper_str);
+    print_string("Lower of 'HELLO WORLD':");
+    print_string(lower_str);  // hello world
+
+    let mixed_lower = string_to_lower(mixed);
+    print_string("Lower of 'Hello World':");
+    print_string(mixed_lower);  // hello world
+
+    // =========================================
+    // Remover Espaços (string_trim)
+    // =========================================
+    print_string("--- string_trim ---");
+
+    let padded = "  hello  ";
+    let trimmed = string_trim(padded);
+    print_string("Trim of '  hello  ':");
+    print_string(trimmed);  // hello
+
+    let left_padded = "   left";
+    let left_trimmed = string_trim(left_padded);
+    print_string("Trim of '   left':");
+    print_string(left_trimmed);
+
+    let right_padded = "right   ";
+    let right_trimmed = string_trim(right_padded);
+    print_string("Trim of 'right   ':");
+    print_string(right_trimmed);
+
+    // =========================================
+    // Funções Compostas
+    // =========================================
+    print_string("--- Composite Functions ---");
+
+    let messy = "  HeLLo WoRLD  ";
+    let normalized = normalize(messy);
+    print_string("Normalized '  HeLLo WoRLD  ':");
+    print_string(normalized);
+
+    let has_quick_ci = contains_ignore_case("The QUICK brown fox", "quick");
+    if has_quick_ci {
+        print_string("Case-insensitive search for 'quick': found");
+    }
+
+    let msg = build_greeting("Alice", "Hello");
+    print_string("Built greeting:");
+    print_string(msg);
+
+    // =========================================
+    // Aplicações
+    // =========================================
+    print_string("--- Applications ---");
+
+    if is_blank("   ") {
+        print_string("'   ' is blank: true");
+    }
+
+    if is_blank("hello") {
+        print_string("'hello' is blank: true");
+    } else {
+        print_string("'hello' is blank: false");
+    }
+
+    let repeated = repeat_string("ab", 3);
+    print_string("Repeat 'ab' 3 times:");
+    print_string(repeated);  // ababab
+}

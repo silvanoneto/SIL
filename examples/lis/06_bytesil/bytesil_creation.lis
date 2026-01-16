@@ -1,0 +1,123 @@
+// LIS Example: Criação de ByteSil
+// Demonstra: Várias formas de criar ByteSil
+// Documentação: Seções 1.2, 6.9, 8.1
+
+fn main() {
+    print_string("=== ByteSil Creation ===");
+
+    // =========================================
+    // Estrutura do ByteSil
+    // =========================================
+    // ByteSil: 8 bits representando número complexo em log-polar
+    // - 4 bits rho (magnitude): 0-15 em escala logarítmica
+    // - 4 bits theta (fase): 0-15 mapeando 0° a 337.5°
+    //
+    // Fase: theta * 22.5° = theta * (2π/16) radianos
+
+    // =========================================
+    // Criação via bytesil_new(rho, theta)
+    // =========================================
+    print_string("--- bytesil_new(rho, theta) ---");
+
+    // rho=0 a 15, theta=0 a 15
+    let bs_0_0 = bytesil_new(0, 0);    // Menor magnitude, fase 0°
+    let bs_8_0 = bytesil_new(8, 0);    // Magnitude média, fase 0°
+    let bs_15_0 = bytesil_new(15, 0);  // Maior magnitude, fase 0°
+
+    print_string("bytesil_new(0, 0) magnitude:");
+    print_float(bytesil_magnitude(bs_0_0));
+
+    print_string("bytesil_new(8, 0) magnitude:");
+    print_float(bytesil_magnitude(bs_8_0));
+
+    print_string("bytesil_new(15, 0) magnitude:");
+    print_float(bytesil_magnitude(bs_15_0));
+
+    // Diferentes fases
+    let bs_8_4 = bytesil_new(8, 4);    // 90° (π/2)
+    let bs_8_8 = bytesil_new(8, 8);    // 180° (π)
+    let bs_8_12 = bytesil_new(8, 12);  // 270° (3π/2)
+
+    print_string("Phases for rho=8:");
+    print_string("theta=0 (0 rad):");
+    print_float(bytesil_phase_radians(bytesil_new(8, 0)));
+    print_string("theta=4 (pi/2 rad):");
+    print_float(bytesil_phase_radians(bs_8_4));
+    print_string("theta=8 (pi rad):");
+    print_float(bytesil_phase_radians(bs_8_8));
+    print_string("theta=12 (3pi/2 rad):");
+    print_float(bytesil_phase_radians(bs_8_12));
+
+    // =========================================
+    // Constantes Especiais
+    // =========================================
+    print_string("--- Special Constants ---");
+
+    let zero = bytesil_null();
+    print_string("bytesil_null() magnitude:");
+    print_float(bytesil_magnitude(zero));
+
+    let one = bytesil_one();
+    print_string("bytesil_one() magnitude:");
+    print_float(bytesil_magnitude(one));
+    print_string("bytesil_one() phase:");
+    print_float(bytesil_phase_radians(one));
+
+    let i_unit = bytesil_i();
+    print_string("bytesil_i() magnitude:");
+    print_float(bytesil_magnitude(i_unit));
+    print_string("bytesil_i() phase (should be ~pi/2):");
+    print_float(bytesil_phase_radians(i_unit));
+
+    let neg_one = bytesil_neg_one();
+    print_string("bytesil_neg_one() phase (should be ~pi):");
+    print_float(bytesil_phase_radians(neg_one));
+
+    let neg_i = bytesil_neg_i();
+    print_string("bytesil_neg_i() phase (should be ~3pi/2):");
+    print_float(bytesil_phase_radians(neg_i));
+
+    let max_bs = bytesil_max();
+    print_string("bytesil_max() magnitude:");
+    print_float(bytesil_magnitude(max_bs));
+
+    // =========================================
+    // Criação via Coordenadas Cartesianas
+    // =========================================
+    print_string("--- bytesil_from_complex(real, imag) ---");
+
+    // 1 + 0i (número real positivo)
+    let real_pos = bytesil_from_complex(1.0, 0.0);
+    print_string("1 + 0i magnitude:");
+    print_float(bytesil_magnitude(real_pos));
+    print_string("1 + 0i phase:");
+    print_float(bytesil_phase_radians(real_pos));
+
+    // 0 + 1i (imaginário puro)
+    let imag_pure = bytesil_from_complex(0.0, 1.0);
+    print_string("0 + 1i magnitude:");
+    print_float(bytesil_magnitude(imag_pure));
+    print_string("0 + 1i phase (should be ~pi/2):");
+    print_float(bytesil_phase_radians(imag_pure));
+
+    // 1 + 1i
+    let complex_11 = bytesil_from_complex(1.0, 1.0);
+    print_string("1 + 1i magnitude (should be ~1.414):");
+    print_float(bytesil_magnitude(complex_11));
+    print_string("1 + 1i phase (should be ~pi/4):");
+    print_float(bytesil_phase_radians(complex_11));
+
+    // 3 + 4i (triângulo 3-4-5)
+    let complex_34 = bytesil_from_complex(3.0, 4.0);
+    print_string("3 + 4i magnitude (should be 5):");
+    print_float(bytesil_magnitude(complex_34));
+
+    // =========================================
+    // Tabela de Referência
+    // =========================================
+    print_string("--- Reference Table ---");
+    print_string("theta=0  -> 0 degrees    -> 0 radians");
+    print_string("theta=4  -> 90 degrees   -> pi/2 radians");
+    print_string("theta=8  -> 180 degrees  -> pi radians");
+    print_string("theta=12 -> 270 degrees  -> 3pi/2 radians");
+}

@@ -1,0 +1,464 @@
+// Paebiru Edge Computing - Chromatic Router
+// Routes computation based on State complexity and device capabilities
+//
+// The router decides where to execute computation based on:
+// 1. State complexity (rho_sil)
+// 2. Available devices and their loads
+// 3. Latency and cost constraints
+// 4. Network topology
+
+// Helper: Absolute value
+fn abs_f(x: Float) -> Float {
+    if x < 0.0 {
+        return 0.0 - x;
+    }
+    return x;
+}
+
+// Helper: Create ByteSil from magnitude
+fn from_mag(m: Float) -> ByteSil {
+    return bytesil_new(floor(clamp_float(ln(max_float(m, 0.0001)), -8.0, 7.0)), 0);
+}
+
+// ============ Rho Calculation (inline to avoid module deps) ============
+
+fn sum_magnitudes(s: State) -> Float {
+    let sum = 0.0;
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 0));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 1));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 2));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 3));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 4));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 5));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 6));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 7));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 8));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 9));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 10));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 11));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 12));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 13));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 14));
+    let sum = sum + bytesil_magnitude(state_get_layer(s, 15));
+    return sum;
+}
+
+fn transition_count_fast(s: State) -> Float {
+    let threshold = 0.1;
+    let count = 0.0;
+
+    let m0 = bytesil_magnitude(state_get_layer(s, 0));
+    let m1 = bytesil_magnitude(state_get_layer(s, 1));
+    if abs_f(m1 - m0) > threshold { let count = count + 1.0; }
+    let m2 = bytesil_magnitude(state_get_layer(s, 2));
+    if abs_f(m2 - m1) > threshold { let count = count + 1.0; }
+    let m3 = bytesil_magnitude(state_get_layer(s, 3));
+    if abs_f(m3 - m2) > threshold { let count = count + 1.0; }
+    let m4 = bytesil_magnitude(state_get_layer(s, 4));
+    if abs_f(m4 - m3) > threshold { let count = count + 1.0; }
+    let m5 = bytesil_magnitude(state_get_layer(s, 5));
+    if abs_f(m5 - m4) > threshold { let count = count + 1.0; }
+    let m6 = bytesil_magnitude(state_get_layer(s, 6));
+    if abs_f(m6 - m5) > threshold { let count = count + 1.0; }
+    let m7 = bytesil_magnitude(state_get_layer(s, 7));
+    if abs_f(m7 - m6) > threshold { let count = count + 1.0; }
+    let m8 = bytesil_magnitude(state_get_layer(s, 8));
+    if abs_f(m8 - m7) > threshold { let count = count + 1.0; }
+    let m9 = bytesil_magnitude(state_get_layer(s, 9));
+    if abs_f(m9 - m8) > threshold { let count = count + 1.0; }
+    let m10 = bytesil_magnitude(state_get_layer(s, 10));
+    if abs_f(m10 - m9) > threshold { let count = count + 1.0; }
+    let m11 = bytesil_magnitude(state_get_layer(s, 11));
+    if abs_f(m11 - m10) > threshold { let count = count + 1.0; }
+    let m12 = bytesil_magnitude(state_get_layer(s, 12));
+    if abs_f(m12 - m11) > threshold { let count = count + 1.0; }
+    let m13 = bytesil_magnitude(state_get_layer(s, 13));
+    if abs_f(m13 - m12) > threshold { let count = count + 1.0; }
+    let m14 = bytesil_magnitude(state_get_layer(s, 14));
+    if abs_f(m14 - m13) > threshold { let count = count + 1.0; }
+    let m15 = bytesil_magnitude(state_get_layer(s, 15));
+    if abs_f(m15 - m14) > threshold { let count = count + 1.0; }
+
+    return count;
+}
+
+fn rho_fast(s: State) -> Float {
+    let trans = transition_count_fast(s) / 15.0;
+    let total = sum_magnitudes(s) + 0.0001;
+    let entropy = 0.0;
+
+    let p0 = bytesil_magnitude(state_get_layer(s, 0)) / total;
+    if p0 > 0.0001 { let entropy = entropy - p0 * ln(p0); }
+    let p1 = bytesil_magnitude(state_get_layer(s, 1)) / total;
+    if p1 > 0.0001 { let entropy = entropy - p1 * ln(p1); }
+    let p2 = bytesil_magnitude(state_get_layer(s, 2)) / total;
+    if p2 > 0.0001 { let entropy = entropy - p2 * ln(p2); }
+    let p3 = bytesil_magnitude(state_get_layer(s, 3)) / total;
+    if p3 > 0.0001 { let entropy = entropy - p3 * ln(p3); }
+    let p4 = bytesil_magnitude(state_get_layer(s, 4)) / total;
+    if p4 > 0.0001 { let entropy = entropy - p4 * ln(p4); }
+    let p5 = bytesil_magnitude(state_get_layer(s, 5)) / total;
+    if p5 > 0.0001 { let entropy = entropy - p5 * ln(p5); }
+    let p6 = bytesil_magnitude(state_get_layer(s, 6)) / total;
+    if p6 > 0.0001 { let entropy = entropy - p6 * ln(p6); }
+    let p7 = bytesil_magnitude(state_get_layer(s, 7)) / total;
+    if p7 > 0.0001 { let entropy = entropy - p7 * ln(p7); }
+    let p8 = bytesil_magnitude(state_get_layer(s, 8)) / total;
+    if p8 > 0.0001 { let entropy = entropy - p8 * ln(p8); }
+    let p9 = bytesil_magnitude(state_get_layer(s, 9)) / total;
+    if p9 > 0.0001 { let entropy = entropy - p9 * ln(p9); }
+    let p10 = bytesil_magnitude(state_get_layer(s, 10)) / total;
+    if p10 > 0.0001 { let entropy = entropy - p10 * ln(p10); }
+    let p11 = bytesil_magnitude(state_get_layer(s, 11)) / total;
+    if p11 > 0.0001 { let entropy = entropy - p11 * ln(p11); }
+    let p12 = bytesil_magnitude(state_get_layer(s, 12)) / total;
+    if p12 > 0.0001 { let entropy = entropy - p12 * ln(p12); }
+    let p13 = bytesil_magnitude(state_get_layer(s, 13)) / total;
+    if p13 > 0.0001 { let entropy = entropy - p13 * ln(p13); }
+    let p14 = bytesil_magnitude(state_get_layer(s, 14)) / total;
+    if p14 > 0.0001 { let entropy = entropy - p14 * ln(p14); }
+    let p15 = bytesil_magnitude(state_get_layer(s, 15)) / total;
+    if p15 > 0.0001 { let entropy = entropy - p15 * ln(p15); }
+
+    let ent = entropy / 2.77;
+    return clamp_float(0.5 * trans + 0.5 * ent, 0.0, 1.0);
+}
+
+// ============ Routing Decision ============
+
+// Route decision codes
+fn ROUTE_LOCAL() -> Int { return 0; }
+fn ROUTE_OFFLOAD_NEAR() -> Int { return 1; }
+fn ROUTE_OFFLOAD_FAR() -> Int { return 2; }
+fn ROUTE_SPLIT() -> Int { return 3; }
+
+// Simple routing decision based on rho and local capability
+fn route_simple(s: State, local_capability: Float) -> Int {
+    let rho = rho_fast(s);
+
+    // Can we handle it locally?
+    let local_threshold = 0.3 + 0.5 * local_capability;
+
+    if rho <= local_threshold {
+        return 0;  // ROUTE_LOCAL
+    }
+
+    // Need to offload - how far?
+    if rho <= 0.6 {
+        return 1;  // ROUTE_OFFLOAD_NEAR
+    }
+
+    return 2;  // ROUTE_OFFLOAD_FAR
+}
+
+// Routing with load awareness
+fn route_load_aware(
+    s: State,
+    local_capability: Float,
+    local_load: Float,
+    near_load: Float,
+    far_load: Float
+) -> Int {
+    let rho = rho_fast(s);
+
+    // Adjust thresholds based on load
+    let local_threshold = (0.3 + 0.5 * local_capability) * (1.0 - 0.5 * local_load);
+    let near_threshold = 0.6 * (1.0 - 0.3 * near_load);
+
+    if rho <= local_threshold {
+        return 0;  // ROUTE_LOCAL
+    }
+
+    if rho <= near_threshold {
+        return 1;  // ROUTE_OFFLOAD_NEAR
+    }
+
+    // Check if far compute is overloaded
+    if far_load > 0.9 {
+        return 3;  // ROUTE_SPLIT - distribute across multiple
+    }
+
+    return 2;  // ROUTE_OFFLOAD_FAR
+}
+
+// Routing with latency constraint
+fn route_latency_constrained(
+    s: State,
+    local_capability: Float,
+    max_latency_ms: Float
+) -> Int {
+    let rho = rho_fast(s);
+
+    // Estimated local compute time
+    let local_time = 10.0 * rho / max_float(local_capability, 0.1);
+
+    if local_time <= max_latency_ms {
+        return 0;  // ROUTE_LOCAL - fast enough
+    }
+
+    // Account for network latency
+    let near_network_latency = 5.0;
+    let far_network_latency = 50.0;
+
+    let near_compute_time = 10.0 * rho / 0.5;  // Assume 0.5 capability
+    let far_compute_time = 10.0 * rho / 0.9;   // Assume 0.9 capability
+
+    if near_compute_time + near_network_latency <= max_latency_ms {
+        return 1;  // ROUTE_OFFLOAD_NEAR
+    }
+
+    if far_compute_time + far_network_latency <= max_latency_ms {
+        return 2;  // ROUTE_OFFLOAD_FAR
+    }
+
+    // Can't meet latency - split computation
+    return 3;  // ROUTE_SPLIT
+}
+
+// ============ Split Routing ============
+
+// Determine split ratio for distributed computation
+// Returns fraction to process locally (0.0 to 1.0)
+fn split_ratio(
+    rho: Float,
+    local_capability: Float,
+    remote_capability: Float
+) -> Float {
+    // Proportional to relative capabilities
+    let total_cap = local_capability + remote_capability + 0.0001;
+    let local_ratio = local_capability / total_cap;
+
+    // Adjust based on complexity - complex states benefit more from remote
+    let complexity_factor = 1.0 - rho;
+    let adjusted_ratio = local_ratio * complexity_factor;
+
+    return clamp_float(adjusted_ratio, 0.1, 0.9);
+}
+
+// Split state into two parts for distributed processing
+// split_point: which layer to split at (0-15)
+fn split_state_at(s: State, split_point: Int) -> State {
+    // Returns first part (layers 0 to split_point-1)
+    let r = state_vacuum();
+
+    if split_point > 0 {
+        let r = state_set_layer(r, 0, state_get_layer(s, 0));
+    }
+    if split_point > 1 {
+        let r = state_set_layer(r, 1, state_get_layer(s, 1));
+    }
+    if split_point > 2 {
+        let r = state_set_layer(r, 2, state_get_layer(s, 2));
+    }
+    if split_point > 3 {
+        let r = state_set_layer(r, 3, state_get_layer(s, 3));
+    }
+    if split_point > 4 {
+        let r = state_set_layer(r, 4, state_get_layer(s, 4));
+    }
+    if split_point > 5 {
+        let r = state_set_layer(r, 5, state_get_layer(s, 5));
+    }
+    if split_point > 6 {
+        let r = state_set_layer(r, 6, state_get_layer(s, 6));
+    }
+    if split_point > 7 {
+        let r = state_set_layer(r, 7, state_get_layer(s, 7));
+    }
+    if split_point > 8 {
+        let r = state_set_layer(r, 8, state_get_layer(s, 8));
+    }
+    if split_point > 9 {
+        let r = state_set_layer(r, 9, state_get_layer(s, 9));
+    }
+    if split_point > 10 {
+        let r = state_set_layer(r, 10, state_get_layer(s, 10));
+    }
+    if split_point > 11 {
+        let r = state_set_layer(r, 11, state_get_layer(s, 11));
+    }
+    if split_point > 12 {
+        let r = state_set_layer(r, 12, state_get_layer(s, 12));
+    }
+    if split_point > 13 {
+        let r = state_set_layer(r, 13, state_get_layer(s, 13));
+    }
+    if split_point > 14 {
+        let r = state_set_layer(r, 14, state_get_layer(s, 14));
+    }
+
+    return r;
+}
+
+// Calculate optimal split point based on complexity distribution
+fn optimal_split_point(s: State, target_local_fraction: Float) -> Int {
+    let total = sum_magnitudes(s);
+    let cumsum = 0.0;
+    let target = total * target_local_fraction;
+
+    let cumsum = cumsum + bytesil_magnitude(state_get_layer(s, 0));
+    if cumsum >= target { return 1; }
+    let cumsum = cumsum + bytesil_magnitude(state_get_layer(s, 1));
+    if cumsum >= target { return 2; }
+    let cumsum = cumsum + bytesil_magnitude(state_get_layer(s, 2));
+    if cumsum >= target { return 3; }
+    let cumsum = cumsum + bytesil_magnitude(state_get_layer(s, 3));
+    if cumsum >= target { return 4; }
+    let cumsum = cumsum + bytesil_magnitude(state_get_layer(s, 4));
+    if cumsum >= target { return 5; }
+    let cumsum = cumsum + bytesil_magnitude(state_get_layer(s, 5));
+    if cumsum >= target { return 6; }
+    let cumsum = cumsum + bytesil_magnitude(state_get_layer(s, 6));
+    if cumsum >= target { return 7; }
+    let cumsum = cumsum + bytesil_magnitude(state_get_layer(s, 7));
+    if cumsum >= target { return 8; }
+    let cumsum = cumsum + bytesil_magnitude(state_get_layer(s, 8));
+    if cumsum >= target { return 9; }
+    let cumsum = cumsum + bytesil_magnitude(state_get_layer(s, 9));
+    if cumsum >= target { return 10; }
+    let cumsum = cumsum + bytesil_magnitude(state_get_layer(s, 10));
+    if cumsum >= target { return 11; }
+    let cumsum = cumsum + bytesil_magnitude(state_get_layer(s, 11));
+    if cumsum >= target { return 12; }
+    let cumsum = cumsum + bytesil_magnitude(state_get_layer(s, 12));
+    if cumsum >= target { return 13; }
+    let cumsum = cumsum + bytesil_magnitude(state_get_layer(s, 13));
+    if cumsum >= target { return 14; }
+    let cumsum = cumsum + bytesil_magnitude(state_get_layer(s, 14));
+    if cumsum >= target { return 15; }
+
+    return 16;  // All local
+}
+
+// ============ Merge Results ============
+
+// Merge two split results back together
+fn merge_split_results(local_result: State, remote_result: State, split_point: Int) -> State {
+    let r = state_vacuum();
+
+    // Take layers 0 to split_point-1 from local
+    if split_point > 0 {
+        let r = state_set_layer(r, 0, state_get_layer(local_result, 0));
+    } else {
+        let r = state_set_layer(r, 0, state_get_layer(remote_result, 0));
+    }
+
+    if split_point > 1 {
+        let r = state_set_layer(r, 1, state_get_layer(local_result, 1));
+    } else {
+        let r = state_set_layer(r, 1, state_get_layer(remote_result, 1));
+    }
+
+    if split_point > 2 {
+        let r = state_set_layer(r, 2, state_get_layer(local_result, 2));
+    } else {
+        let r = state_set_layer(r, 2, state_get_layer(remote_result, 2));
+    }
+
+    if split_point > 3 {
+        let r = state_set_layer(r, 3, state_get_layer(local_result, 3));
+    } else {
+        let r = state_set_layer(r, 3, state_get_layer(remote_result, 3));
+    }
+
+    if split_point > 4 {
+        let r = state_set_layer(r, 4, state_get_layer(local_result, 4));
+    } else {
+        let r = state_set_layer(r, 4, state_get_layer(remote_result, 4));
+    }
+
+    if split_point > 5 {
+        let r = state_set_layer(r, 5, state_get_layer(local_result, 5));
+    } else {
+        let r = state_set_layer(r, 5, state_get_layer(remote_result, 5));
+    }
+
+    if split_point > 6 {
+        let r = state_set_layer(r, 6, state_get_layer(local_result, 6));
+    } else {
+        let r = state_set_layer(r, 6, state_get_layer(remote_result, 6));
+    }
+
+    if split_point > 7 {
+        let r = state_set_layer(r, 7, state_get_layer(local_result, 7));
+    } else {
+        let r = state_set_layer(r, 7, state_get_layer(remote_result, 7));
+    }
+
+    if split_point > 8 {
+        let r = state_set_layer(r, 8, state_get_layer(local_result, 8));
+    } else {
+        let r = state_set_layer(r, 8, state_get_layer(remote_result, 8));
+    }
+
+    if split_point > 9 {
+        let r = state_set_layer(r, 9, state_get_layer(local_result, 9));
+    } else {
+        let r = state_set_layer(r, 9, state_get_layer(remote_result, 9));
+    }
+
+    if split_point > 10 {
+        let r = state_set_layer(r, 10, state_get_layer(local_result, 10));
+    } else {
+        let r = state_set_layer(r, 10, state_get_layer(remote_result, 10));
+    }
+
+    if split_point > 11 {
+        let r = state_set_layer(r, 11, state_get_layer(local_result, 11));
+    } else {
+        let r = state_set_layer(r, 11, state_get_layer(remote_result, 11));
+    }
+
+    if split_point > 12 {
+        let r = state_set_layer(r, 12, state_get_layer(local_result, 12));
+    } else {
+        let r = state_set_layer(r, 12, state_get_layer(remote_result, 12));
+    }
+
+    if split_point > 13 {
+        let r = state_set_layer(r, 13, state_get_layer(local_result, 13));
+    } else {
+        let r = state_set_layer(r, 13, state_get_layer(remote_result, 13));
+    }
+
+    if split_point > 14 {
+        let r = state_set_layer(r, 14, state_get_layer(local_result, 14));
+    } else {
+        let r = state_set_layer(r, 14, state_get_layer(remote_result, 14));
+    }
+
+    if split_point > 15 {
+        let r = state_set_layer(r, 15, state_get_layer(local_result, 15));
+    } else {
+        let r = state_set_layer(r, 15, state_get_layer(remote_result, 15));
+    }
+
+    return r;
+}
+
+// ============ Priority Queue Helpers ============
+
+// Compute priority score for routing (higher = process first)
+fn compute_priority(rho: Float, deadline_ms: Float, current_time_ms: Float) -> Float {
+    let time_remaining = deadline_ms - current_time_ms;
+    let urgency = 1.0 / max_float(time_remaining, 1.0);
+
+    // Combine complexity and urgency
+    return rho * 0.3 + urgency * 100.0 * 0.7;
+}
+
+// Should preempt current task for new task?
+fn should_preempt(
+    current_priority: Float,
+    new_priority: Float,
+    current_progress: Float
+) -> Bool {
+    // Don't preempt if almost done
+    if current_progress > 0.8 {
+        return false;
+    }
+
+    // Preempt if new task is significantly more urgent
+    return new_priority > current_priority * 1.5;
+}
+

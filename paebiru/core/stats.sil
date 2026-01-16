@@ -1,0 +1,747 @@
+.mode SIL-128
+
+.code
+
+sum_state:
+    MOVI R2, 0
+    MOVI R3, 0
+    COMPLEX R1, R2, R3
+    MOVI R4, 0
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ADD R5, R1, R0
+    MOVI R6, 1
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ADD R7, R5, R0
+    MOVI R8, 2
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ADD R9, R7, R0
+    MOVI RA, 3
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ADD RB, R9, R0
+    MOVI RC, 4
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ADD RD, RB, R0
+    MOVI RE, 5
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ADD RF, RD, R0
+    MOVI R0, 6
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ADD R1, RF, R0
+    MOVI R2, 7
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ADD R3, R1, R0
+    MOVI R4, 8
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ADD R5, R3, R0
+    MOVI R6, 9
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ADD R7, R5, R0
+    MOVI R8, 10
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ADD R9, R7, R0
+    MOVI RA, 11
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ADD RB, R9, R0
+    MOVI RC, 12
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ADD RD, RB, R0
+    MOVI RE, 13
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ADD RF, RD, R0
+    MOVI R0, 14
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ADD R1, RF, R0
+    MOVI R2, 15
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ADD R3, R1, R0
+    MOV R0, R3
+    RET
+
+mean:
+    CALL sum_state
+    MOVI R2, 16000
+    MOVI R3, 0
+    COMPLEX R1, R2, R3
+    DIV R4, R0, R1
+    MOV R0, R4
+    RET
+
+variance:
+    CALL mean
+    MOVI R1, 0
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    SUB R2, R0, R0
+    MOVI R3, 1
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    SUB R4, R0, R0
+    MOVI R5, 2
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    SUB R6, R0, R0
+    MOVI R7, 3
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    SUB R8, R0, R0
+    MOVI R9, 4
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    SUB RA, R0, R0
+    MOVI RB, 5
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    SUB RC, R0, R0
+    MOVI RD, 6
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    SUB RE, R0, R0
+    MOVI RF, 7
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    SUB R0, R0, R0
+    MOVI R1, 8
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    SUB R2, R0, R0
+    MOVI R3, 9
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    SUB R4, R0, R0
+    MOVI R5, 10
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    SUB R6, R0, R0
+    MOVI R7, 11
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    SUB R8, R0, R0
+    MOVI R9, 12
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    SUB RA, R0, R0
+    MOVI RB, 13
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    SUB RC, R0, R0
+    MOVI RD, 14
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    SUB RE, R0, R0
+    MOVI RF, 15
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    SUB R0, R0, R0
+    MUL R1, R2, R2
+    MUL R2, R4, R4
+    ADD R3, R1, R2
+    MUL R4, R6, R6
+    ADD R5, R3, R4
+    MUL R6, R8, R8
+    ADD R7, R5, R6
+    MUL R8, RA, RA
+    ADD R9, R7, R8
+    MUL RA, RC, RC
+    ADD RB, R9, RA
+    MUL RC, RE, RE
+    ADD RD, RB, RC
+    MUL RE, R0, R0
+    ADD RF, RD, RE
+    MUL R0, R2, R2
+    ADD R1, RF, R0
+    MUL R2, R4, R4
+    ADD R3, R1, R2
+    MUL R4, R6, R6
+    ADD R5, R3, R4
+    MUL R6, R8, R8
+    ADD R7, R5, R6
+    MUL R8, RA, RA
+    ADD R9, R7, R8
+    MUL RA, RC, RC
+    ADD RB, R9, RA
+    MUL RC, RE, RE
+    ADD RD, RB, RC
+    MUL RE, R0, R0
+    ADD RF, RD, RE
+    MOVI R1, 16000
+    MOVI R2, 0
+    COMPLEX R0, R1, R2
+    DIV R3, RF, R0
+    MOV R0, R3
+    RET
+
+std_dev:
+    CALL variance
+    ; stdlib intrinsic: sqrt
+    CALL sqrt
+    RET
+
+max_magnitude:
+    MOVI R1, 0
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    MOVI R2, 1
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI R3, 2
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI R4, 3
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI R5, 4
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI R6, 5
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI R7, 6
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI R8, 7
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI R9, 8
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI RA, 9
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI RB, 10
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI RC, 11
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI RD, 12
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI RE, 13
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI RF, 14
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI R0, 15
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    RET
+
+min_magnitude:
+    MOVI R1, 0
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    MOVI R2, 1
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: min_float
+    CALL min_float
+    MOVI R3, 2
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: min_float
+    CALL min_float
+    MOVI R4, 3
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: min_float
+    CALL min_float
+    MOVI R5, 4
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: min_float
+    CALL min_float
+    MOVI R6, 5
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: min_float
+    CALL min_float
+    MOVI R7, 6
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: min_float
+    CALL min_float
+    MOVI R8, 7
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: min_float
+    CALL min_float
+    MOVI R9, 8
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: min_float
+    CALL min_float
+    MOVI RA, 9
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: min_float
+    CALL min_float
+    MOVI RB, 10
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: min_float
+    CALL min_float
+    MOVI RC, 11
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: min_float
+    CALL min_float
+    MOVI RD, 12
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: min_float
+    CALL min_float
+    MOVI RE, 13
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: min_float
+    CALL min_float
+    MOVI RF, 14
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: min_float
+    CALL min_float
+    MOVI R0, 15
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    ; stdlib intrinsic: min_float
+    CALL min_float
+    RET
+
+entropy:
+    CALL sum_state
+    MOVI R2, 0
+    MOVI R3, 0
+    COMPLEX R1, R2, R3
+    CMP R4, R0, R1
+    JZ R4, else0
+    MOVI R6, 0
+    MOVI R7, 0
+    COMPLEX R5, R6, R7
+    MOV R0, R5
+    RET
+    JMP if_end1
+else0:
+if_end1:
+    MOVI R9, 0
+    MOVI RA, 0
+    COMPLEX R8, R9, RA
+    MOVI RB, 0
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    DIV RC, R0, R0
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI RD, 1
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    DIV RE, R0, R0
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI RF, 2
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    DIV R0, R0, R0
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI R1, 3
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    DIV R2, R0, R0
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI R3, 4
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    DIV R4, R0, R0
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI R5, 5
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    DIV R6, R0, R0
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI R7, 6
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    DIV R8, R0, R0
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI R9, 7
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    DIV RA, R0, R0
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI RB, 8
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    DIV RC, R0, R0
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI RD, 9
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    DIV RE, R0, R0
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI RF, 10
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    DIV R0, R0, R0
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI R1, 11
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    DIV R2, R0, R0
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI R3, 12
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    DIV R4, R0, R0
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI R5, 13
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    DIV R6, R0, R0
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI R7, 14
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    DIV R8, R0, R0
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI R9, 15
+    ; stdlib intrinsic: state_get_layer
+    CALL state_get_layer
+    ; stdlib intrinsic: bytesil_magnitude
+    CALL bytesil_magnitude
+    DIV RA, R0, R0
+    ; stdlib intrinsic: max_float
+    CALL max_float
+    MOVI RC, 0
+    MOVI RD, 0
+    COMPLEX RB, RC, RD
+    ; stdlib intrinsic: ln
+    CALL ln
+    MUL RE, R0, R0
+    SUB RF, RB, RE
+    ; stdlib intrinsic: ln
+    CALL ln
+    MUL R0, R0, R0
+    SUB R1, RF, R0
+    ; stdlib intrinsic: ln
+    CALL ln
+    MUL R2, R0, R0
+    SUB R3, R1, R2
+    ; stdlib intrinsic: ln
+    CALL ln
+    MUL R4, R0, R0
+    SUB R5, R3, R4
+    ; stdlib intrinsic: ln
+    CALL ln
+    MUL R6, R0, R0
+    SUB R7, R5, R6
+    ; stdlib intrinsic: ln
+    CALL ln
+    MUL R8, R0, R0
+    SUB R9, R7, R8
+    ; stdlib intrinsic: ln
+    CALL ln
+    MUL RA, R0, R0
+    SUB RB, R9, RA
+    ; stdlib intrinsic: ln
+    CALL ln
+    MUL RC, R0, R0
+    SUB RD, RB, RC
+    ; stdlib intrinsic: ln
+    CALL ln
+    MUL RE, R0, R0
+    SUB RF, RD, RE
+    ; stdlib intrinsic: ln
+    CALL ln
+    MUL R0, R0, R0
+    SUB R1, RF, R0
+    ; stdlib intrinsic: ln
+    CALL ln
+    MUL R2, R0, R0
+    SUB R3, R1, R2
+    ; stdlib intrinsic: ln
+    CALL ln
+    MUL R4, R0, R0
+    SUB R5, R3, R4
+    ; stdlib intrinsic: ln
+    CALL ln
+    MUL R6, R0, R0
+    SUB R7, R5, R6
+    ; stdlib intrinsic: ln
+    CALL ln
+    MUL R8, R0, R0
+    SUB R9, R7, R8
+    ; stdlib intrinsic: ln
+    CALL ln
+    MUL RA, R0, R0
+    SUB RB, R9, RA
+    ; stdlib intrinsic: ln
+    CALL ln
+    MUL RC, R0, R0
+    SUB RD, RB, RC
+    MOV R0, RD
+    RET
+
+entropy_normalized:
+    CALL entropy
+    MOVI R2, 16000
+    MOVI R3, 0
+    COMPLEX R1, R2, R3
+    ; stdlib intrinsic: ln
+    CALL ln
+    DIV R4, R0, R0
+    MOV R0, R4
+    RET
+
+median_3:
+    CMP R3, R0, R1
+    JZ R3, else2
+    CMP R4, R1, R2
+    JZ R4, else4
+    MOV R0, R1
+    RET
+    JMP if_end5
+else4:
+if_end5:
+    CMP R5, R0, R2
+    JZ R5, else6
+    MOV R0, R2
+    RET
+    JMP if_end7
+else6:
+if_end7:
+    RET
+    JMP if_end3
+else2:
+if_end3:
+    CMP R6, R0, R2
+    JZ R6, else8
+    RET
+    JMP if_end9
+else8:
+if_end9:
+    CMP R7, R1, R2
+    JZ R7, else10
+    MOV R0, R2
+    RET
+    JMP if_end11
+else10:
+if_end11:
+    MOV R0, R1
+    RET

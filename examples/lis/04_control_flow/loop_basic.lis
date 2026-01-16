@@ -1,0 +1,131 @@
+// LIS Example: Loop Básico
+// Demonstra: loop infinito com break
+// Documentação: Seção 7.5
+
+fn main() {
+    print_string("=== Basic Loop ===");
+
+    // =========================================
+    // Loop Infinito com Break
+    // =========================================
+    print_string("--- Infinite Loop with Break ---");
+
+    // LIS usa 'loop' para criar loops infinitos
+    // Use 'break' para sair do loop
+
+    let count = 0;
+
+    loop {
+        print_string("Iteration:");
+        print_int(count);
+
+        let count = count + 1;
+
+        if count >= 5 {
+            print_string("Breaking out of loop");
+            break;
+        }
+    }
+
+    print_string("Loop finished");
+
+    // =========================================
+    // Loop até Condição
+    // =========================================
+    print_string("--- Loop Until Condition ---");
+
+    let value = 1;
+
+    loop {
+        let value = value * 2;
+        print_string("Value doubled:");
+        print_int(value);
+
+        if value >= 100 {
+            break;
+        }
+    }
+
+    // =========================================
+    // Loop com Múltiplas Condições de Saída
+    // =========================================
+    print_string("--- Multiple Exit Conditions ---");
+
+    let n = 0;
+    let found = false;
+
+    loop {
+        let n = n + 1;
+
+        // Condição 1: encontrou o valor
+        if n == 7 {
+            print_string("Found target value 7!");
+            let found = true;
+            break;
+        }
+
+        // Condição 2: limite máximo
+        if n >= 20 {
+            print_string("Reached maximum iterations");
+            break;
+        }
+    }
+
+    // =========================================
+    // Loop de Busca
+    // =========================================
+    print_string("--- Search Loop ---");
+
+    // Simular busca de divisor
+    let number = 15;
+    let divisor = 2;
+
+    loop {
+        let remainder = number - (number / divisor) * divisor;
+
+        if remainder == 0 {
+            print_string("Found divisor:");
+            print_int(divisor);
+            break;
+        }
+
+        let divisor = divisor + 1;
+
+        if divisor > number {
+            print_string("No divisor found (prime)");
+            break;
+        }
+    }
+
+    // =========================================
+    // Loop de Acumulação
+    // =========================================
+    print_string("--- Accumulation Loop ---");
+
+    let sum = 0;
+    let i = 1;
+
+    loop {
+        let sum = sum + i;
+        let i = i + 1;
+
+        if i > 10 {
+            break;
+        }
+    }
+
+    print_string("Sum of 1 to 10:");
+    print_int(sum);  // Should be 55
+
+    // =========================================
+    // Loop Imediato (Edge Case)
+    // =========================================
+    print_string("--- Immediate Break ---");
+
+    loop {
+        print_string("This prints once");
+        break;
+    }
+
+    print_string("After immediate break loop");
+}

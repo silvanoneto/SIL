@@ -1,0 +1,410 @@
+// Normalization layers: LayerNorm and RMSNorm
+// All operate on State (16-element vectors)
+
+// Layer Normalization
+// Normalizes across the 16 elements of a State
+// gamma: scale parameter (State)
+// beta: shift parameter (State)
+// eps: small constant for numerical stability
+fn layer_norm(input: State, gamma: State, beta: State, eps: Float) -> State {
+    // Compute mean
+    let m0 = bytesil_magnitude(state_get_layer(input, 0));
+    let m1 = bytesil_magnitude(state_get_layer(input, 1));
+    let m2 = bytesil_magnitude(state_get_layer(input, 2));
+    let m3 = bytesil_magnitude(state_get_layer(input, 3));
+    let m4 = bytesil_magnitude(state_get_layer(input, 4));
+    let m5 = bytesil_magnitude(state_get_layer(input, 5));
+    let m6 = bytesil_magnitude(state_get_layer(input, 6));
+    let m7 = bytesil_magnitude(state_get_layer(input, 7));
+    let m8 = bytesil_magnitude(state_get_layer(input, 8));
+    let m9 = bytesil_magnitude(state_get_layer(input, 9));
+    let m10 = bytesil_magnitude(state_get_layer(input, 10));
+    let m11 = bytesil_magnitude(state_get_layer(input, 11));
+    let m12 = bytesil_magnitude(state_get_layer(input, 12));
+    let m13 = bytesil_magnitude(state_get_layer(input, 13));
+    let m14 = bytesil_magnitude(state_get_layer(input, 14));
+    let m15 = bytesil_magnitude(state_get_layer(input, 15));
+
+    let sum = m0 + m1 + m2 + m3 + m4 + m5 + m6 + m7 + m8 + m9 + m10 + m11 + m12 + m13 + m14 + m15;
+    let mean = sum / 16.0;
+
+    // Compute variance
+    let d0 = m0 - mean;
+    let d1 = m1 - mean;
+    let d2 = m2 - mean;
+    let d3 = m3 - mean;
+    let d4 = m4 - mean;
+    let d5 = m5 - mean;
+    let d6 = m6 - mean;
+    let d7 = m7 - mean;
+    let d8 = m8 - mean;
+    let d9 = m9 - mean;
+    let d10 = m10 - mean;
+    let d11 = m11 - mean;
+    let d12 = m12 - mean;
+    let d13 = m13 - mean;
+    let d14 = m14 - mean;
+    let d15 = m15 - mean;
+
+    let var_sum = d0*d0 + d1*d1 + d2*d2 + d3*d3 + d4*d4 + d5*d5 + d6*d6 + d7*d7;
+    let var_sum = var_sum + d8*d8 + d9*d9 + d10*d10 + d11*d11 + d12*d12 + d13*d13 + d14*d14 + d15*d15;
+    let variance = var_sum / 16.0;
+    let std = sqrt(variance + eps);
+
+    // Normalize and apply affine transform
+    let result = state_vacuum();
+
+    let g0 = bytesil_magnitude(state_get_layer(gamma, 0));
+    let b0 = bytesil_magnitude(state_get_layer(beta, 0));
+    let n0 = ((m0 - mean) / std) * g0 + b0;
+    let r0 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n0), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 0, r0);
+
+    let g1 = bytesil_magnitude(state_get_layer(gamma, 1));
+    let b1 = bytesil_magnitude(state_get_layer(beta, 1));
+    let n1 = ((m1 - mean) / std) * g1 + b1;
+    let r1 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n1), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 1, r1);
+
+    let g2 = bytesil_magnitude(state_get_layer(gamma, 2));
+    let b2 = bytesil_magnitude(state_get_layer(beta, 2));
+    let n2 = ((m2 - mean) / std) * g2 + b2;
+    let r2 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n2), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 2, r2);
+
+    let g3 = bytesil_magnitude(state_get_layer(gamma, 3));
+    let b3 = bytesil_magnitude(state_get_layer(beta, 3));
+    let n3 = ((m3 - mean) / std) * g3 + b3;
+    let r3 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n3), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 3, r3);
+
+    let g4 = bytesil_magnitude(state_get_layer(gamma, 4));
+    let b4 = bytesil_magnitude(state_get_layer(beta, 4));
+    let n4 = ((m4 - mean) / std) * g4 + b4;
+    let r4 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n4), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 4, r4);
+
+    let g5 = bytesil_magnitude(state_get_layer(gamma, 5));
+    let b5 = bytesil_magnitude(state_get_layer(beta, 5));
+    let n5 = ((m5 - mean) / std) * g5 + b5;
+    let r5 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n5), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 5, r5);
+
+    let g6 = bytesil_magnitude(state_get_layer(gamma, 6));
+    let b6 = bytesil_magnitude(state_get_layer(beta, 6));
+    let n6 = ((m6 - mean) / std) * g6 + b6;
+    let r6 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n6), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 6, r6);
+
+    let g7 = bytesil_magnitude(state_get_layer(gamma, 7));
+    let b7 = bytesil_magnitude(state_get_layer(beta, 7));
+    let n7 = ((m7 - mean) / std) * g7 + b7;
+    let r7 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n7), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 7, r7);
+
+    let g8 = bytesil_magnitude(state_get_layer(gamma, 8));
+    let b8 = bytesil_magnitude(state_get_layer(beta, 8));
+    let n8 = ((m8 - mean) / std) * g8 + b8;
+    let r8 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n8), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 8, r8);
+
+    let g9 = bytesil_magnitude(state_get_layer(gamma, 9));
+    let b9 = bytesil_magnitude(state_get_layer(beta, 9));
+    let n9 = ((m9 - mean) / std) * g9 + b9;
+    let r9 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n9), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 9, r9);
+
+    let g10 = bytesil_magnitude(state_get_layer(gamma, 10));
+    let b10 = bytesil_magnitude(state_get_layer(beta, 10));
+    let n10 = ((m10 - mean) / std) * g10 + b10;
+    let r10 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n10), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 10, r10);
+
+    let g11 = bytesil_magnitude(state_get_layer(gamma, 11));
+    let b11 = bytesil_magnitude(state_get_layer(beta, 11));
+    let n11 = ((m11 - mean) / std) * g11 + b11;
+    let r11 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n11), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 11, r11);
+
+    let g12 = bytesil_magnitude(state_get_layer(gamma, 12));
+    let b12 = bytesil_magnitude(state_get_layer(beta, 12));
+    let n12 = ((m12 - mean) / std) * g12 + b12;
+    let r12 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n12), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 12, r12);
+
+    let g13 = bytesil_magnitude(state_get_layer(gamma, 13));
+    let b13 = bytesil_magnitude(state_get_layer(beta, 13));
+    let n13 = ((m13 - mean) / std) * g13 + b13;
+    let r13 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n13), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 13, r13);
+
+    let g14 = bytesil_magnitude(state_get_layer(gamma, 14));
+    let b14 = bytesil_magnitude(state_get_layer(beta, 14));
+    let n14 = ((m14 - mean) / std) * g14 + b14;
+    let r14 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n14), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 14, r14);
+
+    let g15 = bytesil_magnitude(state_get_layer(gamma, 15));
+    let b15 = bytesil_magnitude(state_get_layer(beta, 15));
+    let n15 = ((m15 - mean) / std) * g15 + b15;
+    let r15 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n15), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 15, r15);
+
+    return result;
+}
+
+// RMS Normalization (used in LLaMA, etc.)
+// Simpler than LayerNorm - no mean subtraction, just RMS scaling
+fn rms_norm(input: State, gamma: State, eps: Float) -> State {
+    // Compute RMS (root mean square)
+    let m0 = bytesil_magnitude(state_get_layer(input, 0));
+    let m1 = bytesil_magnitude(state_get_layer(input, 1));
+    let m2 = bytesil_magnitude(state_get_layer(input, 2));
+    let m3 = bytesil_magnitude(state_get_layer(input, 3));
+    let m4 = bytesil_magnitude(state_get_layer(input, 4));
+    let m5 = bytesil_magnitude(state_get_layer(input, 5));
+    let m6 = bytesil_magnitude(state_get_layer(input, 6));
+    let m7 = bytesil_magnitude(state_get_layer(input, 7));
+    let m8 = bytesil_magnitude(state_get_layer(input, 8));
+    let m9 = bytesil_magnitude(state_get_layer(input, 9));
+    let m10 = bytesil_magnitude(state_get_layer(input, 10));
+    let m11 = bytesil_magnitude(state_get_layer(input, 11));
+    let m12 = bytesil_magnitude(state_get_layer(input, 12));
+    let m13 = bytesil_magnitude(state_get_layer(input, 13));
+    let m14 = bytesil_magnitude(state_get_layer(input, 14));
+    let m15 = bytesil_magnitude(state_get_layer(input, 15));
+
+    let sq_sum = m0*m0 + m1*m1 + m2*m2 + m3*m3 + m4*m4 + m5*m5 + m6*m6 + m7*m7;
+    let sq_sum = sq_sum + m8*m8 + m9*m9 + m10*m10 + m11*m11 + m12*m12 + m13*m13 + m14*m14 + m15*m15;
+    let rms = sqrt(sq_sum / 16.0 + eps);
+
+    // Normalize and scale by gamma
+    let result = state_vacuum();
+
+    let g0 = bytesil_magnitude(state_get_layer(gamma, 0));
+    let n0 = (m0 / rms) * g0;
+    let r0 = bytesil_new(floor(clamp_float(ln(max_float(n0, 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 0, r0);
+
+    let g1 = bytesil_magnitude(state_get_layer(gamma, 1));
+    let n1 = (m1 / rms) * g1;
+    let r1 = bytesil_new(floor(clamp_float(ln(max_float(n1, 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 1, r1);
+
+    let g2 = bytesil_magnitude(state_get_layer(gamma, 2));
+    let n2 = (m2 / rms) * g2;
+    let r2 = bytesil_new(floor(clamp_float(ln(max_float(n2, 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 2, r2);
+
+    let g3 = bytesil_magnitude(state_get_layer(gamma, 3));
+    let n3 = (m3 / rms) * g3;
+    let r3 = bytesil_new(floor(clamp_float(ln(max_float(n3, 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 3, r3);
+
+    let g4 = bytesil_magnitude(state_get_layer(gamma, 4));
+    let n4 = (m4 / rms) * g4;
+    let r4 = bytesil_new(floor(clamp_float(ln(max_float(n4, 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 4, r4);
+
+    let g5 = bytesil_magnitude(state_get_layer(gamma, 5));
+    let n5 = (m5 / rms) * g5;
+    let r5 = bytesil_new(floor(clamp_float(ln(max_float(n5, 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 5, r5);
+
+    let g6 = bytesil_magnitude(state_get_layer(gamma, 6));
+    let n6 = (m6 / rms) * g6;
+    let r6 = bytesil_new(floor(clamp_float(ln(max_float(n6, 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 6, r6);
+
+    let g7 = bytesil_magnitude(state_get_layer(gamma, 7));
+    let n7 = (m7 / rms) * g7;
+    let r7 = bytesil_new(floor(clamp_float(ln(max_float(n7, 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 7, r7);
+
+    let g8 = bytesil_magnitude(state_get_layer(gamma, 8));
+    let n8 = (m8 / rms) * g8;
+    let r8 = bytesil_new(floor(clamp_float(ln(max_float(n8, 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 8, r8);
+
+    let g9 = bytesil_magnitude(state_get_layer(gamma, 9));
+    let n9 = (m9 / rms) * g9;
+    let r9 = bytesil_new(floor(clamp_float(ln(max_float(n9, 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 9, r9);
+
+    let g10 = bytesil_magnitude(state_get_layer(gamma, 10));
+    let n10 = (m10 / rms) * g10;
+    let r10 = bytesil_new(floor(clamp_float(ln(max_float(n10, 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 10, r10);
+
+    let g11 = bytesil_magnitude(state_get_layer(gamma, 11));
+    let n11 = (m11 / rms) * g11;
+    let r11 = bytesil_new(floor(clamp_float(ln(max_float(n11, 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 11, r11);
+
+    let g12 = bytesil_magnitude(state_get_layer(gamma, 12));
+    let n12 = (m12 / rms) * g12;
+    let r12 = bytesil_new(floor(clamp_float(ln(max_float(n12, 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 12, r12);
+
+    let g13 = bytesil_magnitude(state_get_layer(gamma, 13));
+    let n13 = (m13 / rms) * g13;
+    let r13 = bytesil_new(floor(clamp_float(ln(max_float(n13, 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 13, r13);
+
+    let g14 = bytesil_magnitude(state_get_layer(gamma, 14));
+    let n14 = (m14 / rms) * g14;
+    let r14 = bytesil_new(floor(clamp_float(ln(max_float(n14, 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 14, r14);
+
+    let g15 = bytesil_magnitude(state_get_layer(gamma, 15));
+    let n15 = (m15 / rms) * g15;
+    let r15 = bytesil_new(floor(clamp_float(ln(max_float(n15, 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 15, r15);
+
+    return result;
+}
+
+// Simplified LayerNorm without learnable parameters
+fn layer_norm_simple(input: State, eps: Float) -> State {
+    // Compute mean
+    let m0 = bytesil_magnitude(state_get_layer(input, 0));
+    let m1 = bytesil_magnitude(state_get_layer(input, 1));
+    let m2 = bytesil_magnitude(state_get_layer(input, 2));
+    let m3 = bytesil_magnitude(state_get_layer(input, 3));
+    let m4 = bytesil_magnitude(state_get_layer(input, 4));
+    let m5 = bytesil_magnitude(state_get_layer(input, 5));
+    let m6 = bytesil_magnitude(state_get_layer(input, 6));
+    let m7 = bytesil_magnitude(state_get_layer(input, 7));
+    let m8 = bytesil_magnitude(state_get_layer(input, 8));
+    let m9 = bytesil_magnitude(state_get_layer(input, 9));
+    let m10 = bytesil_magnitude(state_get_layer(input, 10));
+    let m11 = bytesil_magnitude(state_get_layer(input, 11));
+    let m12 = bytesil_magnitude(state_get_layer(input, 12));
+    let m13 = bytesil_magnitude(state_get_layer(input, 13));
+    let m14 = bytesil_magnitude(state_get_layer(input, 14));
+    let m15 = bytesil_magnitude(state_get_layer(input, 15));
+
+    let sum = m0 + m1 + m2 + m3 + m4 + m5 + m6 + m7 + m8 + m9 + m10 + m11 + m12 + m13 + m14 + m15;
+    let mean = sum / 16.0;
+
+    // Compute variance
+    let d0 = m0 - mean;
+    let d1 = m1 - mean;
+    let d2 = m2 - mean;
+    let d3 = m3 - mean;
+    let d4 = m4 - mean;
+    let d5 = m5 - mean;
+    let d6 = m6 - mean;
+    let d7 = m7 - mean;
+    let d8 = m8 - mean;
+    let d9 = m9 - mean;
+    let d10 = m10 - mean;
+    let d11 = m11 - mean;
+    let d12 = m12 - mean;
+    let d13 = m13 - mean;
+    let d14 = m14 - mean;
+    let d15 = m15 - mean;
+
+    let var_sum = d0*d0 + d1*d1 + d2*d2 + d3*d3 + d4*d4 + d5*d5 + d6*d6 + d7*d7;
+    let var_sum = var_sum + d8*d8 + d9*d9 + d10*d10 + d11*d11 + d12*d12 + d13*d13 + d14*d14 + d15*d15;
+    let std = sqrt(var_sum / 16.0 + eps);
+
+    // Normalize
+    let result = state_vacuum();
+
+    let n0 = d0 / std;
+    let r0 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n0), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 0, r0);
+
+    let n1 = d1 / std;
+    let r1 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n1), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 1, r1);
+
+    let n2 = d2 / std;
+    let r2 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n2), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 2, r2);
+
+    let n3 = d3 / std;
+    let r3 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n3), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 3, r3);
+
+    let n4 = d4 / std;
+    let r4 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n4), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 4, r4);
+
+    let n5 = d5 / std;
+    let r5 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n5), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 5, r5);
+
+    let n6 = d6 / std;
+    let r6 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n6), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 6, r6);
+
+    let n7 = d7 / std;
+    let r7 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n7), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 7, r7);
+
+    let n8 = d8 / std;
+    let r8 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n8), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 8, r8);
+
+    let n9 = d9 / std;
+    let r9 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n9), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 9, r9);
+
+    let n10 = d10 / std;
+    let r10 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n10), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 10, r10);
+
+    let n11 = d11 / std;
+    let r11 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n11), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 11, r11);
+
+    let n12 = d12 / std;
+    let r12 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n12), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 12, r12);
+
+    let n13 = d13 / std;
+    let r13 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n13), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 13, r13);
+
+    let n14 = d14 / std;
+    let r14 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n14), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 14, r14);
+
+    let n15 = d15 / std;
+    let r15 = bytesil_new(floor(clamp_float(ln(max_float(abs_float(n15), 0.0001)), -8.0, 7.0)), 0);
+    let result = state_set_layer(result, 15, r15);
+
+    return result;
+}
+
+// Initialize gamma to all ones (for RMS norm or LayerNorm)
+fn init_gamma_ones() -> State {
+    let result = state_vacuum();
+    let one = bytesil_one();
+
+    let result = state_set_layer(result, 0, one);
+    let result = state_set_layer(result, 1, one);
+    let result = state_set_layer(result, 2, one);
+    let result = state_set_layer(result, 3, one);
+    let result = state_set_layer(result, 4, one);
+    let result = state_set_layer(result, 5, one);
+    let result = state_set_layer(result, 6, one);
+    let result = state_set_layer(result, 7, one);
+    let result = state_set_layer(result, 8, one);
+    let result = state_set_layer(result, 9, one);
+    let result = state_set_layer(result, 10, one);
+    let result = state_set_layer(result, 11, one);
+    let result = state_set_layer(result, 12, one);
+    let result = state_set_layer(result, 13, one);
+    let result = state_set_layer(result, 14, one);
+    let result = state_set_layer(result, 15, one);
+
+    return result;
+}
+
+// Initialize beta to all zeros (for LayerNorm)
+fn init_beta_zeros() -> State {
+    return state_vacuum();
+}

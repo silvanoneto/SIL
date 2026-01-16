@@ -1,0 +1,23 @@
+[package]
+name = "sil-orchestration"
+version = "2026.1.16"
+edition = "2024"
+authors = ["Silvano Neto <dev@silvanoneto.com>"]
+license = "AGPL-3.0"
+rust-version = "1.92"
+
+[dependencies]
+sil-core = { path = "../sil-core" }
+thiserror = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+
+# Lock-free concurrency
+crossbeam-channel = "0.5"
+crossbeam-utils = "0.8"
+
+[dev-dependencies]
+criterion = "0.5"
+serde_json = "1.0"
+sil-photonic = { path = "../sil-photonic" }
+sil-actuator = { path = "../sil-actuator" }
+sil-network = { path = "../sil-network" }
