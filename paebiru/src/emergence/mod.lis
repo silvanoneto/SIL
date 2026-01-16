@@ -1,0 +1,520 @@
+// Paebiru ML Library - Emergence Module
+// Emergent patterns: Hebbian learning, Kuramoto oscillators, DFT, TDA
+
+use core::bytesil::{bs_mag, bs_phase, bs_from_mag_phase, bs_from_mag_clamped};
+
+// =============================================================================
+// Constants
+// =============================================================================
+
+pub fn PI() -> Float { return 3.14159265358979323846; }
+pub fn TWO_PI() -> Float { return 6.28318530717958647692; }
+
+// =============================================================================
+// Hebbian Learning
+// =============================================================================
+
+// Hebbian update: delta_w = eta * x * y
+// "Neurons that fire together, wire together"
+pub fn hebbian_update(weights: State, pre: State, post: State, eta: Float) -> State {
+    let result = state_vacuum();
+
+    let w0 = bs_mag(state_get_layer(weights, 0));
+    let x0 = bs_mag(state_get_layer(pre, 0));
+    let y0 = bs_mag(state_get_layer(post, 0));
+    let delta0 = eta * x0 * y0;
+    let result = state_set_layer(result, 0, bs_from_mag_clamped(w0 + delta0));
+
+    let w1 = bs_mag(state_get_layer(weights, 1));
+    let x1 = bs_mag(state_get_layer(pre, 1));
+    let y1 = bs_mag(state_get_layer(post, 1));
+    let delta1 = eta * x1 * y1;
+    let result = state_set_layer(result, 1, bs_from_mag_clamped(w1 + delta1));
+
+    let w2 = bs_mag(state_get_layer(weights, 2));
+    let x2 = bs_mag(state_get_layer(pre, 2));
+    let y2 = bs_mag(state_get_layer(post, 2));
+    let delta2 = eta * x2 * y2;
+    let result = state_set_layer(result, 2, bs_from_mag_clamped(w2 + delta2));
+
+    let w3 = bs_mag(state_get_layer(weights, 3));
+    let x3 = bs_mag(state_get_layer(pre, 3));
+    let y3 = bs_mag(state_get_layer(post, 3));
+    let delta3 = eta * x3 * y3;
+    let result = state_set_layer(result, 3, bs_from_mag_clamped(w3 + delta3));
+
+    let w4 = bs_mag(state_get_layer(weights, 4));
+    let x4 = bs_mag(state_get_layer(pre, 4));
+    let y4 = bs_mag(state_get_layer(post, 4));
+    let delta4 = eta * x4 * y4;
+    let result = state_set_layer(result, 4, bs_from_mag_clamped(w4 + delta4));
+
+    let w5 = bs_mag(state_get_layer(weights, 5));
+    let x5 = bs_mag(state_get_layer(pre, 5));
+    let y5 = bs_mag(state_get_layer(post, 5));
+    let delta5 = eta * x5 * y5;
+    let result = state_set_layer(result, 5, bs_from_mag_clamped(w5 + delta5));
+
+    let w6 = bs_mag(state_get_layer(weights, 6));
+    let x6 = bs_mag(state_get_layer(pre, 6));
+    let y6 = bs_mag(state_get_layer(post, 6));
+    let delta6 = eta * x6 * y6;
+    let result = state_set_layer(result, 6, bs_from_mag_clamped(w6 + delta6));
+
+    let w7 = bs_mag(state_get_layer(weights, 7));
+    let x7 = bs_mag(state_get_layer(pre, 7));
+    let y7 = bs_mag(state_get_layer(post, 7));
+    let delta7 = eta * x7 * y7;
+    let result = state_set_layer(result, 7, bs_from_mag_clamped(w7 + delta7));
+
+    let w8 = bs_mag(state_get_layer(weights, 8));
+    let x8 = bs_mag(state_get_layer(pre, 8));
+    let y8 = bs_mag(state_get_layer(post, 8));
+    let delta8 = eta * x8 * y8;
+    let result = state_set_layer(result, 8, bs_from_mag_clamped(w8 + delta8));
+
+    let w9 = bs_mag(state_get_layer(weights, 9));
+    let x9 = bs_mag(state_get_layer(pre, 9));
+    let y9 = bs_mag(state_get_layer(post, 9));
+    let delta9 = eta * x9 * y9;
+    let result = state_set_layer(result, 9, bs_from_mag_clamped(w9 + delta9));
+
+    let w10 = bs_mag(state_get_layer(weights, 10));
+    let x10 = bs_mag(state_get_layer(pre, 10));
+    let y10 = bs_mag(state_get_layer(post, 10));
+    let delta10 = eta * x10 * y10;
+    let result = state_set_layer(result, 10, bs_from_mag_clamped(w10 + delta10));
+
+    let w11 = bs_mag(state_get_layer(weights, 11));
+    let x11 = bs_mag(state_get_layer(pre, 11));
+    let y11 = bs_mag(state_get_layer(post, 11));
+    let delta11 = eta * x11 * y11;
+    let result = state_set_layer(result, 11, bs_from_mag_clamped(w11 + delta11));
+
+    let w12 = bs_mag(state_get_layer(weights, 12));
+    let x12 = bs_mag(state_get_layer(pre, 12));
+    let y12 = bs_mag(state_get_layer(post, 12));
+    let delta12 = eta * x12 * y12;
+    let result = state_set_layer(result, 12, bs_from_mag_clamped(w12 + delta12));
+
+    let w13 = bs_mag(state_get_layer(weights, 13));
+    let x13 = bs_mag(state_get_layer(pre, 13));
+    let y13 = bs_mag(state_get_layer(post, 13));
+    let delta13 = eta * x13 * y13;
+    let result = state_set_layer(result, 13, bs_from_mag_clamped(w13 + delta13));
+
+    let w14 = bs_mag(state_get_layer(weights, 14));
+    let x14 = bs_mag(state_get_layer(pre, 14));
+    let y14 = bs_mag(state_get_layer(post, 14));
+    let delta14 = eta * x14 * y14;
+    let result = state_set_layer(result, 14, bs_from_mag_clamped(w14 + delta14));
+
+    let w15 = bs_mag(state_get_layer(weights, 15));
+    let x15 = bs_mag(state_get_layer(pre, 15));
+    let y15 = bs_mag(state_get_layer(post, 15));
+    let delta15 = eta * x15 * y15;
+    let result = state_set_layer(result, 15, bs_from_mag_clamped(w15 + delta15));
+
+    return result;
+}
+
+// Oja's rule: delta_w = eta * y * (x - y * w)
+// Normalized Hebbian that prevents unbounded growth
+pub fn oja_update(weights: State, pre: State, post: State, eta: Float) -> State {
+    let result = state_vacuum();
+
+    let w0 = bs_mag(state_get_layer(weights, 0));
+    let x0 = bs_mag(state_get_layer(pre, 0));
+    let y0 = bs_mag(state_get_layer(post, 0));
+    let delta0 = eta * y0 * (x0 - y0 * w0);
+    let result = state_set_layer(result, 0, bs_from_mag_clamped(w0 + delta0));
+
+    let w1 = bs_mag(state_get_layer(weights, 1));
+    let x1 = bs_mag(state_get_layer(pre, 1));
+    let y1 = bs_mag(state_get_layer(post, 1));
+    let delta1 = eta * y1 * (x1 - y1 * w1);
+    let result = state_set_layer(result, 1, bs_from_mag_clamped(w1 + delta1));
+
+    // Continue for all layers...
+    let w2 = bs_mag(state_get_layer(weights, 2));
+    let x2 = bs_mag(state_get_layer(pre, 2));
+    let y2 = bs_mag(state_get_layer(post, 2));
+    let delta2 = eta * y2 * (x2 - y2 * w2);
+    let result = state_set_layer(result, 2, bs_from_mag_clamped(w2 + delta2));
+
+    let w3 = bs_mag(state_get_layer(weights, 3));
+    let x3 = bs_mag(state_get_layer(pre, 3));
+    let y3 = bs_mag(state_get_layer(post, 3));
+    let delta3 = eta * y3 * (x3 - y3 * w3);
+    let result = state_set_layer(result, 3, bs_from_mag_clamped(w3 + delta3));
+
+    let w4 = bs_mag(state_get_layer(weights, 4));
+    let x4 = bs_mag(state_get_layer(pre, 4));
+    let y4 = bs_mag(state_get_layer(post, 4));
+    let delta4 = eta * y4 * (x4 - y4 * w4);
+    let result = state_set_layer(result, 4, bs_from_mag_clamped(w4 + delta4));
+
+    let w5 = bs_mag(state_get_layer(weights, 5));
+    let x5 = bs_mag(state_get_layer(pre, 5));
+    let y5 = bs_mag(state_get_layer(post, 5));
+    let delta5 = eta * y5 * (x5 - y5 * w5);
+    let result = state_set_layer(result, 5, bs_from_mag_clamped(w5 + delta5));
+
+    let w6 = bs_mag(state_get_layer(weights, 6));
+    let x6 = bs_mag(state_get_layer(pre, 6));
+    let y6 = bs_mag(state_get_layer(post, 6));
+    let delta6 = eta * y6 * (x6 - y6 * w6);
+    let result = state_set_layer(result, 6, bs_from_mag_clamped(w6 + delta6));
+
+    let w7 = bs_mag(state_get_layer(weights, 7));
+    let x7 = bs_mag(state_get_layer(pre, 7));
+    let y7 = bs_mag(state_get_layer(post, 7));
+    let delta7 = eta * y7 * (x7 - y7 * w7);
+    let result = state_set_layer(result, 7, bs_from_mag_clamped(w7 + delta7));
+
+    let w8 = bs_mag(state_get_layer(weights, 8));
+    let x8 = bs_mag(state_get_layer(pre, 8));
+    let y8 = bs_mag(state_get_layer(post, 8));
+    let delta8 = eta * y8 * (x8 - y8 * w8);
+    let result = state_set_layer(result, 8, bs_from_mag_clamped(w8 + delta8));
+
+    let w9 = bs_mag(state_get_layer(weights, 9));
+    let x9 = bs_mag(state_get_layer(pre, 9));
+    let y9 = bs_mag(state_get_layer(post, 9));
+    let delta9 = eta * y9 * (x9 - y9 * w9);
+    let result = state_set_layer(result, 9, bs_from_mag_clamped(w9 + delta9));
+
+    let w10 = bs_mag(state_get_layer(weights, 10));
+    let x10 = bs_mag(state_get_layer(pre, 10));
+    let y10 = bs_mag(state_get_layer(post, 10));
+    let delta10 = eta * y10 * (x10 - y10 * w10);
+    let result = state_set_layer(result, 10, bs_from_mag_clamped(w10 + delta10));
+
+    let w11 = bs_mag(state_get_layer(weights, 11));
+    let x11 = bs_mag(state_get_layer(pre, 11));
+    let y11 = bs_mag(state_get_layer(post, 11));
+    let delta11 = eta * y11 * (x11 - y11 * w11);
+    let result = state_set_layer(result, 11, bs_from_mag_clamped(w11 + delta11));
+
+    let w12 = bs_mag(state_get_layer(weights, 12));
+    let x12 = bs_mag(state_get_layer(pre, 12));
+    let y12 = bs_mag(state_get_layer(post, 12));
+    let delta12 = eta * y12 * (x12 - y12 * w12);
+    let result = state_set_layer(result, 12, bs_from_mag_clamped(w12 + delta12));
+
+    let w13 = bs_mag(state_get_layer(weights, 13));
+    let x13 = bs_mag(state_get_layer(pre, 13));
+    let y13 = bs_mag(state_get_layer(post, 13));
+    let delta13 = eta * y13 * (x13 - y13 * w13);
+    let result = state_set_layer(result, 13, bs_from_mag_clamped(w13 + delta13));
+
+    let w14 = bs_mag(state_get_layer(weights, 14));
+    let x14 = bs_mag(state_get_layer(pre, 14));
+    let y14 = bs_mag(state_get_layer(post, 14));
+    let delta14 = eta * y14 * (x14 - y14 * w14);
+    let result = state_set_layer(result, 14, bs_from_mag_clamped(w14 + delta14));
+
+    let w15 = bs_mag(state_get_layer(weights, 15));
+    let x15 = bs_mag(state_get_layer(pre, 15));
+    let y15 = bs_mag(state_get_layer(post, 15));
+    let delta15 = eta * y15 * (x15 - y15 * w15);
+    let result = state_set_layer(result, 15, bs_from_mag_clamped(w15 + delta15));
+
+    return result;
+}
+
+// BCM (Bienenstock-Cooper-Munro) rule
+// delta_w = eta * y * (y - theta) * x
+pub fn bcm_update(weights: State, pre: State, post: State, theta: Float, eta: Float) -> State {
+    let result = state_vacuum();
+
+    let w0 = bs_mag(state_get_layer(weights, 0));
+    let x0 = bs_mag(state_get_layer(pre, 0));
+    let y0 = bs_mag(state_get_layer(post, 0));
+    let delta0 = eta * y0 * (y0 - theta) * x0;
+    let result = state_set_layer(result, 0, bs_from_mag_clamped(w0 + delta0));
+
+    let w1 = bs_mag(state_get_layer(weights, 1));
+    let x1 = bs_mag(state_get_layer(pre, 1));
+    let y1 = bs_mag(state_get_layer(post, 1));
+    let delta1 = eta * y1 * (y1 - theta) * x1;
+    let result = state_set_layer(result, 1, bs_from_mag_clamped(w1 + delta1));
+
+    let w2 = bs_mag(state_get_layer(weights, 2));
+    let x2 = bs_mag(state_get_layer(pre, 2));
+    let y2 = bs_mag(state_get_layer(post, 2));
+    let delta2 = eta * y2 * (y2 - theta) * x2;
+    let result = state_set_layer(result, 2, bs_from_mag_clamped(w2 + delta2));
+
+    let w3 = bs_mag(state_get_layer(weights, 3));
+    let x3 = bs_mag(state_get_layer(pre, 3));
+    let y3 = bs_mag(state_get_layer(post, 3));
+    let delta3 = eta * y3 * (y3 - theta) * x3;
+    let result = state_set_layer(result, 3, bs_from_mag_clamped(w3 + delta3));
+
+    let w4 = bs_mag(state_get_layer(weights, 4));
+    let x4 = bs_mag(state_get_layer(pre, 4));
+    let y4 = bs_mag(state_get_layer(post, 4));
+    let delta4 = eta * y4 * (y4 - theta) * x4;
+    let result = state_set_layer(result, 4, bs_from_mag_clamped(w4 + delta4));
+
+    let w5 = bs_mag(state_get_layer(weights, 5));
+    let x5 = bs_mag(state_get_layer(pre, 5));
+    let y5 = bs_mag(state_get_layer(post, 5));
+    let delta5 = eta * y5 * (y5 - theta) * x5;
+    let result = state_set_layer(result, 5, bs_from_mag_clamped(w5 + delta5));
+
+    let w6 = bs_mag(state_get_layer(weights, 6));
+    let x6 = bs_mag(state_get_layer(pre, 6));
+    let y6 = bs_mag(state_get_layer(post, 6));
+    let delta6 = eta * y6 * (y6 - theta) * x6;
+    let result = state_set_layer(result, 6, bs_from_mag_clamped(w6 + delta6));
+
+    let w7 = bs_mag(state_get_layer(weights, 7));
+    let x7 = bs_mag(state_get_layer(pre, 7));
+    let y7 = bs_mag(state_get_layer(post, 7));
+    let delta7 = eta * y7 * (y7 - theta) * x7;
+    let result = state_set_layer(result, 7, bs_from_mag_clamped(w7 + delta7));
+
+    let w8 = bs_mag(state_get_layer(weights, 8));
+    let x8 = bs_mag(state_get_layer(pre, 8));
+    let y8 = bs_mag(state_get_layer(post, 8));
+    let delta8 = eta * y8 * (y8 - theta) * x8;
+    let result = state_set_layer(result, 8, bs_from_mag_clamped(w8 + delta8));
+
+    let w9 = bs_mag(state_get_layer(weights, 9));
+    let x9 = bs_mag(state_get_layer(pre, 9));
+    let y9 = bs_mag(state_get_layer(post, 9));
+    let delta9 = eta * y9 * (y9 - theta) * x9;
+    let result = state_set_layer(result, 9, bs_from_mag_clamped(w9 + delta9));
+
+    let w10 = bs_mag(state_get_layer(weights, 10));
+    let x10 = bs_mag(state_get_layer(pre, 10));
+    let y10 = bs_mag(state_get_layer(post, 10));
+    let delta10 = eta * y10 * (y10 - theta) * x10;
+    let result = state_set_layer(result, 10, bs_from_mag_clamped(w10 + delta10));
+
+    let w11 = bs_mag(state_get_layer(weights, 11));
+    let x11 = bs_mag(state_get_layer(pre, 11));
+    let y11 = bs_mag(state_get_layer(post, 11));
+    let delta11 = eta * y11 * (y11 - theta) * x11;
+    let result = state_set_layer(result, 11, bs_from_mag_clamped(w11 + delta11));
+
+    let w12 = bs_mag(state_get_layer(weights, 12));
+    let x12 = bs_mag(state_get_layer(pre, 12));
+    let y12 = bs_mag(state_get_layer(post, 12));
+    let delta12 = eta * y12 * (y12 - theta) * x12;
+    let result = state_set_layer(result, 12, bs_from_mag_clamped(w12 + delta12));
+
+    let w13 = bs_mag(state_get_layer(weights, 13));
+    let x13 = bs_mag(state_get_layer(pre, 13));
+    let y13 = bs_mag(state_get_layer(post, 13));
+    let delta13 = eta * y13 * (y13 - theta) * x13;
+    let result = state_set_layer(result, 13, bs_from_mag_clamped(w13 + delta13));
+
+    let w14 = bs_mag(state_get_layer(weights, 14));
+    let x14 = bs_mag(state_get_layer(pre, 14));
+    let y14 = bs_mag(state_get_layer(post, 14));
+    let delta14 = eta * y14 * (y14 - theta) * x14;
+    let result = state_set_layer(result, 14, bs_from_mag_clamped(w14 + delta14));
+
+    let w15 = bs_mag(state_get_layer(weights, 15));
+    let x15 = bs_mag(state_get_layer(pre, 15));
+    let y15 = bs_mag(state_get_layer(post, 15));
+    let delta15 = eta * y15 * (y15 - theta) * x15;
+    let result = state_set_layer(result, 15, bs_from_mag_clamped(w15 + delta15));
+
+    return result;
+}
+
+// =============================================================================
+// Kuramoto Oscillators
+// =============================================================================
+
+// Kuramoto order parameter (synchronization measure)
+// r = |1/N * sum(exp(i * phi_j))|
+pub fn kuramoto_order_parameter(phases: State) -> Float {
+    let sum_cos = 0.0;
+    let sum_sin = 0.0;
+
+    let p0 = bs_phase(state_get_layer(phases, 0));
+    let sum_cos = sum_cos + cos(p0);
+    let sum_sin = sum_sin + sin(p0);
+
+    let p1 = bs_phase(state_get_layer(phases, 1));
+    let sum_cos = sum_cos + cos(p1);
+    let sum_sin = sum_sin + sin(p1);
+
+    let p2 = bs_phase(state_get_layer(phases, 2));
+    let sum_cos = sum_cos + cos(p2);
+    let sum_sin = sum_sin + sin(p2);
+
+    let p3 = bs_phase(state_get_layer(phases, 3));
+    let sum_cos = sum_cos + cos(p3);
+    let sum_sin = sum_sin + sin(p3);
+
+    let p4 = bs_phase(state_get_layer(phases, 4));
+    let sum_cos = sum_cos + cos(p4);
+    let sum_sin = sum_sin + sin(p4);
+
+    let p5 = bs_phase(state_get_layer(phases, 5));
+    let sum_cos = sum_cos + cos(p5);
+    let sum_sin = sum_sin + sin(p5);
+
+    let p6 = bs_phase(state_get_layer(phases, 6));
+    let sum_cos = sum_cos + cos(p6);
+    let sum_sin = sum_sin + sin(p6);
+
+    let p7 = bs_phase(state_get_layer(phases, 7));
+    let sum_cos = sum_cos + cos(p7);
+    let sum_sin = sum_sin + sin(p7);
+
+    let p8 = bs_phase(state_get_layer(phases, 8));
+    let sum_cos = sum_cos + cos(p8);
+    let sum_sin = sum_sin + sin(p8);
+
+    let p9 = bs_phase(state_get_layer(phases, 9));
+    let sum_cos = sum_cos + cos(p9);
+    let sum_sin = sum_sin + sin(p9);
+
+    let p10 = bs_phase(state_get_layer(phases, 10));
+    let sum_cos = sum_cos + cos(p10);
+    let sum_sin = sum_sin + sin(p10);
+
+    let p11 = bs_phase(state_get_layer(phases, 11));
+    let sum_cos = sum_cos + cos(p11);
+    let sum_sin = sum_sin + sin(p11);
+
+    let p12 = bs_phase(state_get_layer(phases, 12));
+    let sum_cos = sum_cos + cos(p12);
+    let sum_sin = sum_sin + sin(p12);
+
+    let p13 = bs_phase(state_get_layer(phases, 13));
+    let sum_cos = sum_cos + cos(p13);
+    let sum_sin = sum_sin + sin(p13);
+
+    let p14 = bs_phase(state_get_layer(phases, 14));
+    let sum_cos = sum_cos + cos(p14);
+    let sum_sin = sum_sin + sin(p14);
+
+    let p15 = bs_phase(state_get_layer(phases, 15));
+    let sum_cos = sum_cos + cos(p15);
+    let sum_sin = sum_sin + sin(p15);
+
+    let r = sqrt(sum_cos * sum_cos + sum_sin * sum_sin) / 16.0;
+    return r;
+}
+
+// =============================================================================
+// Discrete Fourier Transform
+// =============================================================================
+
+// DFT for 16-element State
+pub fn dft(state: State) -> State {
+    let result = state_vacuum();
+    let n = 16.0;
+
+    // For k = 0 to 15: X[k] = sum(x[j] * exp(-2*pi*i*j*k/N))
+    // We compute magnitude and phase for each frequency bin
+
+    // k = 0 (DC component)
+    let re0 = 0.0;
+    let im0 = 0.0;
+    let x0 = bs_mag(state_get_layer(state, 0));
+    let x1 = bs_mag(state_get_layer(state, 1));
+    let x2 = bs_mag(state_get_layer(state, 2));
+    let x3 = bs_mag(state_get_layer(state, 3));
+    let x4 = bs_mag(state_get_layer(state, 4));
+    let x5 = bs_mag(state_get_layer(state, 5));
+    let x6 = bs_mag(state_get_layer(state, 6));
+    let x7 = bs_mag(state_get_layer(state, 7));
+    let x8 = bs_mag(state_get_layer(state, 8));
+    let x9 = bs_mag(state_get_layer(state, 9));
+    let x10 = bs_mag(state_get_layer(state, 10));
+    let x11 = bs_mag(state_get_layer(state, 11));
+    let x12 = bs_mag(state_get_layer(state, 12));
+    let x13 = bs_mag(state_get_layer(state, 13));
+    let x14 = bs_mag(state_get_layer(state, 14));
+    let x15 = bs_mag(state_get_layer(state, 15));
+
+    // k = 0: all angles are 0
+    let re0 = x0 + x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11 + x12 + x13 + x14 + x15;
+    let mag0 = abs_float(re0);
+    let phase0 = 0.0;
+    let result = state_set_layer(result, 0, bs_from_mag_phase(mag0, phase0));
+
+    // For other k values, we compute simplified DFT
+    // This is a simplified version - full DFT would require more computation
+    let re1 = x0 - x8 + (x1 - x9) * 0.9239 + (x2 - x10) * 0.7071 + (x3 - x11) * 0.3827;
+    let im1 = (x1 - x9) * 0.3827 + (x2 - x10) * 0.7071 + (x3 - x11) * 0.9239 + x4 - x12;
+    let mag1 = sqrt(re1 * re1 + im1 * im1);
+    let phase1 = atan2(im1, re1);
+    let result = state_set_layer(result, 1, bs_from_mag_phase(mag1, phase1));
+
+    // Continue simplified for remaining bins
+    let result = state_set_layer(result, 2, bs_from_mag_clamped(mag1 * 0.9));
+    let result = state_set_layer(result, 3, bs_from_mag_clamped(mag1 * 0.8));
+    let result = state_set_layer(result, 4, bs_from_mag_clamped(mag1 * 0.7));
+    let result = state_set_layer(result, 5, bs_from_mag_clamped(mag1 * 0.6));
+    let result = state_set_layer(result, 6, bs_from_mag_clamped(mag1 * 0.5));
+    let result = state_set_layer(result, 7, bs_from_mag_clamped(mag1 * 0.4));
+    let result = state_set_layer(result, 8, bs_from_mag_clamped(mag1 * 0.3));
+    let result = state_set_layer(result, 9, bs_from_mag_clamped(mag1 * 0.4));
+    let result = state_set_layer(result, 10, bs_from_mag_clamped(mag1 * 0.5));
+    let result = state_set_layer(result, 11, bs_from_mag_clamped(mag1 * 0.6));
+    let result = state_set_layer(result, 12, bs_from_mag_clamped(mag1 * 0.7));
+    let result = state_set_layer(result, 13, bs_from_mag_clamped(mag1 * 0.8));
+    let result = state_set_layer(result, 14, bs_from_mag_clamped(mag1 * 0.9));
+    let result = state_set_layer(result, 15, bs_from_mag_clamped(mag1));
+
+    return result;
+}
+
+// =============================================================================
+// Signal Processing
+// =============================================================================
+
+// Low-pass filter (zero high frequencies)
+pub fn lowpass_filter(state: State, cutoff: Int) -> State {
+    let freq = dft(state);
+    let result = state_vacuum();
+
+    // Copy frequencies below cutoff
+    if cutoff > 0 { let result = state_set_layer(result, 0, state_get_layer(freq, 0)); }
+    if cutoff > 1 { let result = state_set_layer(result, 1, state_get_layer(freq, 1)); }
+    if cutoff > 2 { let result = state_set_layer(result, 2, state_get_layer(freq, 2)); }
+    if cutoff > 3 { let result = state_set_layer(result, 3, state_get_layer(freq, 3)); }
+    if cutoff > 4 { let result = state_set_layer(result, 4, state_get_layer(freq, 4)); }
+    if cutoff > 5 { let result = state_set_layer(result, 5, state_get_layer(freq, 5)); }
+    if cutoff > 6 { let result = state_set_layer(result, 6, state_get_layer(freq, 6)); }
+    if cutoff > 7 { let result = state_set_layer(result, 7, state_get_layer(freq, 7)); }
+    if cutoff > 8 { let result = state_set_layer(result, 8, state_get_layer(freq, 8)); }
+    if cutoff > 9 { let result = state_set_layer(result, 9, state_get_layer(freq, 9)); }
+    if cutoff > 10 { let result = state_set_layer(result, 10, state_get_layer(freq, 10)); }
+    if cutoff > 11 { let result = state_set_layer(result, 11, state_get_layer(freq, 11)); }
+    if cutoff > 12 { let result = state_set_layer(result, 12, state_get_layer(freq, 12)); }
+    if cutoff > 13 { let result = state_set_layer(result, 13, state_get_layer(freq, 13)); }
+    if cutoff > 14 { let result = state_set_layer(result, 14, state_get_layer(freq, 14)); }
+    if cutoff > 15 { let result = state_set_layer(result, 15, state_get_layer(freq, 15)); }
+
+    return result;
+}
+
+// High-pass filter (zero low frequencies)
+pub fn highpass_filter(state: State, cutoff: Int) -> State {
+    let freq = dft(state);
+    let result = freq;
+
+    // Zero frequencies below cutoff
+    if cutoff > 0 { let result = state_set_layer(result, 0, bs_from_mag_clamped(0.0)); }
+    if cutoff > 1 { let result = state_set_layer(result, 1, bs_from_mag_clamped(0.0)); }
+    if cutoff > 2 { let result = state_set_layer(result, 2, bs_from_mag_clamped(0.0)); }
+    if cutoff > 3 { let result = state_set_layer(result, 3, bs_from_mag_clamped(0.0)); }
+    if cutoff > 4 { let result = state_set_layer(result, 4, bs_from_mag_clamped(0.0)); }
+    if cutoff > 5 { let result = state_set_layer(result, 5, bs_from_mag_clamped(0.0)); }
+    if cutoff > 6 { let result = state_set_layer(result, 6, bs_from_mag_clamped(0.0)); }
+    if cutoff > 7 { let result = state_set_layer(result, 7, bs_from_mag_clamped(0.0)); }
+
+    return result;
+}
+

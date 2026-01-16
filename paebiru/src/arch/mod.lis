@@ -1,0 +1,12 @@
+// Paebiru ML Library - Architecture Module
+// Arquiteturas de redes neurais
+
+pub mod attention;
+pub mod ffn;
+pub mod transformer;
+pub mod kan;
+pub mod ssm;
+pub mod lnn;
+pub mod recurrent;
+pub mod snn;
+

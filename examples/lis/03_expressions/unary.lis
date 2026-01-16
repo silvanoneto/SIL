@@ -1,0 +1,130 @@
+// LIS Example: Operadores Unários
+// Demonstra: -, !, ~, |x| (negação, NOT, conjugado, magnitude)
+// Documentação: Seção 6.5
+
+fn main() {
+    print_string("=== Unary Operators ===");
+
+    // =========================================
+    // Negação Numérica (-)
+    // =========================================
+    print_string("--- Numeric Negation (-) ---");
+
+    let pos = 42;
+    let neg = -pos;
+    print_string("-42 =");
+    print_int(neg);
+
+    let double_neg = -neg;
+    print_string("-(-42) =");
+    print_int(double_neg);
+
+    let float_pos = 3.14;
+    let float_neg = -float_pos;
+    print_string("-3.14 =");
+    print_float(float_neg);
+
+    // Negação em expressão
+    let a = 10;
+    let b = 5;
+    let expr = -(a + b);
+    print_string("-(10 + 5) =");
+    print_int(expr);
+
+    // =========================================
+    // NOT Lógico (!)
+    // =========================================
+    print_string("--- Logical NOT (!) ---");
+
+    let t = true;
+    let f = false;
+
+    if !f {
+        print_string("!false = true");
+    }
+
+    if !t {
+        print_string("!true = true");
+    } else {
+        print_string("!true = false");
+    }
+
+    // NOT duplo
+    if !!t {
+        print_string("!!true = true");
+    }
+
+    // NOT em expressão
+    let cond = 5 > 3;
+    if !cond {
+        print_string("!(5 > 3) = true");
+    } else {
+        print_string("!(5 > 3) = false");
+    }
+
+    // =========================================
+    // Conjugado Complexo (~)
+    // =========================================
+    print_string("--- Complex Conjugate (~) ---");
+
+    // Criar número complexo: 1 + i
+    let c = bytesil_from_complex(1.0, 1.0);
+
+    // Conjugado: 1 - i
+    let c_conj = ~c;
+
+    // Também pode usar bytesil_conj
+    let c_conj2 = bytesil_conj(c);
+
+    print_string("Original complex (1+i):");
+    print_string("  Magnitude:");
+    print_float(bytesil_magnitude(c));
+    print_string("  Phase (rad):");
+    print_float(bytesil_phase_radians(c));
+
+    print_string("Conjugate (1-i):");
+    print_string("  Magnitude:");
+    print_float(bytesil_magnitude(c_conj));
+    print_string("  Phase (rad):");
+    print_float(bytesil_phase_radians(c_conj));
+
+    // =========================================
+    // Magnitude (|x|)
+    // =========================================
+    print_string("--- Magnitude (|x|) ---");
+
+    // Magnitude de número complexo
+    let c2 = bytesil_from_complex(3.0, 4.0);  // 3 + 4i
+    let mag = |c2|;  // Deveria ser 5 (3-4-5 triangle)
+
+    print_string("|3 + 4i| =");
+    print_float(mag);
+
+    // Magnitude de diferentes ByteSil
+    let bs1 = bytesil_new(8, 0);
+    let mag1 = |bs1|;
+    print_string("Magnitude of bytesil(8, 0):");
+    print_float(mag1);
+
+    let bs2 = bytesil_new(8, 4);
+    let mag2 = |bs2|;
+    print_string("Magnitude of bytesil(8, 4):");
+    print_float(mag2);
+
+    // =========================================
+    // Combinação de Operadores Unários
+    // =========================================
+    print_string("--- Combined Unary Operators ---");
+
+    // Negação e magnitude
+    let x = -5;
+    let abs_x = abs(x * 1.0);  // Usando função abs
+    print_string("abs(-5) =");
+    print_float(abs_x);
+
+    // NOT e comparação
+    let value = 10;
+    if !(value < 5) {
+        print_string("10 is NOT less than 5");
+    }
+}

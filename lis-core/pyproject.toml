@@ -1,0 +1,47 @@
+[build-system]
+requires = ["maturin>=1.4,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "lis-core"
+version = "2026.1.16"
+description = "LIS (Language for Intelligent Systems) - Python bindings for LIS compiler and runtime"
+readme = "README.md"
+license = {text = "AGPL-3.0"}
+requires-python = ">=3.9"
+authors = [
+    {name = "Silvano Neto", email = "dev@silvanoneto.com"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Rust",
+    "Topic :: Software Development :: Compilers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+keywords = ["compiler", "non-linear", "metaprogramming", "hardware-aware", "lis", "sil", "bytecode"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-benchmark>=4.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/silvanoneto/SIL"
+Documentation = "https://github.com/silvanoneto/SIL/docs"
+Repository = "https://github.com/silvanoneto/SIL"
+Issues = "https://github.com/silvanoneto/SIL/issues"
+
+[tool.maturin]
+features = ["python", "jsil"]
+python-source = "python"
+module-name = "lis_core._lis_core"

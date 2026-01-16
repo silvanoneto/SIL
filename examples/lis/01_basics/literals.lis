@@ -1,0 +1,60 @@
+// LIS Example: Literais
+// Demonstra: Literais de Int, Float, String, Bool
+// Documentação: Seção 3.6
+
+fn main() {
+    // =========================================
+    // Literais Inteiros (Int - 64 bits)
+    // =========================================
+    let positive = 42;
+    let negative = -17;
+    let zero = 0;
+    let large = 1000000;
+
+    print_string("Inteiros:");
+    print_int(positive);
+    print_int(negative);
+    print_int(zero);
+    print_int(large);
+
+    // =========================================
+    // Literais Float (64 bits, ponto flutuante)
+    // =========================================
+    let pi = 3.14159;
+    let neg_float = -2.5;
+    let scientific = 1.5e-3;    // Notação científica: 0.0015
+    let simple = 1.0;
+
+    print_string("Floats:");
+    print_float(pi);
+    print_float(neg_float);
+    print_float(scientific);
+    print_float(simple);
+
+    // =========================================
+    // Literais String
+    // =========================================
+    let greeting = "Hello, World!";
+    let empty = "";
+    let with_spaces = "texto com espacos";
+
+    print_string("Strings:");
+    print_string(greeting);
+    print_string(with_spaces);
+
+    // =========================================
+    // Literais Booleanos
+    // =========================================
+    let yes = true;
+    let no = false;
+
+    print_string("Booleanos:");
+    if yes {
+        print_string("yes is true");
+    }
+    if no {
+        print_string("no is true");
+    } else {
+        print_string("no is false");
+    }
+}

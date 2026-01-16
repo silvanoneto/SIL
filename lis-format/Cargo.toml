@@ -1,0 +1,30 @@
+[package]
+name = "lis-format"
+version = "2026.1.16"
+edition = "2024"
+authors = ["Silvano Neto <dev@silvanoneto.com>"]
+license = "AGPL-3.0"
+description = "Code formatter for LIS (Language for Intelligent Systems)"
+repository = "https://github.com/silvanoneto/"
+keywords = ["formatter", "code-style", "pretty-print"]
+categories = ["development-tools"]
+
+[package.metadata.deb]
+maintainer = "Silvano Neto <dev@silvanoneto.com>"
+section = "devel"
+priority = "optional"
+assets = []
+extended-description = "Formatter binary for LIS code: 'lis-format'."
+
+[[bin]]
+name = "lis-format"
+path = "src/main.rs"
+
+[dependencies]
+lis-core = { path = "../lis-core" }
+clap = { version = "4.5", features = ["derive", "cargo"] }
+thiserror = "1.0"
+anyhow = "1.0"
+
+[dev-dependencies]
+criterion = "0.5"

@@ -1,0 +1,210 @@
+// LIS Example: Feedback Loops
+// Demonstra: keyword 'feedback' para loops de retroalimentacao
+// Documentacao: Secao 6.12
+
+// Iterate feedback over multiple iterations
+fn iterate_feedback(initial: State, iterations: Int) -> State {
+    let current = initial;
+    let i = 0;
+
+    loop {
+        if i >= iterations {
+            break;
+        }
+
+        // Aplicar feedback
+        let current = feedback(current);
+
+        // Opcionalmente adicionar transformacao
+        let current = state_normalize(current);
+
+        let i = i + 1;
+    }
+
+    return current;
+}
+
+// Feedback with gain scaling
+fn feedback_with_gain(s: State, gain: Int) -> State {
+    // Aplicar feedback e escalar
+    let fb = feedback(s);
+    return transform_magnitude_scale(fb, gain);
+}
+
+// Negative feedback for stabilization
+fn negative_feedback(s: State, target: State) -> State {
+    // Feedback negativo: move em direcao ao target
+    let error = state_xor(s, target);
+    let correction = transform_magnitude_scale(error, 1);
+    return state_xor(s, correction);
+}
+
+// Positive feedback for amplification
+fn positive_feedback(s: State, amplification: Int) -> State {
+    // Feedback positivo: amplifica a diferenca do neutro
+    let deviation = state_xor(s, state_neutral());
+    let amplified = transform_magnitude_scale(deviation, amplification);
+    return state_xor(s, amplified);
+}
+
+// Complete feedback loop with error correction
+fn complete_feedback_loop(input: State, reference: State, gain: Int, iterations: Int) -> State {
+    let output = input;
+    let i = 0;
+
+    loop {
+        if i >= iterations {
+            break;
+        }
+
+        // Calcular erro
+        let error = state_xor(output, reference);
+
+        // Aplicar correcao proporcional
+        let correction = transform_magnitude_scale(error, gain);
+
+        // Atualizar output
+        let output = state_xor(output, correction);
+
+        // Normalizar para estabilidade
+        let output = state_normalize(output);
+
+        let i = i + 1;
+    }
+
+    return output;
+}
+
+// PID controller step (simplified)
+fn pid_step(current: State, target: State, prev_error: State, kp: Int, ki: Int, kd: Int) -> State {
+    // Calcular erro atual
+    let error = state_xor(current, target);
+
+    // Proporcional
+    let p_term = transform_magnitude_scale(error, kp);
+
+    // Integral (aproximado)
+    let i_term = transform_magnitude_scale(state_xor(error, prev_error), ki);
+
+    // Derivativo (aproximado)
+    let d_term = transform_magnitude_scale(state_xor(error, prev_error), kd);
+
+    // Combinar termos
+    let control = state_xor(p_term, i_term);
+    let control = state_xor(control, d_term);
+
+    return state_xor(current, control);
+}
+
+fn main() {
+    print_string("=== Feedback Loops ===");
+
+    // =========================================
+    // Conceito de Feedback
+    // =========================================
+    // 'feedback' e uma keyword avancada em LIS
+    // para representar loops de retroalimentacao
+    // em sistemas nao-lineares.
+    //
+    // Feedback loops sao fundamentais para:
+    // - Sistemas de controle
+    // - Redes neurais recorrentes
+    // - Estabilizacao de estados
+    // - Auto-correcao
+
+    // =========================================
+    // Feedback Basico
+    // =========================================
+    print_string("--- Basic Feedback ---");
+
+    // Aplicar feedback a um estado
+    let s = state_neutral();
+    let stabilized = feedback(s);
+
+    print_string("Applied feedback to neutral state");
+    print_string("Original L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(s, 0)));
+    print_string("Stabilized L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(stabilized, 0)));
+
+    // =========================================
+    // apply_feedback(state, feedback_strength)
+    // =========================================
+    print_string("--- apply_feedback ---");
+
+    let input = state_neutral();
+    let feedback_strength = 0.5;
+
+    let combined = apply_feedback(input, feedback_strength);
+
+    print_string("Applied feedback with strength 0.5");
+    print_string("Combined L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(combined, 0)));
+
+    // =========================================
+    // Iteracao de Feedback (Manual)
+    // =========================================
+    print_string("--- Feedback Iteration ---");
+
+    let initial = state_neutral();
+    let iterated = iterate_feedback(initial, 5);
+
+    print_string("After 5 feedback iterations:");
+    print_string("L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(iterated, 0)));
+
+    // =========================================
+    // Feedback com Ganho
+    // =========================================
+    print_string("--- Feedback with Gain ---");
+
+    let with_gain = feedback_with_gain(state_neutral(), 1);
+    print_string("Feedback with gain 1:");
+    print_float(bytesil_magnitude(state_get_layer(with_gain, 0)));
+
+    // =========================================
+    // Feedback Negativo (Estabilizacao)
+    // =========================================
+    print_string("--- Negative Feedback ---");
+
+    let current_state = state_neutral();
+    let target_state = state_vacuum();
+
+    let corrected = negative_feedback(current_state, target_state);
+    print_string("Negative feedback applied");
+
+    // =========================================
+    // Feedback Positivo (Amplificacao)
+    // =========================================
+    print_string("--- Positive Feedback ---");
+
+    let amplified_state = positive_feedback(state_neutral(), 2);
+    print_string("Positive feedback applied");
+
+    // =========================================
+    // Feedback Loop Completo
+    // =========================================
+    print_string("--- Complete Feedback Loop ---");
+
+    let loop_input = state_neutral();
+    let loop_ref = state_vacuum();
+    let loop_output = complete_feedback_loop(loop_input, loop_ref, 1, 10);
+
+    print_string("Complete feedback loop (10 iterations):");
+    print_string("Output L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(loop_output, 0)));
+
+    // =========================================
+    // Aplicacao: PID Controller (Simplificado)
+    // =========================================
+    print_string("--- PID Controller (Simplified) ---");
+
+    let pid_current = state_neutral();
+    let pid_target = state_vacuum();
+    let pid_prev = state_neutral();
+
+    let pid_output = pid_step(pid_current, pid_target, pid_prev, 1, 1, 1);
+    print_string("PID step applied");
+
+    print_string("=== Feedback Loops Complete ===");
+}

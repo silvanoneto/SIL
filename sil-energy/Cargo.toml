@@ -1,0 +1,40 @@
+[package]
+name = "sil-energy"
+version = "2026.1.17"
+edition = "2024"
+authors = ["Silvano Neto <dev@silvanoneto.com>"]
+description = "SIL-Energy — Energy consumption measurement and optimization for SIL processing in Joules"
+license = "AGPL-3.0"
+repository = "https://github.com/silvanoneto/SIL"
+homepage = "https://github.com/silvanoneto/SIL"
+documentation = "https://docs.rs/sil-energy"
+readme = "README.md"
+keywords = ["sil", "energy", "joules", "power", "optimization"]
+categories = ["science", "hardware-support", "embedded"]
+rust-version = "1.92"
+
+[features]
+default = []
+# macOS IOKit power metrics
+macos = []
+# Linux perf/RAPL energy counters
+linux-rapl = []
+# NVIDIA GPU power monitoring
+nvidia = []
+
+[dependencies]
+sil-core = { path = "../sil-core" }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error handling
+thiserror = "2.0"
+
+[dev-dependencies]
+criterion = { version = "0.5" }
+
+[[bench]]
+name = "energy_bench"
+harness = false

@@ -1,0 +1,155 @@
+// LIS Example: Loop com Contador
+// Demonstra: Padrões de loop com variável de controle
+// Documentação: Seção 7.5
+
+fn main() {
+    print_string("=== Counter Loops ===");
+
+    // =========================================
+    // Contagem Crescente (0 até N)
+    // =========================================
+    print_string("--- Counting Up (0 to 5) ---");
+
+    let i = 0;
+    loop {
+        if i >= 5 {
+            break;
+        }
+
+        print_string("i =");
+        print_int(i);
+
+        let i = i + 1;
+    }
+
+    // =========================================
+    // Contagem Decrescente (N até 0)
+    // =========================================
+    print_string("--- Counting Down (5 to 1) ---");
+
+    let j = 5;
+    loop {
+        if j <= 0 {
+            break;
+        }
+
+        print_string("j =");
+        print_int(j);
+
+        let j = j - 1;
+    }
+
+    print_string("Liftoff!");
+
+    // =========================================
+    // Passo Personalizado
+    // =========================================
+    print_string("--- Custom Step (0 to 20 by 5) ---");
+
+    let k = 0;
+    loop {
+        if k > 20 {
+            break;
+        }
+
+        print_int(k);
+
+        let k = k + 5;
+    }
+
+    // =========================================
+    // Loop Duplo (Nested)
+    // =========================================
+    print_string("--- Nested Loop (Multiplication Table) ---");
+
+    let row = 1;
+    loop {
+        if row > 3 {
+            break;
+        }
+
+        let col = 1;
+        loop {
+            if col > 3 {
+                break;
+            }
+
+            let product = row * col;
+            print_string("Product:");
+            print_int(product);
+
+            let col = col + 1;
+        }
+
+        let row = row + 1;
+    }
+
+    // =========================================
+    // Soma de Série
+    // =========================================
+    print_string("--- Series Sum (1 + 2 + ... + N) ---");
+
+    let n = 10;
+    let sum = 0;
+    let counter = 1;
+
+    loop {
+        if counter > n {
+            break;
+        }
+
+        let sum = sum + counter;
+        let counter = counter + 1;
+    }
+
+    print_string("Sum of 1 to 10:");
+    print_int(sum);  // 55
+
+    // Verificação: n*(n+1)/2
+    let expected = n * (n + 1) / 2;
+    print_string("Expected (formula):");
+    print_int(expected);
+
+    // =========================================
+    // Fatorial
+    // =========================================
+    print_string("--- Factorial ---");
+
+    let num = 5;
+    let factorial = 1;
+    let f = 1;
+
+    loop {
+        if f > num {
+            break;
+        }
+
+        let factorial = factorial * f;
+        let f = f + 1;
+    }
+
+    print_string("5! =");
+    print_int(factorial);  // 120
+
+    // =========================================
+    // Potência via Loop
+    // =========================================
+    print_string("--- Power via Loop ---");
+
+    let base = 2;
+    let exponent = 8;
+    let result = 1;
+    let e = 0;
+
+    loop {
+        if e >= exponent {
+            break;
+        }
+
+        let result = result * base;
+        let e = e + 1;
+    }
+
+    print_string("2^8 =");
+    print_int(result);  // 256
+}

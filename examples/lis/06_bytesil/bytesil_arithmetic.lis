@@ -1,0 +1,153 @@
+// LIS Example: Aritmética de ByteSil
+// Demonstra: mul, div, pow, sqrt, conjugate
+// Documentação: Seção 8.1
+
+fn main() {
+    print_string("=== ByteSil Arithmetic ===");
+
+    // =========================================
+    // Valores de teste
+    // =========================================
+    let a = bytesil_new(8, 0);   // Magnitude média, fase 0
+    let b = bytesil_new(8, 4);   // Magnitude média, fase 90°
+    let c = bytesil_from_complex(3.0, 4.0);  // 3 + 4i
+
+    // =========================================
+    // Multiplicação (bytesil_mul)
+    // =========================================
+    print_string("--- Multiplication (bytesil_mul) ---");
+
+    // Em polar: magnitudes multiplicam, fases somam
+    let mul_ab = bytesil_mul(a, b);
+
+    print_string("a * b:");
+    print_string("  magnitude:");
+    print_float(bytesil_magnitude(mul_ab));
+    print_string("  phase (should be ~pi/2):");
+    print_float(bytesil_phase_radians(mul_ab));
+
+    // Multiplicar por 1 (identidade)
+    let one = bytesil_one();
+    let mul_a1 = bytesil_mul(a, one);
+    print_string("a * 1 = a (magnitude preserved):");
+    print_float(bytesil_magnitude(mul_a1));
+
+    // Multiplicar por i (rotação 90°)
+    let i_unit = bytesil_i();
+    let mul_ai = bytesil_mul(a, i_unit);
+    print_string("a * i (phase should increase by pi/2):");
+    print_float(bytesil_phase_radians(mul_ai));
+
+    // =========================================
+    // Divisão (bytesil_div)
+    // =========================================
+    print_string("--- Division (bytesil_div) ---");
+
+    // Em polar: magnitudes dividem, fases subtraem
+    let div_ab = bytesil_div(a, b);
+
+    print_string("a / b:");
+    print_string("  magnitude:");
+    print_float(bytesil_magnitude(div_ab));
+    print_string("  phase (should be ~-pi/2):");
+    print_float(bytesil_phase_radians(div_ab));
+
+    // Dividir por si mesmo (resultado = 1)
+    let div_aa = bytesil_div(a, a);
+    print_string("a / a magnitude (should be ~1):");
+    print_float(bytesil_magnitude(div_aa));
+
+    // =========================================
+    // Potência (bytesil_pow)
+    // =========================================
+    print_string("--- Power (bytesil_pow) ---");
+
+    // Em polar: magnitude^n, fase*n
+    let pow_a2 = bytesil_pow(a, 2);
+    print_string("a^2 magnitude:");
+    print_float(bytesil_magnitude(pow_a2));
+
+    let pow_a3 = bytesil_pow(a, 3);
+    print_string("a^3 magnitude:");
+    print_float(bytesil_magnitude(pow_a3));
+
+    // i^2 = -1
+    let i_squared = bytesil_pow(i_unit, 2);
+    print_string("i^2 phase (should be ~pi):");
+    print_float(bytesil_phase_radians(i_squared));
+
+    // i^4 = 1
+    let i_fourth = bytesil_pow(i_unit, 4);
+    print_string("i^4 phase (should be ~0 or 2pi):");
+    print_float(bytesil_phase_radians(i_fourth));
+
+    // =========================================
+    // Raiz Quadrada (bytesil_sqrt / bytesil_root)
+    // =========================================
+    print_string("--- Square Root (bytesil_sqrt) ---");
+
+    // Em polar: sqrt(magnitude), fase/2
+    let sqrt_a = bytesil_sqrt(a);
+    print_string("sqrt(a):");
+    print_string("  original magnitude:");
+    print_float(bytesil_magnitude(a));
+    print_string("  sqrt magnitude:");
+    print_float(bytesil_magnitude(sqrt_a));
+
+    // sqrt(4) = 2
+    let four = bytesil_from_complex(4.0, 0.0);
+    let sqrt_four = bytesil_sqrt(four);
+    print_string("sqrt(4) magnitude (should be ~2):");
+    print_float(bytesil_magnitude(sqrt_four));
+
+    // =========================================
+    // Raiz N-ésima (bytesil_root)
+    // =========================================
+    print_string("--- Nth Root (bytesil_root) ---");
+
+    let root3_a = bytesil_root(a, 3);
+    print_string("cube root of a magnitude:");
+    print_float(bytesil_magnitude(root3_a));
+
+    // =========================================
+    // Conjugado (bytesil_conj / ~)
+    // =========================================
+    print_string("--- Conjugate (bytesil_conj) ---");
+
+    // Conjugado inverte o sinal da fase
+    let conj_b = bytesil_conj(b);
+    print_string("b phase:");
+    print_float(bytesil_phase_radians(b));
+    print_string("conj(b) phase (should be -b.phase):");
+    print_float(bytesil_phase_radians(conj_b));
+
+    // Conjugado de 3+4i = 3-4i
+    let conj_c = bytesil_conj(c);
+    print_string("conj(3+4i) phase:");
+    print_float(bytesil_phase_radians(conj_c));
+
+    // Magnitude não muda
+    print_string("conj(3+4i) magnitude (should be 5):");
+    print_float(bytesil_magnitude(conj_c));
+
+    // z * conj(z) = |z|^2 (real)
+    let z_times_conj = bytesil_mul(c, conj_c);
+    print_string("(3+4i) * conj(3+4i) magnitude (should be 25):");
+    print_float(bytesil_magnitude(z_times_conj));
+    print_string("(3+4i) * conj(3+4i) phase (should be ~0):");
+    print_float(bytesil_phase_radians(z_times_conj));
+
+    // =========================================
+    // Inverso (bytesil_inv)
+    // =========================================
+    print_string("--- Inverse (bytesil_inv) ---");
+
+    let inv_a = bytesil_inv(a);
+    print_string("1/a magnitude:");
+    print_float(bytesil_magnitude(inv_a));
+
+    // a * (1/a) = 1
+    let a_times_inv = bytesil_mul(a, inv_a);
+    print_string("a * (1/a) magnitude (should be ~1):");
+    print_float(bytesil_magnitude(a_times_inv));
+}

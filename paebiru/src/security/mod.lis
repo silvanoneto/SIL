@@ -1,0 +1,217 @@
+// Paebiru ML Library - Security Module
+// Encryption, authentication, and audit logging
+
+use core::bytesil::{bs_mag, bs_from_mag_clamped};
+
+// =============================================================================
+// Security Levels
+// =============================================================================
+
+// Security level constants
+pub fn SECURITY_NONE() -> Int { return 0; }
+pub fn SECURITY_BASIC() -> Int { return 1; }
+pub fn SECURITY_STANDARD() -> Int { return 2; }
+pub fn SECURITY_HIGH() -> Int { return 3; }
+pub fn SECURITY_ENCLAVE() -> Int { return 4; }
+
+// Get security level name
+pub fn security_level_name(level: Int) -> Int {
+    // Returns encoded level for logging
+    return level;
+}
+
+// =============================================================================
+// Model Hashing
+// =============================================================================
+
+// Simple hash for model integrity checking
+// Combines state hashes into a single checksum
+pub fn hash_model_weights(w0: State, w1: State, w2: State, w3: State) -> Int {
+    let h0 = state_hash(w0);
+    let h1 = state_hash(w1);
+    let h2 = state_hash(w2);
+    let h3 = state_hash(w3);
+
+    // Combine hashes
+    let combined = h0;
+    let combined = combined * 31 + h1;
+    let combined = combined * 31 + h2;
+    let combined = combined * 31 + h3;
+
+    return combined % 2147483647;  // Keep positive
+}
+
+// Verify model hash matches expected
+pub fn verify_model_hash(computed: Int, expected: Int) -> Bool {
+    return computed == expected;
+}
+
+// =============================================================================
+// Audit Log Entry
+// =============================================================================
+
+// Audit entry state layout:
+// Layer 0: timestamp (normalized)
+// Layer 1: user_id (normalized)
+// Layer 2: operation type
+// Layer 3: model_id (normalized)
+// Layer 4: success flag
+
+// Create audit entry
+pub fn audit_create(timestamp: Float, user_id: Int, operation: Int,
+                    model_id: Int, success: Bool) -> State {
+    let entry = state_vacuum();
+
+    let entry = state_set_layer(entry, 0, bs_from_mag_clamped(timestamp / 1e9));
+    let entry = state_set_layer(entry, 1, bs_from_mag_clamped(float_from_int(user_id % 256) / 256.0));
+    let entry = state_set_layer(entry, 2, bs_from_mag_clamped(float_from_int(operation) / 16.0));
+    let entry = state_set_layer(entry, 3, bs_from_mag_clamped(float_from_int(model_id % 256) / 256.0));
+
+    let success_val = 0.0;
+    if success { let success_val = 1.0; }
+    let entry = state_set_layer(entry, 4, bs_from_mag_clamped(success_val));
+
+    return entry;
+}
+
+// Operation types
+pub fn OP_LOAD() -> Int { return 0; }
+pub fn OP_INFER() -> Int { return 1; }
+pub fn OP_TRAIN() -> Int { return 2; }
+pub fn OP_SAVE() -> Int { return 3; }
+pub fn OP_DELETE() -> Int { return 4; }
+pub fn OP_ACCESS() -> Int { return 5; }
+
+// Extract audit fields
+pub fn audit_timestamp(entry: State) -> Float {
+    return bs_mag(state_get_layer(entry, 0)) * 1e9;
+}
+
+pub fn audit_user_id(entry: State) -> Int {
+    return int_from_float(bs_mag(state_get_layer(entry, 1)) * 256.0);
+}
+
+pub fn audit_operation(entry: State) -> Int {
+    return int_from_float(bs_mag(state_get_layer(entry, 2)) * 16.0);
+}
+
+pub fn audit_model_id(entry: State) -> Int {
+    return int_from_float(bs_mag(state_get_layer(entry, 3)) * 256.0);
+}
+
+pub fn audit_success(entry: State) -> Bool {
+    return bs_mag(state_get_layer(entry, 4)) > 0.5;
+}
+
+// =============================================================================
+// Access Control
+// =============================================================================
+
+// Permission flags (stored in a single State)
+// Layer 0: read permission
+// Layer 1: write permission
+// Layer 2: execute permission
+// Layer 3: admin permission
+
+// Create permissions
+pub fn permissions_create(read: Bool, write: Bool, execute: Bool, admin: Bool) -> State {
+    let perms = state_vacuum();
+
+    let r = 0.0; if read { let r = 1.0; }
+    let w = 0.0; if write { let w = 1.0; }
+    let e = 0.0; if execute { let e = 1.0; }
+    let a = 0.0; if admin { let a = 1.0; }
+
+    let perms = state_set_layer(perms, 0, bs_from_mag_clamped(r));
+    let perms = state_set_layer(perms, 1, bs_from_mag_clamped(w));
+    let perms = state_set_layer(perms, 2, bs_from_mag_clamped(e));
+    let perms = state_set_layer(perms, 3, bs_from_mag_clamped(a));
+
+    return perms;
+}
+
+// Check permissions
+pub fn can_read(perms: State) -> Bool {
+    return bs_mag(state_get_layer(perms, 0)) > 0.5;
+}
+
+pub fn can_write(perms: State) -> Bool {
+    return bs_mag(state_get_layer(perms, 1)) > 0.5;
+}
+
+pub fn can_execute(perms: State) -> Bool {
+    return bs_mag(state_get_layer(perms, 2)) > 0.5;
+}
+
+pub fn is_admin(perms: State) -> Bool {
+    return bs_mag(state_get_layer(perms, 3)) > 0.5;
+}
+
+// Default permissions
+pub fn permissions_readonly() -> State {
+    return permissions_create(true, false, false, false);
+}
+
+pub fn permissions_readwrite() -> State {
+    return permissions_create(true, true, false, false);
+}
+
+pub fn permissions_full() -> State {
+    return permissions_create(true, true, true, true);
+}
+
+// =============================================================================
+// Simple Encryption (XOR-based obfuscation)
+// =============================================================================
+
+// XOR encrypt/decrypt state with key
+// Note: This is NOT cryptographically secure, just obfuscation
+pub fn xor_encrypt(data: State, key: State) -> State {
+    return state_xor(data, key);
+}
+
+pub fn xor_decrypt(encrypted: State, key: State) -> State {
+    return state_xor(encrypted, key);
+}
+
+// Generate key from seed
+pub fn generate_key(seed: Float) -> State {
+    let key = state_vacuum();
+
+    let v0 = (seed * 7.0) - floor(seed * 7.0);
+    let v1 = (seed * 11.0) - floor(seed * 11.0);
+    let v2 = (seed * 13.0) - floor(seed * 13.0);
+    let v3 = (seed * 17.0) - floor(seed * 17.0);
+    let v4 = (seed * 19.0) - floor(seed * 19.0);
+    let v5 = (seed * 23.0) - floor(seed * 23.0);
+    let v6 = (seed * 29.0) - floor(seed * 29.0);
+    let v7 = (seed * 31.0) - floor(seed * 31.0);
+    let v8 = (seed * 37.0) - floor(seed * 37.0);
+    let v9 = (seed * 41.0) - floor(seed * 41.0);
+    let v10 = (seed * 43.0) - floor(seed * 43.0);
+    let v11 = (seed * 47.0) - floor(seed * 47.0);
+    let v12 = (seed * 53.0) - floor(seed * 53.0);
+    let v13 = (seed * 59.0) - floor(seed * 59.0);
+    let v14 = (seed * 61.0) - floor(seed * 61.0);
+    let v15 = (seed * 67.0) - floor(seed * 67.0);
+
+    let key = state_set_layer(key, 0, bs_from_mag_clamped(v0));
+    let key = state_set_layer(key, 1, bs_from_mag_clamped(v1));
+    let key = state_set_layer(key, 2, bs_from_mag_clamped(v2));
+    let key = state_set_layer(key, 3, bs_from_mag_clamped(v3));
+    let key = state_set_layer(key, 4, bs_from_mag_clamped(v4));
+    let key = state_set_layer(key, 5, bs_from_mag_clamped(v5));
+    let key = state_set_layer(key, 6, bs_from_mag_clamped(v6));
+    let key = state_set_layer(key, 7, bs_from_mag_clamped(v7));
+    let key = state_set_layer(key, 8, bs_from_mag_clamped(v8));
+    let key = state_set_layer(key, 9, bs_from_mag_clamped(v9));
+    let key = state_set_layer(key, 10, bs_from_mag_clamped(v10));
+    let key = state_set_layer(key, 11, bs_from_mag_clamped(v11));
+    let key = state_set_layer(key, 12, bs_from_mag_clamped(v12));
+    let key = state_set_layer(key, 13, bs_from_mag_clamped(v13));
+    let key = state_set_layer(key, 14, bs_from_mag_clamped(v14));
+    let key = state_set_layer(key, 15, bs_from_mag_clamped(v15));
+
+    return key;
+}
+

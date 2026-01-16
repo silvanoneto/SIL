@@ -1,0 +1,102 @@
+// Paebiru ML Library - Linear Algebra Operations
+// Algebra linear usando State como matriz 4x4 ou vetor 16-elementos
+
+use core::state::{st_add, st_sub, st_mul, st_scale, st_dot_mag, st_sum_mag_sq, st_norm_l1, st_norm_l2};
+use core::bytesil::{bs_mag, bs_one, EPSILON};
+
+// =============================================================================
+// Produto Escalar e Normas
+// =============================================================================
+
+// Dot product de dois States (como vetores 16-elementos)
+pub fn dot(a: State, b: State) -> Float {
+    return st_dot_mag(a, b);
+}
+
+// Norma L2 (euclidiana)
+pub fn norm_l2(s: State) -> Float {
+    return st_norm_l2(s);
+}
+
+// Norma L1 (Manhattan)
+pub fn norm_l1(s: State) -> Float {
+    return st_norm_l1(s);
+}
+
+// =============================================================================
+// Operacoes Matriciais (State como matriz 4x4)
+// =============================================================================
+
+// Matriz identidade (4x4 encodada em State)
+// Diagonal: posicoes 0, 5, 10, 15
+pub fn identity() -> State {
+    let m = state_vacuum();
+    let one = bs_one();
+    let m = state_set_layer(m, 0, one);
+    let m = state_set_layer(m, 5, one);
+    let m = state_set_layer(m, 10, one);
+    let m = state_set_layer(m, 15, one);
+    return m;
+}
+
+// Transposta de matriz 4x4
+// Layout: [0,1,2,3; 4,5,6,7; 8,9,10,11; 12,13,14,15]
+pub fn transpose(m: State) -> State {
+    let t = state_vacuum();
+    let t = state_set_layer(t, 0, state_get_layer(m, 0));
+    let t = state_set_layer(t, 1, state_get_layer(m, 4));
+    let t = state_set_layer(t, 2, state_get_layer(m, 8));
+    let t = state_set_layer(t, 3, state_get_layer(m, 12));
+    let t = state_set_layer(t, 4, state_get_layer(m, 1));
+    let t = state_set_layer(t, 5, state_get_layer(m, 5));
+    let t = state_set_layer(t, 6, state_get_layer(m, 9));
+    let t = state_set_layer(t, 7, state_get_layer(m, 13));
+    let t = state_set_layer(t, 8, state_get_layer(m, 2));
+    let t = state_set_layer(t, 9, state_get_layer(m, 6));
+    let t = state_set_layer(t, 10, state_get_layer(m, 10));
+    let t = state_set_layer(t, 11, state_get_layer(m, 14));
+    let t = state_set_layer(t, 12, state_get_layer(m, 3));
+    let t = state_set_layer(t, 13, state_get_layer(m, 7));
+    let t = state_set_layer(t, 14, state_get_layer(m, 11));
+    let t = state_set_layer(t, 15, state_get_layer(m, 15));
+    return t;
+}
+
+// =============================================================================
+// Similaridade
+// =============================================================================
+
+pub fn cosine_similarity(a: State, b: State) -> Float {
+    let d = dot(a, b);
+    let na = norm_l2(a);
+    let nb = norm_l2(b);
+    let denom = na * nb;
+    if denom < EPSILON() {
+        return 0.0;
+    }
+    return d / denom;
+}
+
+// =============================================================================
+// Operacoes Vetoriais (re-exports com nomes tradicionais)
+// =============================================================================
+
+// Soma de vetores
+pub fn add_st(a: State, b: State) -> State {
+    return st_add(a, b);
+}
+
+// Subtracao de vetores
+pub fn sub_st(a: State, b: State) -> State {
+    return st_sub(a, b);
+}
+
+// Produto de Hadamard (element-wise)
+pub fn hadamard(a: State, b: State) -> State {
+    return st_mul(a, b);
+}
+
+// Escalar vetor
+pub fn scale_st(s: State, scalar: Float) -> State {
+    return st_scale(s, scalar);
+}

@@ -1,0 +1,338 @@
+// Paebiru ML Library - State Space Models
+// SSM: Mamba and other linear-complexity sequence models
+
+use core::bytesil::{bs_mag, bs_from_mag_clamped};
+use core::state::{st_add, st_scale, st_mul};
+
+// =============================================================================
+// State Space Model Core
+// =============================================================================
+
+// SSM state update: h_t = A * h_{t-1} + B * x_t
+// A, B are discretized state-space parameters
+pub fn ssm_state_update(h_prev: State, x: State, A: State, B: State) -> State {
+    let Ah = st_mul(A, h_prev);
+    let Bx = st_mul(B, x);
+    return st_add(Ah, Bx);
+}
+
+// SSM output: y_t = C * h_t + D * x_t
+pub fn ssm_output(h: State, x: State, C: State, D: State) -> State {
+    let Ch = st_mul(C, h);
+    let Dx = st_mul(D, x);
+    return st_add(Ch, Dx);
+}
+
+// Full SSM step: returns (new_state, output)
+// Combines state update and output computation
+pub fn ssm_step(h_prev: State, x: State, A: State, B: State, C: State, D: State) -> State {
+    let h_new = ssm_state_update(h_prev, x, A, B);
+    let y = ssm_output(h_new, x, C, D);
+    return y;
+}
+
+// =============================================================================
+// Mamba (Selective State Space)
+// =============================================================================
+
+// Mamba selective mechanism: computes input-dependent gates
+// delta: controls discretization step
+// B_t, C_t: input-dependent state matrices
+pub fn mamba_selective_scan(x: State, delta: State, B_t: State, C_t: State, h_prev: State) -> State {
+    // Discretize A using delta: A_bar = exp(-delta)
+    // Simplified: use delta as decay factor
+    let result = state_vacuum();
+
+    let d0 = bs_mag(state_get_layer(delta, 0));
+    let h0 = bs_mag(state_get_layer(h_prev, 0));
+    let x0 = bs_mag(state_get_layer(x, 0));
+    let b0 = bs_mag(state_get_layer(B_t, 0));
+    let c0 = bs_mag(state_get_layer(C_t, 0));
+    let decay0 = exp(0.0 - d0);
+    let h_new0 = decay0 * h0 + (1.0 - decay0) * b0 * x0;
+    let y0 = c0 * h_new0;
+    let result = state_set_layer(result, 0, bs_from_mag_clamped(y0));
+
+    let d1 = bs_mag(state_get_layer(delta, 1));
+    let h1 = bs_mag(state_get_layer(h_prev, 1));
+    let x1 = bs_mag(state_get_layer(x, 1));
+    let b1 = bs_mag(state_get_layer(B_t, 1));
+    let c1 = bs_mag(state_get_layer(C_t, 1));
+    let decay1 = exp(0.0 - d1);
+    let h_new1 = decay1 * h1 + (1.0 - decay1) * b1 * x1;
+    let y1 = c1 * h_new1;
+    let result = state_set_layer(result, 1, bs_from_mag_clamped(y1));
+
+    let d2 = bs_mag(state_get_layer(delta, 2));
+    let h2 = bs_mag(state_get_layer(h_prev, 2));
+    let x2 = bs_mag(state_get_layer(x, 2));
+    let b2 = bs_mag(state_get_layer(B_t, 2));
+    let c2 = bs_mag(state_get_layer(C_t, 2));
+    let decay2 = exp(0.0 - d2);
+    let h_new2 = decay2 * h2 + (1.0 - decay2) * b2 * x2;
+    let y2 = c2 * h_new2;
+    let result = state_set_layer(result, 2, bs_from_mag_clamped(y2));
+
+    let d3 = bs_mag(state_get_layer(delta, 3));
+    let h3 = bs_mag(state_get_layer(h_prev, 3));
+    let x3 = bs_mag(state_get_layer(x, 3));
+    let b3 = bs_mag(state_get_layer(B_t, 3));
+    let c3 = bs_mag(state_get_layer(C_t, 3));
+    let decay3 = exp(0.0 - d3);
+    let h_new3 = decay3 * h3 + (1.0 - decay3) * b3 * x3;
+    let y3 = c3 * h_new3;
+    let result = state_set_layer(result, 3, bs_from_mag_clamped(y3));
+
+    let d4 = bs_mag(state_get_layer(delta, 4));
+    let h4 = bs_mag(state_get_layer(h_prev, 4));
+    let x4 = bs_mag(state_get_layer(x, 4));
+    let b4 = bs_mag(state_get_layer(B_t, 4));
+    let c4 = bs_mag(state_get_layer(C_t, 4));
+    let decay4 = exp(0.0 - d4);
+    let h_new4 = decay4 * h4 + (1.0 - decay4) * b4 * x4;
+    let y4 = c4 * h_new4;
+    let result = state_set_layer(result, 4, bs_from_mag_clamped(y4));
+
+    let d5 = bs_mag(state_get_layer(delta, 5));
+    let h5 = bs_mag(state_get_layer(h_prev, 5));
+    let x5 = bs_mag(state_get_layer(x, 5));
+    let b5 = bs_mag(state_get_layer(B_t, 5));
+    let c5 = bs_mag(state_get_layer(C_t, 5));
+    let decay5 = exp(0.0 - d5);
+    let h_new5 = decay5 * h5 + (1.0 - decay5) * b5 * x5;
+    let y5 = c5 * h_new5;
+    let result = state_set_layer(result, 5, bs_from_mag_clamped(y5));
+
+    let d6 = bs_mag(state_get_layer(delta, 6));
+    let h6 = bs_mag(state_get_layer(h_prev, 6));
+    let x6 = bs_mag(state_get_layer(x, 6));
+    let b6 = bs_mag(state_get_layer(B_t, 6));
+    let c6 = bs_mag(state_get_layer(C_t, 6));
+    let decay6 = exp(0.0 - d6);
+    let h_new6 = decay6 * h6 + (1.0 - decay6) * b6 * x6;
+    let y6 = c6 * h_new6;
+    let result = state_set_layer(result, 6, bs_from_mag_clamped(y6));
+
+    let d7 = bs_mag(state_get_layer(delta, 7));
+    let h7 = bs_mag(state_get_layer(h_prev, 7));
+    let x7 = bs_mag(state_get_layer(x, 7));
+    let b7 = bs_mag(state_get_layer(B_t, 7));
+    let c7 = bs_mag(state_get_layer(C_t, 7));
+    let decay7 = exp(0.0 - d7);
+    let h_new7 = decay7 * h7 + (1.0 - decay7) * b7 * x7;
+    let y7 = c7 * h_new7;
+    let result = state_set_layer(result, 7, bs_from_mag_clamped(y7));
+
+    let d8 = bs_mag(state_get_layer(delta, 8));
+    let h8 = bs_mag(state_get_layer(h_prev, 8));
+    let x8 = bs_mag(state_get_layer(x, 8));
+    let b8 = bs_mag(state_get_layer(B_t, 8));
+    let c8 = bs_mag(state_get_layer(C_t, 8));
+    let decay8 = exp(0.0 - d8);
+    let h_new8 = decay8 * h8 + (1.0 - decay8) * b8 * x8;
+    let y8 = c8 * h_new8;
+    let result = state_set_layer(result, 8, bs_from_mag_clamped(y8));
+
+    let d9 = bs_mag(state_get_layer(delta, 9));
+    let h9 = bs_mag(state_get_layer(h_prev, 9));
+    let x9 = bs_mag(state_get_layer(x, 9));
+    let b9 = bs_mag(state_get_layer(B_t, 9));
+    let c9 = bs_mag(state_get_layer(C_t, 9));
+    let decay9 = exp(0.0 - d9);
+    let h_new9 = decay9 * h9 + (1.0 - decay9) * b9 * x9;
+    let y9 = c9 * h_new9;
+    let result = state_set_layer(result, 9, bs_from_mag_clamped(y9));
+
+    let d10 = bs_mag(state_get_layer(delta, 10));
+    let h10 = bs_mag(state_get_layer(h_prev, 10));
+    let x10 = bs_mag(state_get_layer(x, 10));
+    let b10 = bs_mag(state_get_layer(B_t, 10));
+    let c10 = bs_mag(state_get_layer(C_t, 10));
+    let decay10 = exp(0.0 - d10);
+    let h_new10 = decay10 * h10 + (1.0 - decay10) * b10 * x10;
+    let y10 = c10 * h_new10;
+    let result = state_set_layer(result, 10, bs_from_mag_clamped(y10));
+
+    let d11 = bs_mag(state_get_layer(delta, 11));
+    let h11 = bs_mag(state_get_layer(h_prev, 11));
+    let x11 = bs_mag(state_get_layer(x, 11));
+    let b11 = bs_mag(state_get_layer(B_t, 11));
+    let c11 = bs_mag(state_get_layer(C_t, 11));
+    let decay11 = exp(0.0 - d11);
+    let h_new11 = decay11 * h11 + (1.0 - decay11) * b11 * x11;
+    let y11 = c11 * h_new11;
+    let result = state_set_layer(result, 11, bs_from_mag_clamped(y11));
+
+    let d12 = bs_mag(state_get_layer(delta, 12));
+    let h12 = bs_mag(state_get_layer(h_prev, 12));
+    let x12 = bs_mag(state_get_layer(x, 12));
+    let b12 = bs_mag(state_get_layer(B_t, 12));
+    let c12 = bs_mag(state_get_layer(C_t, 12));
+    let decay12 = exp(0.0 - d12);
+    let h_new12 = decay12 * h12 + (1.0 - decay12) * b12 * x12;
+    let y12 = c12 * h_new12;
+    let result = state_set_layer(result, 12, bs_from_mag_clamped(y12));
+
+    let d13 = bs_mag(state_get_layer(delta, 13));
+    let h13 = bs_mag(state_get_layer(h_prev, 13));
+    let x13 = bs_mag(state_get_layer(x, 13));
+    let b13 = bs_mag(state_get_layer(B_t, 13));
+    let c13 = bs_mag(state_get_layer(C_t, 13));
+    let decay13 = exp(0.0 - d13);
+    let h_new13 = decay13 * h13 + (1.0 - decay13) * b13 * x13;
+    let y13 = c13 * h_new13;
+    let result = state_set_layer(result, 13, bs_from_mag_clamped(y13));
+
+    let d14 = bs_mag(state_get_layer(delta, 14));
+    let h14 = bs_mag(state_get_layer(h_prev, 14));
+    let x14 = bs_mag(state_get_layer(x, 14));
+    let b14 = bs_mag(state_get_layer(B_t, 14));
+    let c14 = bs_mag(state_get_layer(C_t, 14));
+    let decay14 = exp(0.0 - d14);
+    let h_new14 = decay14 * h14 + (1.0 - decay14) * b14 * x14;
+    let y14 = c14 * h_new14;
+    let result = state_set_layer(result, 14, bs_from_mag_clamped(y14));
+
+    let d15 = bs_mag(state_get_layer(delta, 15));
+    let h15 = bs_mag(state_get_layer(h_prev, 15));
+    let x15 = bs_mag(state_get_layer(x, 15));
+    let b15 = bs_mag(state_get_layer(B_t, 15));
+    let c15 = bs_mag(state_get_layer(C_t, 15));
+    let decay15 = exp(0.0 - d15);
+    let h_new15 = decay15 * h15 + (1.0 - decay15) * b15 * x15;
+    let y15 = c15 * h_new15;
+    let result = state_set_layer(result, 15, bs_from_mag_clamped(y15));
+
+    return result;
+}
+
+// =============================================================================
+// Diagonal State Space Model (DSSM)
+// =============================================================================
+
+// DSSM: diagonal A matrix for efficiency
+// decay: per-dimension decay rates
+pub fn dssm_step(x: State, h_prev: State, decay: State, input_proj: State) -> State {
+    let result = state_vacuum();
+
+    let d0 = bs_mag(state_get_layer(decay, 0));
+    let h0 = bs_mag(state_get_layer(h_prev, 0));
+    let x0 = bs_mag(state_get_layer(x, 0));
+    let p0 = bs_mag(state_get_layer(input_proj, 0));
+    let h_new0 = d0 * h0 + p0 * x0;
+    let result = state_set_layer(result, 0, bs_from_mag_clamped(h_new0));
+
+    let d1 = bs_mag(state_get_layer(decay, 1));
+    let h1 = bs_mag(state_get_layer(h_prev, 1));
+    let x1 = bs_mag(state_get_layer(x, 1));
+    let p1 = bs_mag(state_get_layer(input_proj, 1));
+    let h_new1 = d1 * h1 + p1 * x1;
+    let result = state_set_layer(result, 1, bs_from_mag_clamped(h_new1));
+
+    // ... (continuing pattern for all 16 layers)
+    let d2 = bs_mag(state_get_layer(decay, 2));
+    let h2 = bs_mag(state_get_layer(h_prev, 2));
+    let x2 = bs_mag(state_get_layer(x, 2));
+    let p2 = bs_mag(state_get_layer(input_proj, 2));
+    let h_new2 = d2 * h2 + p2 * x2;
+    let result = state_set_layer(result, 2, bs_from_mag_clamped(h_new2));
+
+    let d3 = bs_mag(state_get_layer(decay, 3));
+    let h3 = bs_mag(state_get_layer(h_prev, 3));
+    let x3 = bs_mag(state_get_layer(x, 3));
+    let p3 = bs_mag(state_get_layer(input_proj, 3));
+    let h_new3 = d3 * h3 + p3 * x3;
+    let result = state_set_layer(result, 3, bs_from_mag_clamped(h_new3));
+
+    let d4 = bs_mag(state_get_layer(decay, 4));
+    let h4 = bs_mag(state_get_layer(h_prev, 4));
+    let x4 = bs_mag(state_get_layer(x, 4));
+    let p4 = bs_mag(state_get_layer(input_proj, 4));
+    let h_new4 = d4 * h4 + p4 * x4;
+    let result = state_set_layer(result, 4, bs_from_mag_clamped(h_new4));
+
+    let d5 = bs_mag(state_get_layer(decay, 5));
+    let h5 = bs_mag(state_get_layer(h_prev, 5));
+    let x5 = bs_mag(state_get_layer(x, 5));
+    let p5 = bs_mag(state_get_layer(input_proj, 5));
+    let h_new5 = d5 * h5 + p5 * x5;
+    let result = state_set_layer(result, 5, bs_from_mag_clamped(h_new5));
+
+    let d6 = bs_mag(state_get_layer(decay, 6));
+    let h6 = bs_mag(state_get_layer(h_prev, 6));
+    let x6 = bs_mag(state_get_layer(x, 6));
+    let p6 = bs_mag(state_get_layer(input_proj, 6));
+    let h_new6 = d6 * h6 + p6 * x6;
+    let result = state_set_layer(result, 6, bs_from_mag_clamped(h_new6));
+
+    let d7 = bs_mag(state_get_layer(decay, 7));
+    let h7 = bs_mag(state_get_layer(h_prev, 7));
+    let x7 = bs_mag(state_get_layer(x, 7));
+    let p7 = bs_mag(state_get_layer(input_proj, 7));
+    let h_new7 = d7 * h7 + p7 * x7;
+    let result = state_set_layer(result, 7, bs_from_mag_clamped(h_new7));
+
+    let d8 = bs_mag(state_get_layer(decay, 8));
+    let h8 = bs_mag(state_get_layer(h_prev, 8));
+    let x8 = bs_mag(state_get_layer(x, 8));
+    let p8 = bs_mag(state_get_layer(input_proj, 8));
+    let h_new8 = d8 * h8 + p8 * x8;
+    let result = state_set_layer(result, 8, bs_from_mag_clamped(h_new8));
+
+    let d9 = bs_mag(state_get_layer(decay, 9));
+    let h9 = bs_mag(state_get_layer(h_prev, 9));
+    let x9 = bs_mag(state_get_layer(x, 9));
+    let p9 = bs_mag(state_get_layer(input_proj, 9));
+    let h_new9 = d9 * h9 + p9 * x9;
+    let result = state_set_layer(result, 9, bs_from_mag_clamped(h_new9));
+
+    let d10 = bs_mag(state_get_layer(decay, 10));
+    let h10 = bs_mag(state_get_layer(h_prev, 10));
+    let x10 = bs_mag(state_get_layer(x, 10));
+    let p10 = bs_mag(state_get_layer(input_proj, 10));
+    let h_new10 = d10 * h10 + p10 * x10;
+    let result = state_set_layer(result, 10, bs_from_mag_clamped(h_new10));
+
+    let d11 = bs_mag(state_get_layer(decay, 11));
+    let h11 = bs_mag(state_get_layer(h_prev, 11));
+    let x11 = bs_mag(state_get_layer(x, 11));
+    let p11 = bs_mag(state_get_layer(input_proj, 11));
+    let h_new11 = d11 * h11 + p11 * x11;
+    let result = state_set_layer(result, 11, bs_from_mag_clamped(h_new11));
+
+    let d12 = bs_mag(state_get_layer(decay, 12));
+    let h12 = bs_mag(state_get_layer(h_prev, 12));
+    let x12 = bs_mag(state_get_layer(x, 12));
+    let p12 = bs_mag(state_get_layer(input_proj, 12));
+    let h_new12 = d12 * h12 + p12 * x12;
+    let result = state_set_layer(result, 12, bs_from_mag_clamped(h_new12));
+
+    let d13 = bs_mag(state_get_layer(decay, 13));
+    let h13 = bs_mag(state_get_layer(h_prev, 13));
+    let x13 = bs_mag(state_get_layer(x, 13));
+    let p13 = bs_mag(state_get_layer(input_proj, 13));
+    let h_new13 = d13 * h13 + p13 * x13;
+    let result = state_set_layer(result, 13, bs_from_mag_clamped(h_new13));
+
+    let d14 = bs_mag(state_get_layer(decay, 14));
+    let h14 = bs_mag(state_get_layer(h_prev, 14));
+    let x14 = bs_mag(state_get_layer(x, 14));
+    let p14 = bs_mag(state_get_layer(input_proj, 14));
+    let h_new14 = d14 * h14 + p14 * x14;
+    let result = state_set_layer(result, 14, bs_from_mag_clamped(h_new14));
+
+    let d15 = bs_mag(state_get_layer(decay, 15));
+    let h15 = bs_mag(state_get_layer(h_prev, 15));
+    let x15 = bs_mag(state_get_layer(x, 15));
+    let p15 = bs_mag(state_get_layer(input_proj, 15));
+    let h_new15 = d15 * h15 + p15 * x15;
+    let result = state_set_layer(result, 15, bs_from_mag_clamped(h_new15));
+
+    return result;
+}
+
+// Initialize SSM hidden state to zeros
+pub fn init_ssm_state() -> State {
+    return state_vacuum();
+}
+

@@ -1,0 +1,10 @@
+// Paebiru ML Library - Distributed Module
+// Treinamento distribuido e federado
+
+pub mod fedavg;
+pub mod byzantine;
+pub mod compress;
+pub mod cluster;
+pub mod mesh;
+pub mod privacy;
+

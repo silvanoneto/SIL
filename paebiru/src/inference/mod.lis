@@ -1,0 +1,160 @@
+// Paebiru ML Library - Inference Module
+// Hardware-agnostic inference with automatic backend selection
+
+use core::state::{st_mean, st_variance, st_norm_l2};
+use edge::rho_sil::{compute_rho_sil};
+use edge::device::{ChromaticZone, zone_from_rho};
+
+// =============================================================================
+// Backend Selection
+// =============================================================================
+
+// Backend types for inference
+// 0 = CPU, 1 = GPU, 2 = NPU, 3 = Auto
+pub fn BACKEND_CPU() -> Int { return 0; }
+pub fn BACKEND_GPU() -> Int { return 1; }
+pub fn BACKEND_NPU() -> Int { return 2; }
+pub fn BACKEND_AUTO() -> Int { return 3; }
+
+// Detect best available backend
+// Returns backend type based on hardware capabilities
+pub fn detect_backend() -> Int {
+    // In SIL, we default to CPU
+    // GPU/NPU detection would require platform-specific intrinsics
+    return BACKEND_CPU();
+}
+
+// =============================================================================
+// Routing Decisions
+// =============================================================================
+
+// Routing decision types
+// 0 = Local, 1 = Offload, 2 = Distribute
+pub fn ROUTE_LOCAL() -> Int { return 0; }
+pub fn ROUTE_OFFLOAD() -> Int { return 1; }
+pub fn ROUTE_DISTRIBUTE() -> Int { return 2; }
+
+// Make routing decision based on input complexity
+pub fn route_decision(input: State, rho_critical: Float) -> Int {
+    let rho = compute_rho_sil(input);
+
+    if rho <= rho_critical {
+        return ROUTE_LOCAL();
+    }
+
+    let zone = zone_from_rho(rho);
+
+    // UltraLocal or Local -> run locally
+    if zone == 0 { return ROUTE_LOCAL(); }
+    if zone == 1 { return ROUTE_LOCAL(); }
+
+    // Near -> distribute across nodes
+    if zone == 2 { return ROUTE_DISTRIBUTE(); }
+
+    // Far or HPC -> offload to more powerful hardware
+    return ROUTE_OFFLOAD();
+}
+
+// =============================================================================
+// Inference Execution
+// =============================================================================
+
+// Execute inference on CPU backend
+// This is a passthrough - real implementation would run model layers
+pub fn infer_cpu(input: State) -> State {
+    // Placeholder: in real impl, would execute model graph
+    return input;
+}
+
+// Execute inference with automatic routing
+pub fn infer_auto(input: State, rho_critical: Float) -> State {
+    let decision = route_decision(input, rho_critical);
+
+    if decision == ROUTE_LOCAL() {
+        return infer_cpu(input);
+    }
+
+    if decision == ROUTE_DISTRIBUTE() {
+        // Would distribute across nodes - for now, run locally
+        return infer_cpu(input);
+    }
+
+    // ROUTE_OFFLOAD: would send to remote - for now, run locally
+    return infer_cpu(input);
+}
+
+// =============================================================================
+// Batch Inference
+// =============================================================================
+
+// Infer on a batch of 2 inputs
+pub fn infer_batch_2(in0: State, in1: State) -> State {
+    let out0 = infer_cpu(in0);
+    let out1 = infer_cpu(in1);
+    // Return combined result (XOR for simplicity)
+    return state_xor(out0, out1);
+}
+
+// Infer on a batch of 4 inputs
+pub fn infer_batch_4(in0: State, in1: State, in2: State, in3: State) -> State {
+    let out0 = infer_cpu(in0);
+    let out1 = infer_cpu(in1);
+    let out2 = infer_cpu(in2);
+    let out3 = infer_cpu(in3);
+    // Combine all results
+    let c01 = state_xor(out0, out1);
+    let c23 = state_xor(out2, out3);
+    return state_xor(c01, c23);
+}
+
+// =============================================================================
+// Model Execution Pipeline
+// =============================================================================
+
+// Simple feedforward pass through multiple layers
+// layers: array of weight states, layer_count: number of layers
+pub fn feedforward_2layer(input: State, w1: State, b1: State, w2: State, b2: State) -> State {
+    use layers::dense::{dense_forward};
+    use core::activations::{relu_state};
+
+    let h1 = dense_forward(input, w1, b1);
+    let h1 = relu_state(h1);
+    let out = dense_forward(h1, w2, b2);
+    return out;
+}
+
+// Feedforward with 3 layers
+pub fn feedforward_3layer(input: State, w1: State, b1: State,
+                          w2: State, b2: State, w3: State, b3: State) -> State {
+    use layers::dense::{dense_forward};
+    use core::activations::{relu_state};
+
+    let h1 = dense_forward(input, w1, b1);
+    let h1 = relu_state(h1);
+    let h2 = dense_forward(h1, w2, b2);
+    let h2 = relu_state(h2);
+    let out = dense_forward(h2, w3, b3);
+    return out;
+}
+
+// =============================================================================
+// Inference Statistics
+// =============================================================================
+
+// Compute inference statistics for monitoring
+pub fn inference_stats(input: State, output: State) -> Float {
+    // Return L2 distance between input and output
+    use core::state::{st_sub};
+    let diff = st_sub(output, input);
+    return st_norm_l2(diff);
+}
+
+// =============================================================================
+// Default Configuration
+// =============================================================================
+
+// Default rho critical threshold
+pub fn default_rho_critical() -> Float {
+    return 0.5;
+}
+

@@ -1,0 +1,299 @@
+// Paebiru ML Library - Attention Mechanisms
+// Implementacao de atencao para transformers
+
+use core::bytesil::{bs_mag, bs_from_mag_clamped};
+use core::state::{st_add, st_scale, st_max_mag, st_mul};
+use core::activations::{softmax};
+use core::linalg::{dot, transpose};
+
+// =============================================================================
+// Scaled Dot-Product Attention
+// =============================================================================
+
+// Softmax sobre 4 elementos
+fn softmax_4(v0: Float, v1: Float, v2: Float, v3: Float) -> State {
+    let max_v = max_float(max_float(v0, v1), max_float(v2, v3));
+    let e0 = exp(v0 - max_v);
+    let e1 = exp(v1 - max_v);
+    let e2 = exp(v2 - max_v);
+    let e3 = exp(v3 - max_v);
+    let sum = e0 + e1 + e2 + e3 + 0.0001;
+
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, bs_from_mag_clamped(e0 / sum));
+    let r = state_set_layer(r, 1, bs_from_mag_clamped(e1 / sum));
+    let r = state_set_layer(r, 2, bs_from_mag_clamped(e2 / sum));
+    let r = state_set_layer(r, 3, bs_from_mag_clamped(e3 / sum));
+    return r;
+}
+
+// Matrix multiplication 4x4 (State como matriz 4x4)
+pub fn matmul_4x4(a: State, b: State) -> State {
+    let r = state_vacuum();
+
+    let a00 = bs_mag(state_get_layer(a, 0));
+    let a01 = bs_mag(state_get_layer(a, 1));
+    let a02 = bs_mag(state_get_layer(a, 2));
+    let a03 = bs_mag(state_get_layer(a, 3));
+
+    let b00 = bs_mag(state_get_layer(b, 0));
+    let b10 = bs_mag(state_get_layer(b, 4));
+    let b20 = bs_mag(state_get_layer(b, 8));
+    let b30 = bs_mag(state_get_layer(b, 12));
+    let b01 = bs_mag(state_get_layer(b, 1));
+    let b11 = bs_mag(state_get_layer(b, 5));
+    let b21 = bs_mag(state_get_layer(b, 9));
+    let b31 = bs_mag(state_get_layer(b, 13));
+    let b02 = bs_mag(state_get_layer(b, 2));
+    let b12 = bs_mag(state_get_layer(b, 6));
+    let b22 = bs_mag(state_get_layer(b, 10));
+    let b32 = bs_mag(state_get_layer(b, 14));
+    let b03 = bs_mag(state_get_layer(b, 3));
+    let b13 = bs_mag(state_get_layer(b, 7));
+    let b23 = bs_mag(state_get_layer(b, 11));
+    let b33 = bs_mag(state_get_layer(b, 15));
+
+    let r = state_set_layer(r, 0, bs_from_mag_clamped(a00 * b00 + a01 * b10 + a02 * b20 + a03 * b30));
+    let r = state_set_layer(r, 1, bs_from_mag_clamped(a00 * b01 + a01 * b11 + a02 * b21 + a03 * b31));
+    let r = state_set_layer(r, 2, bs_from_mag_clamped(a00 * b02 + a01 * b12 + a02 * b22 + a03 * b32));
+    let r = state_set_layer(r, 3, bs_from_mag_clamped(a00 * b03 + a01 * b13 + a02 * b23 + a03 * b33));
+
+    let a10 = bs_mag(state_get_layer(a, 4));
+    let a11 = bs_mag(state_get_layer(a, 5));
+    let a12 = bs_mag(state_get_layer(a, 6));
+    let a13 = bs_mag(state_get_layer(a, 7));
+
+    let r = state_set_layer(r, 4, bs_from_mag_clamped(a10 * b00 + a11 * b10 + a12 * b20 + a13 * b30));
+    let r = state_set_layer(r, 5, bs_from_mag_clamped(a10 * b01 + a11 * b11 + a12 * b21 + a13 * b31));
+    let r = state_set_layer(r, 6, bs_from_mag_clamped(a10 * b02 + a11 * b12 + a12 * b22 + a13 * b32));
+    let r = state_set_layer(r, 7, bs_from_mag_clamped(a10 * b03 + a11 * b13 + a12 * b23 + a13 * b33));
+
+    let a20 = bs_mag(state_get_layer(a, 8));
+    let a21 = bs_mag(state_get_layer(a, 9));
+    let a22 = bs_mag(state_get_layer(a, 10));
+    let a23 = bs_mag(state_get_layer(a, 11));
+
+    let r = state_set_layer(r, 8, bs_from_mag_clamped(a20 * b00 + a21 * b10 + a22 * b20 + a23 * b30));
+    let r = state_set_layer(r, 9, bs_from_mag_clamped(a20 * b01 + a21 * b11 + a22 * b21 + a23 * b31));
+    let r = state_set_layer(r, 10, bs_from_mag_clamped(a20 * b02 + a21 * b12 + a22 * b22 + a23 * b32));
+    let r = state_set_layer(r, 11, bs_from_mag_clamped(a20 * b03 + a21 * b13 + a22 * b23 + a23 * b33));
+
+    let a30 = bs_mag(state_get_layer(a, 12));
+    let a31 = bs_mag(state_get_layer(a, 13));
+    let a32 = bs_mag(state_get_layer(a, 14));
+    let a33 = bs_mag(state_get_layer(a, 15));
+
+    let r = state_set_layer(r, 12, bs_from_mag_clamped(a30 * b00 + a31 * b10 + a32 * b20 + a33 * b30));
+    let r = state_set_layer(r, 13, bs_from_mag_clamped(a30 * b01 + a31 * b11 + a32 * b21 + a33 * b31));
+    let r = state_set_layer(r, 14, bs_from_mag_clamped(a30 * b02 + a31 * b12 + a32 * b22 + a33 * b32));
+    let r = state_set_layer(r, 15, bs_from_mag_clamped(a30 * b03 + a31 * b13 + a32 * b23 + a33 * b33));
+
+    return r;
+}
+
+// Transpose 4x4 matrix
+pub fn transpose_4x4(a: State) -> State {
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, state_get_layer(a, 0));
+    let r = state_set_layer(r, 1, state_get_layer(a, 4));
+    let r = state_set_layer(r, 2, state_get_layer(a, 8));
+    let r = state_set_layer(r, 3, state_get_layer(a, 12));
+    let r = state_set_layer(r, 4, state_get_layer(a, 1));
+    let r = state_set_layer(r, 5, state_get_layer(a, 5));
+    let r = state_set_layer(r, 6, state_get_layer(a, 9));
+    let r = state_set_layer(r, 7, state_get_layer(a, 13));
+    let r = state_set_layer(r, 8, state_get_layer(a, 2));
+    let r = state_set_layer(r, 9, state_get_layer(a, 6));
+    let r = state_set_layer(r, 10, state_get_layer(a, 10));
+    let r = state_set_layer(r, 11, state_get_layer(a, 14));
+    let r = state_set_layer(r, 12, state_get_layer(a, 3));
+    let r = state_set_layer(r, 13, state_get_layer(a, 7));
+    let r = state_set_layer(r, 14, state_get_layer(a, 11));
+    let r = state_set_layer(r, 15, state_get_layer(a, 15));
+    return r;
+}
+
+// Scaled Dot-Product Attention para 4x4
+// Attention(Q, K, V) = softmax(QK^T / sqrt(d_k)) * V
+pub fn scaled_dot_attention_4x4(q: State, k: State, v: State) -> State {
+    let scale = 0.5;  // 1/sqrt(4) = 0.5
+
+    let k_t = transpose_4x4(k);
+    let scores = matmul_4x4(q, k_t);
+    let scores = st_scale(scores, scale);
+
+    let r = state_vacuum();
+
+    // Row 0
+    let s00 = bs_mag(state_get_layer(scores, 0));
+    let s01 = bs_mag(state_get_layer(scores, 1));
+    let s02 = bs_mag(state_get_layer(scores, 2));
+    let s03 = bs_mag(state_get_layer(scores, 3));
+    let attn0 = softmax_4(s00, s01, s02, s03);
+
+    let a00 = bs_mag(state_get_layer(attn0, 0));
+    let a01 = bs_mag(state_get_layer(attn0, 1));
+    let a02 = bs_mag(state_get_layer(attn0, 2));
+    let a03 = bs_mag(state_get_layer(attn0, 3));
+
+    let v0 = bs_mag(state_get_layer(v, 0));
+    let v1 = bs_mag(state_get_layer(v, 4));
+    let v2 = bs_mag(state_get_layer(v, 8));
+    let v3 = bs_mag(state_get_layer(v, 12));
+    let r = state_set_layer(r, 0, bs_from_mag_clamped(a00 * v0 + a01 * v1 + a02 * v2 + a03 * v3));
+
+    let v0 = bs_mag(state_get_layer(v, 1));
+    let v1 = bs_mag(state_get_layer(v, 5));
+    let v2 = bs_mag(state_get_layer(v, 9));
+    let v3 = bs_mag(state_get_layer(v, 13));
+    let r = state_set_layer(r, 1, bs_from_mag_clamped(a00 * v0 + a01 * v1 + a02 * v2 + a03 * v3));
+
+    let v0 = bs_mag(state_get_layer(v, 2));
+    let v1 = bs_mag(state_get_layer(v, 6));
+    let v2 = bs_mag(state_get_layer(v, 10));
+    let v3 = bs_mag(state_get_layer(v, 14));
+    let r = state_set_layer(r, 2, bs_from_mag_clamped(a00 * v0 + a01 * v1 + a02 * v2 + a03 * v3));
+
+    let v0 = bs_mag(state_get_layer(v, 3));
+    let v1 = bs_mag(state_get_layer(v, 7));
+    let v2 = bs_mag(state_get_layer(v, 11));
+    let v3 = bs_mag(state_get_layer(v, 15));
+    let r = state_set_layer(r, 3, bs_from_mag_clamped(a00 * v0 + a01 * v1 + a02 * v2 + a03 * v3));
+
+    // Row 1
+    let s10 = bs_mag(state_get_layer(scores, 4));
+    let s11 = bs_mag(state_get_layer(scores, 5));
+    let s12 = bs_mag(state_get_layer(scores, 6));
+    let s13 = bs_mag(state_get_layer(scores, 7));
+    let attn1 = softmax_4(s10, s11, s12, s13);
+
+    let a10 = bs_mag(state_get_layer(attn1, 0));
+    let a11 = bs_mag(state_get_layer(attn1, 1));
+    let a12 = bs_mag(state_get_layer(attn1, 2));
+    let a13 = bs_mag(state_get_layer(attn1, 3));
+
+    let v0 = bs_mag(state_get_layer(v, 0));
+    let v1 = bs_mag(state_get_layer(v, 4));
+    let v2 = bs_mag(state_get_layer(v, 8));
+    let v3 = bs_mag(state_get_layer(v, 12));
+    let r = state_set_layer(r, 4, bs_from_mag_clamped(a10 * v0 + a11 * v1 + a12 * v2 + a13 * v3));
+
+    let v0 = bs_mag(state_get_layer(v, 1));
+    let v1 = bs_mag(state_get_layer(v, 5));
+    let v2 = bs_mag(state_get_layer(v, 9));
+    let v3 = bs_mag(state_get_layer(v, 13));
+    let r = state_set_layer(r, 5, bs_from_mag_clamped(a10 * v0 + a11 * v1 + a12 * v2 + a13 * v3));
+
+    let v0 = bs_mag(state_get_layer(v, 2));
+    let v1 = bs_mag(state_get_layer(v, 6));
+    let v2 = bs_mag(state_get_layer(v, 10));
+    let v3 = bs_mag(state_get_layer(v, 14));
+    let r = state_set_layer(r, 6, bs_from_mag_clamped(a10 * v0 + a11 * v1 + a12 * v2 + a13 * v3));
+
+    let v0 = bs_mag(state_get_layer(v, 3));
+    let v1 = bs_mag(state_get_layer(v, 7));
+    let v2 = bs_mag(state_get_layer(v, 11));
+    let v3 = bs_mag(state_get_layer(v, 15));
+    let r = state_set_layer(r, 7, bs_from_mag_clamped(a10 * v0 + a11 * v1 + a12 * v2 + a13 * v3));
+
+    // Row 2
+    let s20 = bs_mag(state_get_layer(scores, 8));
+    let s21 = bs_mag(state_get_layer(scores, 9));
+    let s22 = bs_mag(state_get_layer(scores, 10));
+    let s23 = bs_mag(state_get_layer(scores, 11));
+    let attn2 = softmax_4(s20, s21, s22, s23);
+
+    let a20 = bs_mag(state_get_layer(attn2, 0));
+    let a21 = bs_mag(state_get_layer(attn2, 1));
+    let a22 = bs_mag(state_get_layer(attn2, 2));
+    let a23 = bs_mag(state_get_layer(attn2, 3));
+
+    let v0 = bs_mag(state_get_layer(v, 0));
+    let v1 = bs_mag(state_get_layer(v, 4));
+    let v2 = bs_mag(state_get_layer(v, 8));
+    let v3 = bs_mag(state_get_layer(v, 12));
+    let r = state_set_layer(r, 8, bs_from_mag_clamped(a20 * v0 + a21 * v1 + a22 * v2 + a23 * v3));
+
+    let v0 = bs_mag(state_get_layer(v, 1));
+    let v1 = bs_mag(state_get_layer(v, 5));
+    let v2 = bs_mag(state_get_layer(v, 9));
+    let v3 = bs_mag(state_get_layer(v, 13));
+    let r = state_set_layer(r, 9, bs_from_mag_clamped(a20 * v0 + a21 * v1 + a22 * v2 + a23 * v3));
+
+    let v0 = bs_mag(state_get_layer(v, 2));
+    let v1 = bs_mag(state_get_layer(v, 6));
+    let v2 = bs_mag(state_get_layer(v, 10));
+    let v3 = bs_mag(state_get_layer(v, 14));
+    let r = state_set_layer(r, 10, bs_from_mag_clamped(a20 * v0 + a21 * v1 + a22 * v2 + a23 * v3));
+
+    let v0 = bs_mag(state_get_layer(v, 3));
+    let v1 = bs_mag(state_get_layer(v, 7));
+    let v2 = bs_mag(state_get_layer(v, 11));
+    let v3 = bs_mag(state_get_layer(v, 15));
+    let r = state_set_layer(r, 11, bs_from_mag_clamped(a20 * v0 + a21 * v1 + a22 * v2 + a23 * v3));
+
+    // Row 3
+    let s30 = bs_mag(state_get_layer(scores, 12));
+    let s31 = bs_mag(state_get_layer(scores, 13));
+    let s32 = bs_mag(state_get_layer(scores, 14));
+    let s33 = bs_mag(state_get_layer(scores, 15));
+    let attn3 = softmax_4(s30, s31, s32, s33);
+
+    let a30 = bs_mag(state_get_layer(attn3, 0));
+    let a31 = bs_mag(state_get_layer(attn3, 1));
+    let a32 = bs_mag(state_get_layer(attn3, 2));
+    let a33 = bs_mag(state_get_layer(attn3, 3));
+
+    let v0 = bs_mag(state_get_layer(v, 0));
+    let v1 = bs_mag(state_get_layer(v, 4));
+    let v2 = bs_mag(state_get_layer(v, 8));
+    let v3 = bs_mag(state_get_layer(v, 12));
+    let r = state_set_layer(r, 12, bs_from_mag_clamped(a30 * v0 + a31 * v1 + a32 * v2 + a33 * v3));
+
+    let v0 = bs_mag(state_get_layer(v, 1));
+    let v1 = bs_mag(state_get_layer(v, 5));
+    let v2 = bs_mag(state_get_layer(v, 9));
+    let v3 = bs_mag(state_get_layer(v, 13));
+    let r = state_set_layer(r, 13, bs_from_mag_clamped(a30 * v0 + a31 * v1 + a32 * v2 + a33 * v3));
+
+    let v0 = bs_mag(state_get_layer(v, 2));
+    let v1 = bs_mag(state_get_layer(v, 6));
+    let v2 = bs_mag(state_get_layer(v, 10));
+    let v3 = bs_mag(state_get_layer(v, 14));
+    let r = state_set_layer(r, 14, bs_from_mag_clamped(a30 * v0 + a31 * v1 + a32 * v2 + a33 * v3));
+
+    let v0 = bs_mag(state_get_layer(v, 3));
+    let v1 = bs_mag(state_get_layer(v, 7));
+    let v2 = bs_mag(state_get_layer(v, 11));
+    let v3 = bs_mag(state_get_layer(v, 15));
+    let r = state_set_layer(r, 15, bs_from_mag_clamped(a30 * v0 + a31 * v1 + a32 * v2 + a33 * v3));
+
+    return r;
+}
+
+// =============================================================================
+// Multi-Head Attention
+// =============================================================================
+
+// Simplified self-attention (single head)
+pub fn self_attention(input: State, wq: State, wk: State, wv: State) -> State {
+    let q = matmul_4x4(wq, input);
+    let k = matmul_4x4(wk, input);
+    let v = matmul_4x4(wv, input);
+    return scaled_dot_attention_4x4(q, k, v);
+}
+
+// Self-attention with output projection
+pub fn self_attention_proj(input: State, wq: State, wk: State, wv: State, wo: State) -> State {
+    let attn_out = self_attention(input, wq, wk, wv);
+    return matmul_4x4(wo, attn_out);
+}
+
+// Cross-attention (Q from input, K/V from context)
+pub fn cross_attention(input: State, context: State, wq: State, wk: State, wv: State) -> State {
+    let q = matmul_4x4(wq, input);
+    let k = matmul_4x4(wk, context);
+    let v = matmul_4x4(wv, context);
+    return scaled_dot_attention_4x4(q, k, v);
+}
+

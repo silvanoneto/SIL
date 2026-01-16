@@ -1,0 +1,256 @@
+// Paebiru ML Library - Dropout Layers
+// Regularizacao via dropout e variantes
+
+use core::bytesil::{bs_mag, bs_from_mag_clamped};
+
+// =============================================================================
+// Hash Function
+// =============================================================================
+
+// Simple hash para pseudo-random selection
+fn simple_hash(seed: Float) -> Float {
+    let x = seed * 0.6180339887;
+    return x - floor(x);
+}
+
+// =============================================================================
+// Standard Dropout
+// =============================================================================
+
+// Dropout com seed-based pseudo-random mask
+// p: probabilidade de dropout (0.0 a 1.0) - fracao a dropar
+// training: Bool - se false, retorna input inalterado
+pub fn dropout(input: State, p: Float, training: Bool, seed_f: Float) -> State {
+    if training == false {
+        return input;
+    }
+
+    let scale = 1.0 / (1.0 - p);
+    let result = state_vacuum();
+
+    let keep0 = simple_hash(seed_f + 0.1);
+    let v0 = state_get_layer(input, 0);
+    if keep0 > p {
+        let m0 = bs_mag(v0) * scale;
+        let result = state_set_layer(result, 0, bs_from_mag_clamped(m0));
+    }
+
+    let keep1 = simple_hash(seed_f + 1.1);
+    let v1 = state_get_layer(input, 1);
+    if keep1 > p {
+        let m1 = bs_mag(v1) * scale;
+        let result = state_set_layer(result, 1, bs_from_mag_clamped(m1));
+    }
+
+    let keep2 = simple_hash(seed_f + 2.1);
+    let v2 = state_get_layer(input, 2);
+    if keep2 > p {
+        let m2 = bs_mag(v2) * scale;
+        let result = state_set_layer(result, 2, bs_from_mag_clamped(m2));
+    }
+
+    let keep3 = simple_hash(seed_f + 3.1);
+    let v3 = state_get_layer(input, 3);
+    if keep3 > p {
+        let m3 = bs_mag(v3) * scale;
+        let result = state_set_layer(result, 3, bs_from_mag_clamped(m3));
+    }
+
+    let keep4 = simple_hash(seed_f + 4.1);
+    let v4 = state_get_layer(input, 4);
+    if keep4 > p {
+        let m4 = bs_mag(v4) * scale;
+        let result = state_set_layer(result, 4, bs_from_mag_clamped(m4));
+    }
+
+    let keep5 = simple_hash(seed_f + 5.1);
+    let v5 = state_get_layer(input, 5);
+    if keep5 > p {
+        let m5 = bs_mag(v5) * scale;
+        let result = state_set_layer(result, 5, bs_from_mag_clamped(m5));
+    }
+
+    let keep6 = simple_hash(seed_f + 6.1);
+    let v6 = state_get_layer(input, 6);
+    if keep6 > p {
+        let m6 = bs_mag(v6) * scale;
+        let result = state_set_layer(result, 6, bs_from_mag_clamped(m6));
+    }
+
+    let keep7 = simple_hash(seed_f + 7.1);
+    let v7 = state_get_layer(input, 7);
+    if keep7 > p {
+        let m7 = bs_mag(v7) * scale;
+        let result = state_set_layer(result, 7, bs_from_mag_clamped(m7));
+    }
+
+    let keep8 = simple_hash(seed_f + 8.1);
+    let v8 = state_get_layer(input, 8);
+    if keep8 > p {
+        let m8 = bs_mag(v8) * scale;
+        let result = state_set_layer(result, 8, bs_from_mag_clamped(m8));
+    }
+
+    let keep9 = simple_hash(seed_f + 9.1);
+    let v9 = state_get_layer(input, 9);
+    if keep9 > p {
+        let m9 = bs_mag(v9) * scale;
+        let result = state_set_layer(result, 9, bs_from_mag_clamped(m9));
+    }
+
+    let keep10 = simple_hash(seed_f + 10.1);
+    let v10 = state_get_layer(input, 10);
+    if keep10 > p {
+        let m10 = bs_mag(v10) * scale;
+        let result = state_set_layer(result, 10, bs_from_mag_clamped(m10));
+    }
+
+    let keep11 = simple_hash(seed_f + 11.1);
+    let v11 = state_get_layer(input, 11);
+    if keep11 > p {
+        let m11 = bs_mag(v11) * scale;
+        let result = state_set_layer(result, 11, bs_from_mag_clamped(m11));
+    }
+
+    let keep12 = simple_hash(seed_f + 12.1);
+    let v12 = state_get_layer(input, 12);
+    if keep12 > p {
+        let m12 = bs_mag(v12) * scale;
+        let result = state_set_layer(result, 12, bs_from_mag_clamped(m12));
+    }
+
+    let keep13 = simple_hash(seed_f + 13.1);
+    let v13 = state_get_layer(input, 13);
+    if keep13 > p {
+        let m13 = bs_mag(v13) * scale;
+        let result = state_set_layer(result, 13, bs_from_mag_clamped(m13));
+    }
+
+    let keep14 = simple_hash(seed_f + 14.1);
+    let v14 = state_get_layer(input, 14);
+    if keep14 > p {
+        let m14 = bs_mag(v14) * scale;
+        let result = state_set_layer(result, 14, bs_from_mag_clamped(m14));
+    }
+
+    let keep15 = simple_hash(seed_f + 15.1);
+    let v15 = state_get_layer(input, 15);
+    if keep15 > p {
+        let m15 = bs_mag(v15) * scale;
+        let result = state_set_layer(result, 15, bs_from_mag_clamped(m15));
+    }
+
+    return result;
+}
+
+// =============================================================================
+// Dropout Variants
+// =============================================================================
+
+// Dropout simplificado que sempre aplica (para uso apenas em treinamento)
+pub fn dropout_training(input: State, p: Float, seed_f: Float) -> State {
+    return dropout(input, p, true, seed_f);
+}
+
+// DropConnect - dropa pesos ao inves de ativacoes
+pub fn dropconnect(weights: State, p: Float, seed_f: Float) -> State {
+    return dropout(weights, p, true, seed_f);
+}
+
+// Funcao identidade - retorna input inalterado (para modo inferencia)
+pub fn dropout_inference(input: State) -> State {
+    return input;
+}
+
+// =============================================================================
+// Spatial Dropout
+// =============================================================================
+
+// Spatial dropout - dropa canais inteiros (grupos de 4)
+pub fn spatial_dropout_4(input: State, p: Float, seed_f: Float) -> State {
+    let result = state_vacuum();
+    let scale = 1.0 / (1.0 - p);
+
+    // Canal 0 (L0-L3)
+    let keep0 = simple_hash(seed_f + 0.5);
+    if keep0 > p {
+        let v0 = state_get_layer(input, 0);
+        let m0 = bs_mag(v0) * scale;
+        let result = state_set_layer(result, 0, bs_from_mag_clamped(m0));
+
+        let v1 = state_get_layer(input, 1);
+        let m1 = bs_mag(v1) * scale;
+        let result = state_set_layer(result, 1, bs_from_mag_clamped(m1));
+
+        let v2 = state_get_layer(input, 2);
+        let m2 = bs_mag(v2) * scale;
+        let result = state_set_layer(result, 2, bs_from_mag_clamped(m2));
+
+        let v3 = state_get_layer(input, 3);
+        let m3 = bs_mag(v3) * scale;
+        let result = state_set_layer(result, 3, bs_from_mag_clamped(m3));
+    }
+
+    // Canal 1 (L4-L7)
+    let keep1 = simple_hash(seed_f + 1.5);
+    if keep1 > p {
+        let v4 = state_get_layer(input, 4);
+        let m4 = bs_mag(v4) * scale;
+        let result = state_set_layer(result, 4, bs_from_mag_clamped(m4));
+
+        let v5 = state_get_layer(input, 5);
+        let m5 = bs_mag(v5) * scale;
+        let result = state_set_layer(result, 5, bs_from_mag_clamped(m5));
+
+        let v6 = state_get_layer(input, 6);
+        let m6 = bs_mag(v6) * scale;
+        let result = state_set_layer(result, 6, bs_from_mag_clamped(m6));
+
+        let v7 = state_get_layer(input, 7);
+        let m7 = bs_mag(v7) * scale;
+        let result = state_set_layer(result, 7, bs_from_mag_clamped(m7));
+    }
+
+    // Canal 2 (L8-L11)
+    let keep2 = simple_hash(seed_f + 2.5);
+    if keep2 > p {
+        let v8 = state_get_layer(input, 8);
+        let m8 = bs_mag(v8) * scale;
+        let result = state_set_layer(result, 8, bs_from_mag_clamped(m8));
+
+        let v9 = state_get_layer(input, 9);
+        let m9 = bs_mag(v9) * scale;
+        let result = state_set_layer(result, 9, bs_from_mag_clamped(m9));
+
+        let v10 = state_get_layer(input, 10);
+        let m10 = bs_mag(v10) * scale;
+        let result = state_set_layer(result, 10, bs_from_mag_clamped(m10));
+
+        let v11 = state_get_layer(input, 11);
+        let m11 = bs_mag(v11) * scale;
+        let result = state_set_layer(result, 11, bs_from_mag_clamped(m11));
+    }
+
+    // Canal 3 (L12-L15)
+    let keep3 = simple_hash(seed_f + 3.5);
+    if keep3 > p {
+        let v12 = state_get_layer(input, 12);
+        let m12 = bs_mag(v12) * scale;
+        let result = state_set_layer(result, 12, bs_from_mag_clamped(m12));
+
+        let v13 = state_get_layer(input, 13);
+        let m13 = bs_mag(v13) * scale;
+        let result = state_set_layer(result, 13, bs_from_mag_clamped(m13));
+
+        let v14 = state_get_layer(input, 14);
+        let m14 = bs_mag(v14) * scale;
+        let result = state_set_layer(result, 14, bs_from_mag_clamped(m14));
+
+        let v15 = state_get_layer(input, 15);
+        let m15 = bs_mag(v15) * scale;
+        let result = state_set_layer(result, 15, bs_from_mag_clamped(m15));
+    }
+
+    return result;
+}
+

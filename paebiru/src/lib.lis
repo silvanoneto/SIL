@@ -1,0 +1,120 @@
+// Paebiru ML Library
+// Biblioteca integrada de ML para o ecossistema SIL
+// Edge-first, privacy-centric neural computing
+//
+// Estrutura de modulos:
+// - core: Operacoes fundamentais (ByteSil, State, linalg, activations, loss, optim, stats)
+// - layers: Camadas para redes neurais (dense, norm, dropout, residual)
+// - arch: Arquiteturas de redes (attention, ffn, transformer, kan, ssm, lnn, recurrent, snn)
+// - distributed: Treinamento distribuido (fedavg, byzantine, compress, cluster, mesh, privacy)
+// - edge: Computacao edge (device, rho_sil, router)
+// - inference: Engine de inferencia com roteamento automatico
+// - memory: Cache, pools de memoria, armazenamento de tensores
+// - emergence: Aprendizado emergente (Hebbian, Kuramoto, DFT)
+// - observability: Metricas, tracing, monitoramento
+// - security: Niveis de seguranca, audit, permissoes
+// - protocols: Protocolos de comunicacao (gRPC, REST, MQTT, WebSocket)
+// - hardware: Deteccao e capacidades de hardware (GPU, TPU, NPU)
+// - streaming: Transformacoes de dados e windowing
+// - storage: Checkpoints, sharding, DHT, records
+// - mlops: Registro de modelos, A/B testing, deployment
+// - scaling: Limites de recursos, politicas de escala, load balancer
+// - lis: Modelo LIS (Language for Intelligent Systems) com 16 modalidades
+
+pub mod core;
+pub mod layers;
+pub mod arch;
+pub mod distributed;
+pub mod edge;
+pub mod inference;
+pub mod memory;
+pub mod emergence;
+pub mod observability;
+pub mod security;
+pub mod protocols;
+pub mod hardware;
+pub mod streaming;
+pub mod storage;
+pub mod mlops;
+pub mod scaling;
+pub mod lis;
+
+// =============================================================================
+// Re-exports convenientes
+// =============================================================================
+
+// Core types e operacoes mais usadas
+pub use core::bytesil::{bs_mag, bs_from_mag, bs_from_mag_clamped, bs_zero, bs_one, EPSILON};
+pub use core::state::{st_add, st_sub, st_scale, st_mul, st_norm_l2, st_mean, st_variance};
+pub use core::activations::{relu_state, sigmoid_state, gelu_state, softmax, swish_state};
+pub use core::loss::{mse, cross_entropy, cosine_loss};
+pub use core::optim::{sgd_step, clip_grad_norm};
+pub use core::linalg::{dot, norm_l2, cosine_similarity};
+
+// Layers mais usadas
+pub use layers::dense::{dense_forward, dense_relu, dense_gelu};
+pub use layers::norm::{layer_norm, rms_norm};
+pub use layers::dropout::{dropout};
+pub use layers::residual::{residual, residual_scaled, highway};
+
+// Arquitecturas
+pub use arch::attention::{scaled_dot_attention_4x4, matmul_4x4, self_attention};
+pub use arch::ffn::{swiglu_ffn, ffn_standard};
+pub use arch::transformer::{transformer_encoder_block, transformer_decoder_block};
+pub use arch::kan::{kan_forward, bspline_basis_1};
+pub use arch::ssm::{ssm_state_update, mamba_selective_scan};
+pub use arch::lnn::{ltc_step, ctrnn_step};
+pub use arch::recurrent::{rnn_cell, lstm_cell, gru_cell};
+pub use arch::snn::{lif_step, generate_spikes};
+
+// Distribuido
+pub use distributed::fedavg::{fedavg_2, fedavg_3, fedavg_4, fedavg_weighted_4};
+pub use distributed::byzantine::{byzantine_median_3, krum_3, robust_aggregate_3};
+pub use distributed::compress::{topk_sparsify, quantize_int8, compress_with_feedback};
+pub use distributed::cluster::{cluster_init, cluster_node_create, cluster_active_count};
+pub use distributed::mesh::{mesh_node_create, gossip_create, membership_init};
+pub use distributed::privacy::{dp_config_create, add_gaussian_noise, clip_gradients};
+
+// Edge
+pub use edge::device::{DEVICE_NANO, DEVICE_MICRO, DEVICE_MINI, DEVICE_STANDARD, DEVICE_EDGE, DEVICE_CLOUD};
+pub use edge::device::{device_class_from_capability, can_handle_workload, min_device_for_rho};
+pub use edge::rho_sil::{rho_sil, rho_sil_fast, should_offload};
+pub use edge::router::{route_simple, route_load_aware, ROUTE_LOCAL, ROUTE_OFFLOAD_NEAR};
+
+// Inference
+pub use inference::{detect_backend, route_decision, infer_auto, BACKEND_CPU, BACKEND_GPU};
+
+// Memory
+pub use memory::{pool_init_16, pool_allocate, pool_deallocate, cache_hit_rate};
+
+// Emergence
+pub use emergence::{hebbian_update, oja_update, kuramoto_order_parameter, dft};
+
+// Observability
+pub use observability::{metrics_init, counter_inc, gauge_set, timer_start, timer_end};
+
+// Security
+pub use security::{SECURITY_NONE, SECURITY_SIGNED, audit_log_create, permission_check};
+
+// Protocols
+pub use protocols::{PROTOCOL_GRPC, PROTOCOL_REST, PROTOCOL_MQTT, message_create, queue_push};
+
+// Hardware
+pub use hardware::{ACCEL_CPU, ACCEL_GPU, ACCEL_TPU, detect_accelerator, capabilities_create};
+
+// Streaming
+pub use streaming::{transform_scale, transform_normalize, window_tumbling, aggregate_mean};
+
+// Storage
+pub use storage::{checkpoint_create, ckpt_epoch, ckpt_loss, shard_create, record_create};
+
+// MLOps
+pub use mlops::{model_version_create, version_stage, registry_register, abtest_create};
+
+// Scaling
+pub use scaling::{limits_create, limits_check, policy_create, lb_round_robin};
+
+// LIS
+pub use lis::{MOD_PHOTONIC, MOD_ACOUSTIC, MOD_ELECTRONIC, lis_config_create, lis_enable_modality};
+pub use lis::{lis_config_minimal, lis_config_standard, lis_config_full};
+

@@ -1,0 +1,263 @@
+// Paebiru ML Library - Activation Functions
+// Funcoes de ativacao para redes neurais
+
+use core::bytesil::{bs_mag, bs_from_mag, bs_from_mag_clamped, bs_zero, tanh_approx, sigmoid_f, EPSILON};
+use core::state::{st_max_mag};
+
+// =============================================================================
+// Ativacoes Escalares (ByteSil -> ByteSil)
+// =============================================================================
+
+pub fn relu(x: ByteSil) -> ByteSil {
+    let mag = bs_mag(x);
+    if mag > 0.0 {
+        return x;
+    }
+    return bs_zero();
+}
+
+pub fn sigmoid(x: ByteSil) -> ByteSil {
+    let mag = bs_mag(x);
+    let sig = sigmoid_f(mag);
+    return bs_from_mag(sig);
+}
+
+pub fn tanh_act(x: ByteSil) -> ByteSil {
+    let mag = bs_mag(x);
+    let th = tanh_approx(mag);
+    return bs_from_mag(th);
+}
+
+pub fn gelu(x: ByteSil) -> ByteSil {
+    let mag = bs_mag(x);
+    let sqrt_2_pi = sqrt(2.0 / pi());
+    let inner = sqrt_2_pi * (mag + 0.044715 * mag * mag * mag);
+    let th = tanh_approx(inner);
+    let result = 0.5 * mag * (1.0 + th);
+    return bs_from_mag(result);
+}
+
+pub fn swish(x: ByteSil) -> ByteSil {
+    let mag = bs_mag(x);
+    let sig = sigmoid_f(mag);
+    return bs_from_mag(mag * sig);
+}
+
+pub fn leaky_relu(x: ByteSil, alpha: Float) -> ByteSil {
+    let mag = bs_mag(x);
+    if mag > 0.0 {
+        return x;
+    }
+    return bs_from_mag(alpha * mag);
+}
+
+pub fn relu6(x: ByteSil) -> ByteSil {
+    let mag = bs_mag(x);
+    let clamped = clamp_float(mag, 0.0, 6.0);
+    return bs_from_mag(clamped);
+}
+
+pub fn silu(x: ByteSil) -> ByteSil {
+    return swish(x);
+}
+
+pub fn elu(x: ByteSil, alpha: Float) -> ByteSil {
+    let mag = bs_mag(x);
+    if mag > 0.0 {
+        return x;
+    }
+    return bs_from_mag(alpha * (exp(mag) - 1.0));
+}
+
+// =============================================================================
+// Ativacoes sobre State (State -> State)
+// =============================================================================
+
+pub fn relu_state(s: State) -> State {
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, relu(state_get_layer(s, 0)));
+    let r = state_set_layer(r, 1, relu(state_get_layer(s, 1)));
+    let r = state_set_layer(r, 2, relu(state_get_layer(s, 2)));
+    let r = state_set_layer(r, 3, relu(state_get_layer(s, 3)));
+    let r = state_set_layer(r, 4, relu(state_get_layer(s, 4)));
+    let r = state_set_layer(r, 5, relu(state_get_layer(s, 5)));
+    let r = state_set_layer(r, 6, relu(state_get_layer(s, 6)));
+    let r = state_set_layer(r, 7, relu(state_get_layer(s, 7)));
+    let r = state_set_layer(r, 8, relu(state_get_layer(s, 8)));
+    let r = state_set_layer(r, 9, relu(state_get_layer(s, 9)));
+    let r = state_set_layer(r, 10, relu(state_get_layer(s, 10)));
+    let r = state_set_layer(r, 11, relu(state_get_layer(s, 11)));
+    let r = state_set_layer(r, 12, relu(state_get_layer(s, 12)));
+    let r = state_set_layer(r, 13, relu(state_get_layer(s, 13)));
+    let r = state_set_layer(r, 14, relu(state_get_layer(s, 14)));
+    let r = state_set_layer(r, 15, relu(state_get_layer(s, 15)));
+    return r;
+}
+
+pub fn sigmoid_state(s: State) -> State {
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, sigmoid(state_get_layer(s, 0)));
+    let r = state_set_layer(r, 1, sigmoid(state_get_layer(s, 1)));
+    let r = state_set_layer(r, 2, sigmoid(state_get_layer(s, 2)));
+    let r = state_set_layer(r, 3, sigmoid(state_get_layer(s, 3)));
+    let r = state_set_layer(r, 4, sigmoid(state_get_layer(s, 4)));
+    let r = state_set_layer(r, 5, sigmoid(state_get_layer(s, 5)));
+    let r = state_set_layer(r, 6, sigmoid(state_get_layer(s, 6)));
+    let r = state_set_layer(r, 7, sigmoid(state_get_layer(s, 7)));
+    let r = state_set_layer(r, 8, sigmoid(state_get_layer(s, 8)));
+    let r = state_set_layer(r, 9, sigmoid(state_get_layer(s, 9)));
+    let r = state_set_layer(r, 10, sigmoid(state_get_layer(s, 10)));
+    let r = state_set_layer(r, 11, sigmoid(state_get_layer(s, 11)));
+    let r = state_set_layer(r, 12, sigmoid(state_get_layer(s, 12)));
+    let r = state_set_layer(r, 13, sigmoid(state_get_layer(s, 13)));
+    let r = state_set_layer(r, 14, sigmoid(state_get_layer(s, 14)));
+    let r = state_set_layer(r, 15, sigmoid(state_get_layer(s, 15)));
+    return r;
+}
+
+pub fn gelu_state(s: State) -> State {
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, gelu(state_get_layer(s, 0)));
+    let r = state_set_layer(r, 1, gelu(state_get_layer(s, 1)));
+    let r = state_set_layer(r, 2, gelu(state_get_layer(s, 2)));
+    let r = state_set_layer(r, 3, gelu(state_get_layer(s, 3)));
+    let r = state_set_layer(r, 4, gelu(state_get_layer(s, 4)));
+    let r = state_set_layer(r, 5, gelu(state_get_layer(s, 5)));
+    let r = state_set_layer(r, 6, gelu(state_get_layer(s, 6)));
+    let r = state_set_layer(r, 7, gelu(state_get_layer(s, 7)));
+    let r = state_set_layer(r, 8, gelu(state_get_layer(s, 8)));
+    let r = state_set_layer(r, 9, gelu(state_get_layer(s, 9)));
+    let r = state_set_layer(r, 10, gelu(state_get_layer(s, 10)));
+    let r = state_set_layer(r, 11, gelu(state_get_layer(s, 11)));
+    let r = state_set_layer(r, 12, gelu(state_get_layer(s, 12)));
+    let r = state_set_layer(r, 13, gelu(state_get_layer(s, 13)));
+    let r = state_set_layer(r, 14, gelu(state_get_layer(s, 14)));
+    let r = state_set_layer(r, 15, gelu(state_get_layer(s, 15)));
+    return r;
+}
+
+pub fn swish_state(s: State) -> State {
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, swish(state_get_layer(s, 0)));
+    let r = state_set_layer(r, 1, swish(state_get_layer(s, 1)));
+    let r = state_set_layer(r, 2, swish(state_get_layer(s, 2)));
+    let r = state_set_layer(r, 3, swish(state_get_layer(s, 3)));
+    let r = state_set_layer(r, 4, swish(state_get_layer(s, 4)));
+    let r = state_set_layer(r, 5, swish(state_get_layer(s, 5)));
+    let r = state_set_layer(r, 6, swish(state_get_layer(s, 6)));
+    let r = state_set_layer(r, 7, swish(state_get_layer(s, 7)));
+    let r = state_set_layer(r, 8, swish(state_get_layer(s, 8)));
+    let r = state_set_layer(r, 9, swish(state_get_layer(s, 9)));
+    let r = state_set_layer(r, 10, swish(state_get_layer(s, 10)));
+    let r = state_set_layer(r, 11, swish(state_get_layer(s, 11)));
+    let r = state_set_layer(r, 12, swish(state_get_layer(s, 12)));
+    let r = state_set_layer(r, 13, swish(state_get_layer(s, 13)));
+    let r = state_set_layer(r, 14, swish(state_get_layer(s, 14)));
+    let r = state_set_layer(r, 15, swish(state_get_layer(s, 15)));
+    return r;
+}
+
+pub fn tanh_state(s: State) -> State {
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, tanh_act(state_get_layer(s, 0)));
+    let r = state_set_layer(r, 1, tanh_act(state_get_layer(s, 1)));
+    let r = state_set_layer(r, 2, tanh_act(state_get_layer(s, 2)));
+    let r = state_set_layer(r, 3, tanh_act(state_get_layer(s, 3)));
+    let r = state_set_layer(r, 4, tanh_act(state_get_layer(s, 4)));
+    let r = state_set_layer(r, 5, tanh_act(state_get_layer(s, 5)));
+    let r = state_set_layer(r, 6, tanh_act(state_get_layer(s, 6)));
+    let r = state_set_layer(r, 7, tanh_act(state_get_layer(s, 7)));
+    let r = state_set_layer(r, 8, tanh_act(state_get_layer(s, 8)));
+    let r = state_set_layer(r, 9, tanh_act(state_get_layer(s, 9)));
+    let r = state_set_layer(r, 10, tanh_act(state_get_layer(s, 10)));
+    let r = state_set_layer(r, 11, tanh_act(state_get_layer(s, 11)));
+    let r = state_set_layer(r, 12, tanh_act(state_get_layer(s, 12)));
+    let r = state_set_layer(r, 13, tanh_act(state_get_layer(s, 13)));
+    let r = state_set_layer(r, 14, tanh_act(state_get_layer(s, 14)));
+    let r = state_set_layer(r, 15, tanh_act(state_get_layer(s, 15)));
+    return r;
+}
+
+// =============================================================================
+// Softmax
+// =============================================================================
+
+pub fn softmax(s: State) -> State {
+    let mv = st_max_mag(s);
+    let e0 = exp(bs_mag(state_get_layer(s, 0)) - mv);
+    let e1 = exp(bs_mag(state_get_layer(s, 1)) - mv);
+    let e2 = exp(bs_mag(state_get_layer(s, 2)) - mv);
+    let e3 = exp(bs_mag(state_get_layer(s, 3)) - mv);
+    let e4 = exp(bs_mag(state_get_layer(s, 4)) - mv);
+    let e5 = exp(bs_mag(state_get_layer(s, 5)) - mv);
+    let e6 = exp(bs_mag(state_get_layer(s, 6)) - mv);
+    let e7 = exp(bs_mag(state_get_layer(s, 7)) - mv);
+    let e8 = exp(bs_mag(state_get_layer(s, 8)) - mv);
+    let e9 = exp(bs_mag(state_get_layer(s, 9)) - mv);
+    let e10 = exp(bs_mag(state_get_layer(s, 10)) - mv);
+    let e11 = exp(bs_mag(state_get_layer(s, 11)) - mv);
+    let e12 = exp(bs_mag(state_get_layer(s, 12)) - mv);
+    let e13 = exp(bs_mag(state_get_layer(s, 13)) - mv);
+    let e14 = exp(bs_mag(state_get_layer(s, 14)) - mv);
+    let e15 = exp(bs_mag(state_get_layer(s, 15)) - mv);
+    let sum_exp = e0 + e1 + e2 + e3 + e4 + e5 + e6 + e7 + e8 + e9 + e10 + e11 + e12 + e13 + e14 + e15;
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, bs_from_mag(e0 / sum_exp));
+    let r = state_set_layer(r, 1, bs_from_mag(e1 / sum_exp));
+    let r = state_set_layer(r, 2, bs_from_mag(e2 / sum_exp));
+    let r = state_set_layer(r, 3, bs_from_mag(e3 / sum_exp));
+    let r = state_set_layer(r, 4, bs_from_mag(e4 / sum_exp));
+    let r = state_set_layer(r, 5, bs_from_mag(e5 / sum_exp));
+    let r = state_set_layer(r, 6, bs_from_mag(e6 / sum_exp));
+    let r = state_set_layer(r, 7, bs_from_mag(e7 / sum_exp));
+    let r = state_set_layer(r, 8, bs_from_mag(e8 / sum_exp));
+    let r = state_set_layer(r, 9, bs_from_mag(e9 / sum_exp));
+    let r = state_set_layer(r, 10, bs_from_mag(e10 / sum_exp));
+    let r = state_set_layer(r, 11, bs_from_mag(e11 / sum_exp));
+    let r = state_set_layer(r, 12, bs_from_mag(e12 / sum_exp));
+    let r = state_set_layer(r, 13, bs_from_mag(e13 / sum_exp));
+    let r = state_set_layer(r, 14, bs_from_mag(e14 / sum_exp));
+    let r = state_set_layer(r, 15, bs_from_mag(e15 / sum_exp));
+    return r;
+}
+
+// Log softmax (mais estavel numericamente)
+pub fn log_softmax(s: State) -> State {
+    let mv = st_max_mag(s);
+    let e0 = exp(bs_mag(state_get_layer(s, 0)) - mv);
+    let e1 = exp(bs_mag(state_get_layer(s, 1)) - mv);
+    let e2 = exp(bs_mag(state_get_layer(s, 2)) - mv);
+    let e3 = exp(bs_mag(state_get_layer(s, 3)) - mv);
+    let e4 = exp(bs_mag(state_get_layer(s, 4)) - mv);
+    let e5 = exp(bs_mag(state_get_layer(s, 5)) - mv);
+    let e6 = exp(bs_mag(state_get_layer(s, 6)) - mv);
+    let e7 = exp(bs_mag(state_get_layer(s, 7)) - mv);
+    let e8 = exp(bs_mag(state_get_layer(s, 8)) - mv);
+    let e9 = exp(bs_mag(state_get_layer(s, 9)) - mv);
+    let e10 = exp(bs_mag(state_get_layer(s, 10)) - mv);
+    let e11 = exp(bs_mag(state_get_layer(s, 11)) - mv);
+    let e12 = exp(bs_mag(state_get_layer(s, 12)) - mv);
+    let e13 = exp(bs_mag(state_get_layer(s, 13)) - mv);
+    let e14 = exp(bs_mag(state_get_layer(s, 14)) - mv);
+    let e15 = exp(bs_mag(state_get_layer(s, 15)) - mv);
+    let sum_exp = e0 + e1 + e2 + e3 + e4 + e5 + e6 + e7 + e8 + e9 + e10 + e11 + e12 + e13 + e14 + e15;
+    let log_sum_exp = ln(sum_exp);
+    let r = state_vacuum();
+    let r = state_set_layer(r, 0, bs_from_mag(bs_mag(state_get_layer(s, 0)) - mv - log_sum_exp));
+    let r = state_set_layer(r, 1, bs_from_mag(bs_mag(state_get_layer(s, 1)) - mv - log_sum_exp));
+    let r = state_set_layer(r, 2, bs_from_mag(bs_mag(state_get_layer(s, 2)) - mv - log_sum_exp));
+    let r = state_set_layer(r, 3, bs_from_mag(bs_mag(state_get_layer(s, 3)) - mv - log_sum_exp));
+    let r = state_set_layer(r, 4, bs_from_mag(bs_mag(state_get_layer(s, 4)) - mv - log_sum_exp));
+    let r = state_set_layer(r, 5, bs_from_mag(bs_mag(state_get_layer(s, 5)) - mv - log_sum_exp));
+    let r = state_set_layer(r, 6, bs_from_mag(bs_mag(state_get_layer(s, 6)) - mv - log_sum_exp));
+    let r = state_set_layer(r, 7, bs_from_mag(bs_mag(state_get_layer(s, 7)) - mv - log_sum_exp));
+    let r = state_set_layer(r, 8, bs_from_mag(bs_mag(state_get_layer(s, 8)) - mv - log_sum_exp));
+    let r = state_set_layer(r, 9, bs_from_mag(bs_mag(state_get_layer(s, 9)) - mv - log_sum_exp));
+    let r = state_set_layer(r, 10, bs_from_mag(bs_mag(state_get_layer(s, 10)) - mv - log_sum_exp));
+    let r = state_set_layer(r, 11, bs_from_mag(bs_mag(state_get_layer(s, 11)) - mv - log_sum_exp));
+    let r = state_set_layer(r, 12, bs_from_mag(bs_mag(state_get_layer(s, 12)) - mv - log_sum_exp));
+    let r = state_set_layer(r, 13, bs_from_mag(bs_mag(state_get_layer(s, 13)) - mv - log_sum_exp));
+    let r = state_set_layer(r, 14, bs_from_mag(bs_mag(state_get_layer(s, 14)) - mv - log_sum_exp));
+    let r = state_set_layer(r, 15, bs_from_mag(bs_mag(state_get_layer(s, 15)) - mv - log_sum_exp));
+    return r;
+}

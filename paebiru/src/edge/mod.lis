@@ -1,0 +1,7 @@
+// Paebiru ML Library - Edge Module
+// Computacao edge e roteamento
+
+pub mod device;
+pub mod rho_sil;
+pub mod router;
+

@@ -1,0 +1,53 @@
+// Paebiru ML Library - Residual Connections
+// Conexoes residuais para redes neurais profundas
+
+use core::state::{st_add, st_scale};
+
+// =============================================================================
+// Residual Connections
+// =============================================================================
+
+// Residual connection: output = input + transformed
+// Skip connection padrao usado em ResNets
+pub fn residual(input: State, transformed: State) -> State {
+    return st_add(input, transformed);
+}
+
+// Scaled residual connection: output = input + (transformed * scale)
+// Util para inicializacao de redes muito profundas (e.g., ReZero)
+pub fn residual_scaled(input: State, transformed: State, scale: Float) -> State {
+    let scaled = st_scale(transformed, scale);
+    return st_add(input, scaled);
+}
+
+// Pre-activation residual: output = input + f(norm(input))
+// Usado em PreAct-ResNet (normaliza antes da transformacao)
+pub fn residual_pre(input: State, normalized_transformed: State) -> State {
+    return st_add(input, normalized_transformed);
+}
+
+// Gated residual: output = input + gate * transformed
+// Gate eh um valor entre 0 e 1 que controla quanto do residual passar
+pub fn residual_gated(input: State, transformed: State, gate: State) -> State {
+    use core::state::{st_mul};
+    let gated = st_mul(transformed, gate);
+    return st_add(input, gated);
+}
+
+// Highway connection: output = gate * transformed + (1 - gate) * input
+// Variacao onde gate controla mix entre input e transformed
+pub fn highway(input: State, transformed: State, gate: Float) -> State {
+    let g = clamp_float(gate, 0.0, 1.0);
+    let inv_g = 1.0 - g;
+    let trans_scaled = st_scale(transformed, g);
+    let input_scaled = st_scale(input, inv_g);
+    return st_add(trans_scaled, input_scaled);
+}
+
+// Dense connection: concatena input com transformed (para DenseNets)
+// Nota: Em SIL, usamos rotate para simular concatenacao em layers
+pub fn dense_connection(input: State, transformed: State) -> State {
+    // Combina via XOR para manter informacao de ambos
+    return state_xor(input, transformed);
+}
+

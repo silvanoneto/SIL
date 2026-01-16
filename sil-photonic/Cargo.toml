@@ -1,0 +1,18 @@
+[package]
+name = "sil-photonic"
+version = "2026.1.16"
+edition = "2024"
+authors = ["Silvano Neto <dev@silvanoneto.com>"]
+description = "L0 Fotônico — Sensores óticos, câmeras, processamento de imagem"
+license = "AGPL-3.0"
+keywords = ["sil", "photonic", "camera", "vision", "l0"]
+categories = ["embedded", "computer-vision"]
+rust-version = "1.92"
+
+[dependencies]
+sil-core = { path = "../sil-core" }
+thiserror = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+criterion = "0.5"

@@ -1,0 +1,208 @@
+// Paebiru ML Library - Observability Module
+// Metrics, tracing, and monitoring
+
+use core::bytesil::{bs_mag, bs_from_mag_clamped};
+
+// =============================================================================
+// Metric Types
+// =============================================================================
+
+// Metric type constants
+pub fn METRIC_COUNTER() -> Int { return 0; }
+pub fn METRIC_GAUGE() -> Int { return 1; }
+pub fn METRIC_HISTOGRAM() -> Int { return 2; }
+
+// =============================================================================
+// Metrics Collector
+// =============================================================================
+
+// Metrics state layout:
+// Layer 0: counter value
+// Layer 1: gauge value
+// Layer 2-15: histogram buckets
+
+// Initialize metrics collector
+pub fn metrics_init() -> State {
+    return state_vacuum();
+}
+
+// Increment counter
+pub fn counter_inc(metrics: State, delta: Float) -> State {
+    let current = bs_mag(state_get_layer(metrics, 0));
+    return state_set_layer(metrics, 0, bs_from_mag_clamped(current + delta));
+}
+
+// Get counter value
+pub fn counter_get(metrics: State) -> Float {
+    return bs_mag(state_get_layer(metrics, 0));
+}
+
+// Set gauge value
+pub fn gauge_set(metrics: State, value: Float) -> State {
+    return state_set_layer(metrics, 1, bs_from_mag_clamped(value));
+}
+
+// Get gauge value
+pub fn gauge_get(metrics: State) -> Float {
+    return bs_mag(state_get_layer(metrics, 1));
+}
+
+// Increment gauge
+pub fn gauge_inc(metrics: State, delta: Float) -> State {
+    let current = bs_mag(state_get_layer(metrics, 1));
+    return state_set_layer(metrics, 1, bs_from_mag_clamped(current + delta));
+}
+
+// Decrement gauge
+pub fn gauge_dec(metrics: State, delta: Float) -> State {
+    let current = bs_mag(state_get_layer(metrics, 1));
+    let new_val = current - delta;
+    if new_val < 0.0 { let new_val = 0.0; }
+    return state_set_layer(metrics, 1, bs_from_mag_clamped(new_val));
+}
+
+// =============================================================================
+// Histogram
+// =============================================================================
+
+// Record value in histogram (layers 2-15 as 14 buckets)
+// Bucket boundaries: [0, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0, 1000.0]
+pub fn histogram_observe(metrics: State, value: Float) -> State {
+    let bucket = 2;  // Start at layer 2
+
+    if value <= 0.1 { let bucket = 2; }
+    else if value <= 0.25 { let bucket = 3; }
+    else if value <= 0.5 { let bucket = 4; }
+    else if value <= 1.0 { let bucket = 5; }
+    else if value <= 2.5 { let bucket = 6; }
+    else if value <= 5.0 { let bucket = 7; }
+    else if value <= 10.0 { let bucket = 8; }
+    else if value <= 25.0 { let bucket = 9; }
+    else if value <= 50.0 { let bucket = 10; }
+    else if value <= 100.0 { let bucket = 11; }
+    else if value <= 250.0 { let bucket = 12; }
+    else if value <= 500.0 { let bucket = 13; }
+    else if value <= 1000.0 { let bucket = 14; }
+    else { let bucket = 15; }
+
+    let current = bs_mag(state_get_layer(metrics, bucket));
+    return state_set_layer(metrics, bucket, bs_from_mag_clamped(current + 1.0));
+}
+
+// Get histogram bucket count
+pub fn histogram_bucket_count(metrics: State, bucket: Int) -> Float {
+    let layer = bucket + 2;
+    if layer > 15 { return 0.0; }
+    return bs_mag(state_get_layer(metrics, layer));
+}
+
+// Get total histogram observations
+pub fn histogram_total(metrics: State) -> Float {
+    let total = 0.0;
+    let total = total + bs_mag(state_get_layer(metrics, 2));
+    let total = total + bs_mag(state_get_layer(metrics, 3));
+    let total = total + bs_mag(state_get_layer(metrics, 4));
+    let total = total + bs_mag(state_get_layer(metrics, 5));
+    let total = total + bs_mag(state_get_layer(metrics, 6));
+    let total = total + bs_mag(state_get_layer(metrics, 7));
+    let total = total + bs_mag(state_get_layer(metrics, 8));
+    let total = total + bs_mag(state_get_layer(metrics, 9));
+    let total = total + bs_mag(state_get_layer(metrics, 10));
+    let total = total + bs_mag(state_get_layer(metrics, 11));
+    let total = total + bs_mag(state_get_layer(metrics, 12));
+    let total = total + bs_mag(state_get_layer(metrics, 13));
+    let total = total + bs_mag(state_get_layer(metrics, 14));
+    let total = total + bs_mag(state_get_layer(metrics, 15));
+    return total;
+}
+
+// =============================================================================
+// Timer
+// =============================================================================
+
+// Timer for measuring operation duration
+// Uses a State to track start time and accumulated duration
+
+// Start timer (stores normalized timestamp in layer 0)
+pub fn timer_start(timestamp: Float) -> State {
+    let timer = state_vacuum();
+    return state_set_layer(timer, 0, bs_from_mag_clamped(timestamp / 1000.0));
+}
+
+// Stop timer and get duration
+pub fn timer_stop(timer: State, end_timestamp: Float) -> Float {
+    let start = bs_mag(state_get_layer(timer, 0)) * 1000.0;
+    return end_timestamp - start;
+}
+
+// =============================================================================
+// Inference Trace
+// =============================================================================
+
+// Trace state layout:
+// Layer 0: latency (ms)
+// Layer 1: batch size
+// Layer 2: backend type (0=CPU, 1=GPU, 2=NPU)
+// Layer 3: rho_sil value
+// Layer 4: success flag
+
+// Create inference trace
+pub fn trace_create(latency_ms: Float, batch_size: Int, backend: Int, rho: Float, success: Bool) -> State {
+    let trace = state_vacuum();
+
+    let trace = state_set_layer(trace, 0, bs_from_mag_clamped(latency_ms / 100.0));
+    let trace = state_set_layer(trace, 1, bs_from_mag_clamped(float_from_int(batch_size) / 16.0));
+    let trace = state_set_layer(trace, 2, bs_from_mag_clamped(float_from_int(backend) / 4.0));
+    let trace = state_set_layer(trace, 3, bs_from_mag_clamped(rho));
+
+    let success_val = 0.0;
+    if success { let success_val = 1.0; }
+    let trace = state_set_layer(trace, 4, bs_from_mag_clamped(success_val));
+
+    return trace;
+}
+
+// Extract trace fields
+pub fn trace_latency(trace: State) -> Float {
+    return bs_mag(state_get_layer(trace, 0)) * 100.0;
+}
+
+pub fn trace_batch_size(trace: State) -> Int {
+    return int_from_float(bs_mag(state_get_layer(trace, 1)) * 16.0);
+}
+
+pub fn trace_backend(trace: State) -> Int {
+    return int_from_float(bs_mag(state_get_layer(trace, 2)) * 4.0);
+}
+
+pub fn trace_rho(trace: State) -> Float {
+    return bs_mag(state_get_layer(trace, 3));
+}
+
+pub fn trace_success(trace: State) -> Bool {
+    return bs_mag(state_get_layer(trace, 4)) > 0.5;
+}
+
+// =============================================================================
+// Aggregation
+// =============================================================================
+
+// Compute average latency from multiple traces
+pub fn avg_latency_4(t0: State, t1: State, t2: State, t3: State) -> Float {
+    let l0 = trace_latency(t0);
+    let l1 = trace_latency(t1);
+    let l2 = trace_latency(t2);
+    let l3 = trace_latency(t3);
+    return (l0 + l1 + l2 + l3) / 4.0;
+}
+
+// Compute success rate from traces
+pub fn success_rate_4(t0: State, t1: State, t2: State, t3: State) -> Float {
+    let count = 0.0;
+    if trace_success(t0) { let count = count + 1.0; }
+    if trace_success(t1) { let count = count + 1.0; }
+    if trace_success(t2) { let count = count + 1.0; }
+    if trace_success(t3) { let count = count + 1.0; }
+    return count / 4.0;
+}
+

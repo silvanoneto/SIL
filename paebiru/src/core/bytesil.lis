@@ -1,0 +1,184 @@
+// Paebiru ML Library - ByteSil Operations
+// Funcoes auxiliares para manipulacao de ByteSil
+
+// =============================================================================
+// Constantes
+// =============================================================================
+
+pub fn EPSILON() -> Float {
+    return 0.0000001;
+}
+
+pub fn RHO_MIN() -> Float {
+    return -8.0;
+}
+
+pub fn RHO_MAX() -> Float {
+    return 7.0;
+}
+
+// =============================================================================
+// Conversoes e Construtores
+// =============================================================================
+
+// Extrai magnitude de ByteSil
+pub fn bs_mag(b: ByteSil) -> Float {
+    return bytesil_magnitude(b);
+}
+
+// Extrai fase em radianos
+pub fn bs_phase(b: ByteSil) -> Float {
+    return bytesil_phase_radians(b);
+}
+
+// Cria ByteSil a partir de magnitude (fase = 0)
+pub fn bs_from_mag(mag: Float) -> ByteSil {
+    return bytesil_from_complex(mag, 0.0);
+}
+
+// Cria ByteSil a partir de magnitude com clamping para rho range
+pub fn bs_from_mag_clamped(mag: Float) -> ByteSil {
+    let safe_mag = max_float(mag, EPSILON());
+    let rho = clamp_float(ln(safe_mag), RHO_MIN(), RHO_MAX());
+    return bytesil_new(floor(rho), 0);
+}
+
+// Cria ByteSil a partir de rho e theta inteiros
+pub fn bs_new(rho: Int, theta: Int) -> ByteSil {
+    return bytesil_new(rho, theta);
+}
+
+// Cria ByteSil a partir de magnitude e fase (radianos)
+pub fn bs_from_polar(mag: Float, phase_rad: Float) -> ByteSil {
+    let safe_mag = max_float(mag, EPSILON());
+    let rho_float = ln(safe_mag);
+    let rho_clamped = clamp_float(rho_float, RHO_MIN(), RHO_MAX());
+    let rho_int = floor(rho_clamped + 0.5);
+    let pi_val = pi();
+    let two_pi = pi_val * 2.0;
+    let phase_norm = phase_rad - floor(phase_rad / two_pi) * two_pi;
+    let theta_float = phase_norm * 8.0 / pi_val;
+    let theta_clamped = clamp_float(theta_float, 0.0, 15.9);
+    let theta_int = floor(theta_clamped);
+    return bytesil_new(floor(rho_int), floor(theta_int));
+}
+
+// Cria ByteSil a partir de coordenadas cartesianas
+pub fn bs_from_cartesian(real: Float, imag: Float) -> ByteSil {
+    let mag = sqrt(real * real + imag * imag);
+    let phase_rad = atan2(imag, real);
+    return bs_from_polar(mag, phase_rad);
+}
+
+// =============================================================================
+// Constantes ByteSil
+// =============================================================================
+
+pub fn bs_zero() -> ByteSil {
+    return bytesil_null();
+}
+
+pub fn bs_one() -> ByteSil {
+    return bytesil_one();
+}
+
+pub fn bs_i() -> ByteSil {
+    return bytesil_i();
+}
+
+pub fn bs_neg_one() -> ByteSil {
+    return bytesil_neg_one();
+}
+
+pub fn bs_neg_i() -> ByteSil {
+    return bytesil_neg_i();
+}
+
+pub fn bs_max() -> ByteSil {
+    return bytesil_max();
+}
+
+// =============================================================================
+// Operacoes Aritmeticas
+// =============================================================================
+
+pub fn bs_add(a: ByteSil, b: ByteSil) -> ByteSil {
+    return complex_add(a, b);
+}
+
+pub fn bs_sub(a: ByteSil, b: ByteSil) -> ByteSil {
+    return complex_sub(a, b);
+}
+
+pub fn bs_mul(a: ByteSil, b: ByteSil) -> ByteSil {
+    return bytesil_mul(a, b);
+}
+
+pub fn bs_div(a: ByteSil, b: ByteSil) -> ByteSil {
+    return bytesil_div(a, b);
+}
+
+pub fn bs_scale(b: ByteSil, s: Float) -> ByteSil {
+    return complex_scale(b, s);
+}
+
+pub fn bs_rotate(b: ByteSil, angle_rad: Float) -> ByteSil {
+    return complex_rotate(b, angle_rad);
+}
+
+pub fn bs_conj(b: ByteSil) -> ByteSil {
+    return bytesil_conj(b);
+}
+
+pub fn bs_inv(b: ByteSil) -> ByteSil {
+    return bytesil_inv(b);
+}
+
+pub fn bs_pow(b: ByteSil, n: Int) -> ByteSil {
+    return bytesil_pow(b, n);
+}
+
+pub fn bs_root(b: ByteSil, n: Int) -> ByteSil {
+    return bytesil_root(b, n);
+}
+
+pub fn bs_lerp(a: ByteSil, b: ByteSil, t: Float) -> ByteSil {
+    return complex_lerp(a, b, t);
+}
+
+// =============================================================================
+// Conversoes para Float
+// =============================================================================
+
+pub fn bs_to_real(b: ByteSil) -> Float {
+    let mag = bs_mag(b);
+    let phase_rad = bs_phase(b);
+    return mag * cos(phase_rad);
+}
+
+pub fn bs_to_imag(b: ByteSil) -> Float {
+    let mag = bs_mag(b);
+    let phase_rad = bs_phase(b);
+    return mag * sin(phase_rad);
+}
+
+// =============================================================================
+// Funcoes Matematicas
+// =============================================================================
+
+// tanh aproximado via exp
+pub fn tanh_approx(x: Float) -> Float {
+    let exp_x = exp(x);
+    let exp_neg_x = exp(0.0 - x);
+    return (exp_x - exp_neg_x) / (exp_x + exp_neg_x);
+}
+
+// sigmoid
+pub fn sigmoid_f(x: Float) -> Float {
+    return 1.0 / (1.0 + exp(0.0 - x));
+}
+
+// clamp generico
+pub fn clamp_f(x: Float, lo: Float, hi: Float) -> Float {
+    return clamp_float(x, lo, hi);
+}

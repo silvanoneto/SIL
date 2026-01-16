@@ -1,0 +1,28 @@
+pkgname=lis-cli-git
+pkgver=0
+pkgrel=1
+pkgdesc="Command-line interface for the LIS language compiler (git master)"
+arch=('x86_64' 'aarch64')
+url="https://github.com/silvanoneto/SIL"
+license=('AGPL3')
+depends=()
+makedepends=('rust' 'cargo' 'git')
+source=("SIL::git+https://github.com/silvanoneto/SIL.git")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd SIL
+  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd SIL
+  cargo build --release -p lis-cli
+}
+
+package() {
+  cd SIL
+  install -Dm755 "target/release/lis"     "$pkgdir/usr/bin/lis"
+  install -Dm755 "target/release/lis-lsp" "$pkgdir/usr/bin/lis-lsp"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

@@ -1,0 +1,77 @@
+// Paebiru ML Library - Feed-Forward Networks
+// FFN layers para transformers
+
+use core::bytesil::{bs_mag, bs_from_mag_clamped};
+use core::state::{st_add, st_mul};
+use core::activations::{gelu_state, swish_state, relu_state};
+use arch::attention::{matmul_4x4};
+
+// =============================================================================
+// Standard FFN
+// =============================================================================
+
+// Standard FFN: FFN(x) = activation(x * W1 + b1) * W2 + b2
+pub fn ffn_standard(input: State, w1: State, b1: State, w2: State, b2: State) -> State {
+    let h = matmul_4x4(w1, input);
+    let h = st_add(h, b1);
+    let h = gelu_state(h);
+    let out = matmul_4x4(w2, h);
+    return st_add(out, b2);
+}
+
+// FFN without bias
+pub fn ffn_no_bias(input: State, w1: State, w2: State) -> State {
+    let h = matmul_4x4(w1, input);
+    let h = gelu_state(h);
+    return matmul_4x4(w2, h);
+}
+
+// FFN with ReLU activation
+pub fn ffn_relu(input: State, w1: State, w2: State) -> State {
+    let h = matmul_4x4(w1, input);
+    let h = relu_state(h);
+    return matmul_4x4(w2, h);
+}
+
+// =============================================================================
+// SwiGLU FFN (used in LLaMA)
+// =============================================================================
+
+// SwiGLU: FFN(x) = (Swish(x * W_gate) ⊙ (x * W_up)) * W_down
+pub fn swiglu_ffn(input: State, w_gate: State, w_up: State, w_down: State) -> State {
+    let gate = matmul_4x4(w_gate, input);
+    let up = matmul_4x4(w_up, input);
+    let gate_swish = swish_state(gate);
+    let gated = st_mul(gate_swish, up);
+    return matmul_4x4(w_down, gated);
+}
+
+// GeGLU: FFN(x) = (GELU(x * W_gate) ⊙ (x * W_up)) * W_down
+pub fn geglu_ffn(input: State, w_gate: State, w_up: State, w_down: State) -> State {
+    let gate = matmul_4x4(w_gate, input);
+    let up = matmul_4x4(w_up, input);
+    let gate_gelu = gelu_state(gate);
+    let gated = st_mul(gate_gelu, up);
+    return matmul_4x4(w_down, gated);
+}
+
+// =============================================================================
+// MLP Block
+// =============================================================================
+
+// Standard 2-layer MLP
+pub fn mlp_2layer(input: State, w1: State, w2: State) -> State {
+    let h = matmul_4x4(w1, input);
+    let h = swish_state(h);
+    return matmul_4x4(w2, h);
+}
+
+// 3-layer MLP with hidden projection
+pub fn mlp_3layer(input: State, w1: State, w2: State, w3: State) -> State {
+    let h1 = matmul_4x4(w1, input);
+    let h1 = swish_state(h1);
+    let h2 = matmul_4x4(w2, h1);
+    let h2 = swish_state(h2);
+    return matmul_4x4(w3, h2);
+}
+

@@ -1,0 +1,161 @@
+// LIS Example: Operações Complexas
+// Demonstra: add, sub, scale, rotate, lerp
+// Documentação: Seção 8.4
+
+fn main() {
+    print_string("=== Complex Operations ===");
+
+    // =========================================
+    // Valores de teste
+    // =========================================
+    let a = bytesil_from_complex(3.0, 4.0);   // 3 + 4i
+    let b = bytesil_from_complex(1.0, 2.0);   // 1 + 2i
+    let c = bytesil_new(8, 0);                // Magnitude média, fase 0
+
+    // =========================================
+    // Soma Complexa (complex_add)
+    // =========================================
+    print_string("--- Complex Addition (complex_add) ---");
+
+    // (3+4i) + (1+2i) = 4+6i
+    let sum_ab = complex_add(a, b);
+
+    print_string("(3+4i) + (1+2i):");
+    print_string("  magnitude (should be ~7.21):");  // sqrt(4^2 + 6^2)
+    print_float(bytesil_magnitude(sum_ab));
+
+    // Soma com zero
+    let zero = bytesil_null();
+    let sum_a0 = complex_add(a, zero);
+    print_string("(3+4i) + 0 magnitude (should be 5):");
+    print_float(bytesil_magnitude(sum_a0));
+
+    // =========================================
+    // Subtração Complexa (complex_sub)
+    // =========================================
+    print_string("--- Complex Subtraction (complex_sub) ---");
+
+    // (3+4i) - (1+2i) = 2+2i
+    let diff_ab = complex_sub(a, b);
+
+    print_string("(3+4i) - (1+2i):");
+    print_string("  magnitude (should be ~2.83):");  // sqrt(2^2 + 2^2)
+    print_float(bytesil_magnitude(diff_ab));
+
+    // Subtração de si mesmo = 0
+    let diff_aa = complex_sub(a, a);
+    print_string("(3+4i) - (3+4i) magnitude (should be ~0):");
+    print_float(bytesil_magnitude(diff_aa));
+
+    // =========================================
+    // Escala (complex_scale)
+    // =========================================
+    print_string("--- Complex Scale (complex_scale) ---");
+
+    // Multiplicar magnitude por escalar
+    let scaled_2x = complex_scale(a, 2.0);
+    print_string("(3+4i) * 2 magnitude (should be 10):");
+    print_float(bytesil_magnitude(scaled_2x));
+
+    let scaled_half = complex_scale(a, 0.5);
+    print_string("(3+4i) * 0.5 magnitude (should be 2.5):");
+    print_float(bytesil_magnitude(scaled_half));
+
+    // Escala não muda a fase
+    print_string("Original phase:");
+    print_float(bytesil_phase_radians(a));
+    print_string("Scaled phase (should be same):");
+    print_float(bytesil_phase_radians(scaled_2x));
+
+    // =========================================
+    // Rotação (complex_rotate)
+    // =========================================
+    print_string("--- Complex Rotation (complex_rotate) ---");
+
+    // Rotacionar por ângulo em radianos
+    let pi = 3.14159265358979;
+
+    let rotated_90 = complex_rotate(c, pi / 2.0);
+    print_string("Rotate by pi/2:");
+    print_string("  original phase:");
+    print_float(bytesil_phase_radians(c));
+    print_string("  rotated phase (should be ~pi/2):");
+    print_float(bytesil_phase_radians(rotated_90));
+
+    let rotated_180 = complex_rotate(c, pi);
+    print_string("Rotate by pi:");
+    print_string("  rotated phase (should be ~pi):");
+    print_float(bytesil_phase_radians(rotated_180));
+
+    // Rotação preserva magnitude
+    print_string("Magnitude after rotation (should be same):");
+    print_float(bytesil_magnitude(rotated_90));
+
+    // =========================================
+    // Interpolação Linear (complex_lerp)
+    // =========================================
+    print_string("--- Linear Interpolation (complex_lerp) ---");
+
+    // Interpolar entre a e b
+    let lerp_0 = complex_lerp(a, b, 0.0);
+    print_string("lerp(a, b, 0.0) magnitude (should be |a| = 5):");
+    print_float(bytesil_magnitude(lerp_0));
+
+    let lerp_1 = complex_lerp(a, b, 1.0);
+    print_string("lerp(a, b, 1.0) magnitude (should be |b| ~= 2.24):");
+    print_float(bytesil_magnitude(lerp_1));
+
+    let lerp_half = complex_lerp(a, b, 0.5);
+    print_string("lerp(a, b, 0.5) magnitude (midpoint):");
+    print_float(bytesil_magnitude(lerp_half));
+
+    // Lerp entre mesmo valor = mesmo valor
+    let lerp_same = complex_lerp(a, a, 0.5);
+    print_string("lerp(a, a, 0.5) magnitude (should be |a|):");
+    print_float(bytesil_magnitude(lerp_same));
+
+    // =========================================
+    // Combinação de Operações
+    // =========================================
+    print_string("--- Combined Operations ---");
+
+    // (a + b) * 2
+    let combined1 = complex_add(a, b);
+    let combined1 = complex_scale(combined1, 2.0);
+    print_string("((3+4i) + (1+2i)) * 2 magnitude:");
+    print_float(bytesil_magnitude(combined1));
+
+    // rotate(scale(a, 2), pi/4)
+    let combined2 = complex_scale(a, 2.0);
+    let combined2 = complex_rotate(combined2, pi / 4.0);
+    print_string("rotate(scale(a, 2), pi/4):");
+    print_string("  magnitude (should be 10):");
+    print_float(bytesil_magnitude(combined2));
+    print_string("  phase:");
+    print_float(bytesil_phase_radians(combined2));
+
+    // =========================================
+    // Aplicação: Vetor no Plano Complexo
+    // =========================================
+    print_string("--- Application: Complex Plane Vector ---");
+
+    // Simular um vetor que rotaciona gradualmente
+    let vec = bytesil_new(10, 0);  // Vetor inicial
+
+    let vec1 = complex_rotate(vec, pi / 8.0);
+    let vec2 = complex_rotate(vec1, pi / 8.0);
+    let vec3 = complex_rotate(vec2, pi / 8.0);
+    let vec4 = complex_rotate(vec3, pi / 8.0);
+
+    print_string("Rotating vector in steps of pi/8:");
+    print_string("Step 0 phase:");
+    print_float(bytesil_phase_radians(vec));
+    print_string("Step 1 phase:");
+    print_float(bytesil_phase_radians(vec1));
+    print_string("Step 2 phase:");
+    print_float(bytesil_phase_radians(vec2));
+    print_string("Step 3 phase:");
+    print_float(bytesil_phase_radians(vec3));
+    print_string("Step 4 phase (should be ~pi/2):");
+    print_float(bytesil_phase_radians(vec4));
+}

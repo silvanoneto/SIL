@@ -1,0 +1,412 @@
+// Paebiru ML Library - Privacy Module
+// Differential privacy for federated learning
+
+use core::bytesil::{bs_mag, bs_from_mag_clamped, bs_from_phase};
+
+// =============================================================================
+// Privacy Mechanisms
+// =============================================================================
+
+pub fn MECHANISM_LAPLACE() -> Int { return 0; }    // Laplace noise
+pub fn MECHANISM_GAUSSIAN() -> Int { return 1; }   // Gaussian noise
+pub fn MECHANISM_EXPONENTIAL() -> Int { return 2; } // Exponential mechanism
+
+// =============================================================================
+// Differential Privacy Config
+// =============================================================================
+
+// DP config state layout:
+// Layer 0: epsilon (privacy budget, normalized)
+// Layer 1: delta (failure probability, normalized)
+// Layer 2: sensitivity (normalized)
+// Layer 3: mechanism type
+// Layer 4: noise multiplier
+// Layer 5: clipping norm
+
+// Create DP config
+pub fn dp_config_create(epsilon: Float, delta: Float, sensitivity: Float) -> State {
+    let config = state_vacuum();
+
+    // Normalize epsilon (typically 0.1 to 10)
+    let config = state_set_layer(config, 0, bs_from_mag_clamped(clamp_float(epsilon, 0.0, 10.0) / 10.0));
+    // Delta is typically very small (1e-5 to 1e-3)
+    let config = state_set_layer(config, 1, bs_from_mag_clamped(clamp_float(delta * 1000.0, 0.0, 1.0)));
+    // Sensitivity normalized
+    let config = state_set_layer(config, 2, bs_from_mag_clamped(clamp_float(sensitivity, 0.0, 10.0) / 10.0));
+    // Default to Gaussian mechanism
+    let config = state_set_layer(config, 3, bs_from_mag_clamped(float_from_int(MECHANISM_GAUSSIAN()) / 4.0));
+
+    return config;
+}
+
+// Get epsilon
+pub fn dp_epsilon(config: State) -> Float {
+    return bs_mag(state_get_layer(config, 0)) * 10.0;
+}
+
+// Get delta
+pub fn dp_delta(config: State) -> Float {
+    return bs_mag(state_get_layer(config, 1)) / 1000.0;
+}
+
+// Get sensitivity
+pub fn dp_sensitivity(config: State) -> Float {
+    return bs_mag(state_get_layer(config, 2)) * 10.0;
+}
+
+// Get mechanism type
+pub fn dp_mechanism(config: State) -> Int {
+    return int_from_float(bs_mag(state_get_layer(config, 3)) * 4.0);
+}
+
+// Set mechanism
+pub fn dp_set_mechanism(config: State, mechanism: Int) -> State {
+    return state_set_layer(config, 3, bs_from_mag_clamped(float_from_int(mechanism) / 4.0));
+}
+
+// =============================================================================
+// Noise Computation
+// =============================================================================
+
+// Compute Gaussian noise scale: σ = sensitivity * sqrt(2 * ln(1.25/delta)) / epsilon
+pub fn gaussian_noise_scale(epsilon: Float, delta: Float, sensitivity: Float) -> Float {
+    if epsilon < 0.001 { return 1000.0; }  // Very high noise for invalid epsilon
+    if delta < 1e-10 { let delta = 1e-10; }
+
+    // ln(1.25/delta) approximation
+    // ln(1.25) ≈ 0.223
+    // For delta = 1e-5: ln(1.25e5) ≈ 11.74
+    let log_term = 0.223 - ln_approx(delta);
+    if log_term < 0.0 { let log_term = 0.0; }
+
+    let sigma = sensitivity * sqrt_approx(2.0 * log_term) / epsilon;
+    return sigma;
+}
+
+// Compute Laplace noise scale: b = sensitivity / epsilon
+pub fn laplace_noise_scale(epsilon: Float, sensitivity: Float) -> Float {
+    if epsilon < 0.001 { return 1000.0; }
+    return sensitivity / epsilon;
+}
+
+// Simple natural log approximation for small positive values
+pub fn ln_approx(x: Float) -> Float {
+    if x <= 0.0 { return -100.0; }
+    if x < 0.001 { return -7.0 - (0.001 - x) * 1000.0; }
+    if x < 0.01 { return -4.6 - (0.01 - x) * 100.0; }
+    if x < 0.1 { return -2.3 - (0.1 - x) * 10.0; }
+    if x < 1.0 { return -(1.0 - x); }
+    if x < 10.0 { return (x - 1.0) * 0.23; }
+    return 2.3 + (x - 10.0) * 0.1;
+}
+
+// Simple square root approximation
+pub fn sqrt_approx(x: Float) -> Float {
+    if x <= 0.0 { return 0.0; }
+    // Newton's method, 3 iterations
+    let guess = x / 2.0;
+    if guess < 0.1 { let guess = 0.1; }
+
+    let guess = (guess + x / guess) / 2.0;
+    let guess = (guess + x / guess) / 2.0;
+    let guess = (guess + x / guess) / 2.0;
+
+    return guess;
+}
+
+// =============================================================================
+// Adding Noise to State
+// =============================================================================
+
+// Add Gaussian DP noise to a State
+// Uses a simple pseudo-random generator
+pub fn add_gaussian_noise(state: State, sigma: Float, seed: Int) -> State {
+    let result = state_vacuum();
+    let s = seed;
+
+    // Layer 0
+    let s = prng_next(s);
+    let noise0 = box_muller_approx(s, sigma);
+    let v0 = bs_mag(state_get_layer(state, 0)) + noise0;
+    let result = state_set_layer(result, 0, bs_from_mag_clamped(v0));
+
+    // Layer 1
+    let s = prng_next(s);
+    let noise1 = box_muller_approx(s, sigma);
+    let v1 = bs_mag(state_get_layer(state, 1)) + noise1;
+    let result = state_set_layer(result, 1, bs_from_mag_clamped(v1));
+
+    // Layer 2
+    let s = prng_next(s);
+    let noise2 = box_muller_approx(s, sigma);
+    let v2 = bs_mag(state_get_layer(state, 2)) + noise2;
+    let result = state_set_layer(result, 2, bs_from_mag_clamped(v2));
+
+    // Layer 3
+    let s = prng_next(s);
+    let noise3 = box_muller_approx(s, sigma);
+    let v3 = bs_mag(state_get_layer(state, 3)) + noise3;
+    let result = state_set_layer(result, 3, bs_from_mag_clamped(v3));
+
+    // Layer 4
+    let s = prng_next(s);
+    let noise4 = box_muller_approx(s, sigma);
+    let v4 = bs_mag(state_get_layer(state, 4)) + noise4;
+    let result = state_set_layer(result, 4, bs_from_mag_clamped(v4));
+
+    // Layer 5
+    let s = prng_next(s);
+    let noise5 = box_muller_approx(s, sigma);
+    let v5 = bs_mag(state_get_layer(state, 5)) + noise5;
+    let result = state_set_layer(result, 5, bs_from_mag_clamped(v5));
+
+    // Layer 6
+    let s = prng_next(s);
+    let noise6 = box_muller_approx(s, sigma);
+    let v6 = bs_mag(state_get_layer(state, 6)) + noise6;
+    let result = state_set_layer(result, 6, bs_from_mag_clamped(v6));
+
+    // Layer 7
+    let s = prng_next(s);
+    let noise7 = box_muller_approx(s, sigma);
+    let v7 = bs_mag(state_get_layer(state, 7)) + noise7;
+    let result = state_set_layer(result, 7, bs_from_mag_clamped(v7));
+
+    // Layer 8
+    let s = prng_next(s);
+    let noise8 = box_muller_approx(s, sigma);
+    let v8 = bs_mag(state_get_layer(state, 8)) + noise8;
+    let result = state_set_layer(result, 8, bs_from_mag_clamped(v8));
+
+    // Layer 9
+    let s = prng_next(s);
+    let noise9 = box_muller_approx(s, sigma);
+    let v9 = bs_mag(state_get_layer(state, 9)) + noise9;
+    let result = state_set_layer(result, 9, bs_from_mag_clamped(v9));
+
+    // Layer 10
+    let s = prng_next(s);
+    let noise10 = box_muller_approx(s, sigma);
+    let v10 = bs_mag(state_get_layer(state, 10)) + noise10;
+    let result = state_set_layer(result, 10, bs_from_mag_clamped(v10));
+
+    // Layer 11
+    let s = prng_next(s);
+    let noise11 = box_muller_approx(s, sigma);
+    let v11 = bs_mag(state_get_layer(state, 11)) + noise11;
+    let result = state_set_layer(result, 11, bs_from_mag_clamped(v11));
+
+    // Layer 12
+    let s = prng_next(s);
+    let noise12 = box_muller_approx(s, sigma);
+    let v12 = bs_mag(state_get_layer(state, 12)) + noise12;
+    let result = state_set_layer(result, 12, bs_from_mag_clamped(v12));
+
+    // Layer 13
+    let s = prng_next(s);
+    let noise13 = box_muller_approx(s, sigma);
+    let v13 = bs_mag(state_get_layer(state, 13)) + noise13;
+    let result = state_set_layer(result, 13, bs_from_mag_clamped(v13));
+
+    // Layer 14
+    let s = prng_next(s);
+    let noise14 = box_muller_approx(s, sigma);
+    let v14 = bs_mag(state_get_layer(state, 14)) + noise14;
+    let result = state_set_layer(result, 14, bs_from_mag_clamped(v14));
+
+    // Layer 15
+    let s = prng_next(s);
+    let noise15 = box_muller_approx(s, sigma);
+    let v15 = bs_mag(state_get_layer(state, 15)) + noise15;
+    let result = state_set_layer(result, 15, bs_from_mag_clamped(v15));
+
+    return result;
+}
+
+// Simple PRNG (Linear Congruential Generator)
+pub fn prng_next(seed: Int) -> Int {
+    // LCG parameters
+    let a = 1103515245;
+    let c = 12345;
+    let m = 2147483648;  // 2^31
+    return (seed * a + c) % m;
+}
+
+// Simplified Box-Muller approximation for Gaussian noise
+pub fn box_muller_approx(seed: Int, sigma: Float) -> Float {
+    // Convert seed to uniform [0,1]
+    let u1 = float_from_int(seed % 10000) / 10000.0;
+    if u1 < 0.0001 { let u1 = 0.0001; }
+
+    let u2 = float_from_int((seed / 10000) % 10000) / 10000.0;
+
+    // Box-Muller transform (approximated)
+    let r = sqrt_approx(-2.0 * ln_approx(u1));
+    let theta = 6.28318 * u2;  // 2*PI
+
+    // cos approximation
+    let cos_theta = cos_approx(theta);
+
+    return r * cos_theta * sigma;
+}
+
+// Simple cosine approximation
+pub fn cos_approx(x: Float) -> Float {
+    // Normalize to [0, 2*PI]
+    let pi2 = 6.28318;
+    let normalized = x - float_from_int(int_from_float(x / pi2)) * pi2;
+
+    // Taylor series approximation: cos(x) ≈ 1 - x²/2 + x⁴/24
+    let x2 = normalized * normalized;
+    let x4 = x2 * x2;
+
+    return 1.0 - x2 / 2.0 + x4 / 24.0;
+}
+
+// =============================================================================
+// Gradient Clipping
+// =============================================================================
+
+// Clip gradients to bound sensitivity
+pub fn clip_gradients(gradients: State, max_norm: Float) -> State {
+    use core::state::{st_norm_l2, st_scale};
+
+    let norm = st_norm_l2(gradients);
+
+    if norm <= max_norm {
+        return gradients;
+    }
+
+    let scale = max_norm / norm;
+    return st_scale(gradients, scale);
+}
+
+// =============================================================================
+// Privacy Budget Tracking
+// =============================================================================
+
+// Budget tracker state layout:
+// Layer 0: total epsilon spent
+// Layer 1: total delta spent
+// Layer 2: query count
+// Layer 3: max epsilon budget
+// Layer 4: max delta budget
+
+pub fn budget_create(max_epsilon: Float, max_delta: Float) -> State {
+    let budget = state_vacuum();
+
+    let budget = state_set_layer(budget, 0, bs_from_mag_clamped(0.0));
+    let budget = state_set_layer(budget, 1, bs_from_mag_clamped(0.0));
+    let budget = state_set_layer(budget, 2, bs_from_mag_clamped(0.0));
+    let budget = state_set_layer(budget, 3, bs_from_mag_clamped(max_epsilon / 100.0));
+    let budget = state_set_layer(budget, 4, bs_from_mag_clamped(max_delta * 1000.0));
+
+    return budget;
+}
+
+// Record privacy expenditure
+pub fn budget_spend(budget: State, epsilon: Float, delta: Float) -> State {
+    let spent_eps = bs_mag(state_get_layer(budget, 0)) * 100.0 + epsilon;
+    let spent_delta = bs_mag(state_get_layer(budget, 1)) / 1000.0 + delta;
+    let queries = bs_mag(state_get_layer(budget, 2)) * 1000.0 + 1.0;
+
+    let budget = state_set_layer(budget, 0, bs_from_mag_clamped(spent_eps / 100.0));
+    let budget = state_set_layer(budget, 1, bs_from_mag_clamped(spent_delta * 1000.0));
+    let budget = state_set_layer(budget, 2, bs_from_mag_clamped(queries / 1000.0));
+
+    return budget;
+}
+
+// Check if budget is exhausted
+pub fn budget_exhausted(budget: State) -> Bool {
+    let spent_eps = bs_mag(state_get_layer(budget, 0)) * 100.0;
+    let max_eps = bs_mag(state_get_layer(budget, 3)) * 100.0;
+
+    let spent_delta = bs_mag(state_get_layer(budget, 1)) / 1000.0;
+    let max_delta = bs_mag(state_get_layer(budget, 4)) / 1000.0;
+
+    if spent_eps >= max_eps { return true; }
+    if spent_delta >= max_delta { return true; }
+
+    return false;
+}
+
+// Get remaining epsilon
+pub fn budget_remaining_epsilon(budget: State) -> Float {
+    let spent = bs_mag(state_get_layer(budget, 0)) * 100.0;
+    let max_budget = bs_mag(state_get_layer(budget, 3)) * 100.0;
+    let remaining = max_budget - spent;
+    if remaining < 0.0 { return 0.0; }
+    return remaining;
+}
+
+// =============================================================================
+// Secure Aggregation (simplified)
+// =============================================================================
+
+// Mask a gradient with a random mask (for secure aggregation)
+pub fn secure_mask(gradient: State, mask: State) -> State {
+    return state_xor(gradient, mask);
+}
+
+// Unmask (XOR is its own inverse)
+pub fn secure_unmask(masked: State, mask: State) -> State {
+    return state_xor(masked, mask);
+}
+
+// Generate mask from seed
+pub fn generate_mask(seed: Int) -> State {
+    let mask = state_vacuum();
+    let s = seed;
+
+    let s = prng_next(s);
+    let mask = state_set_layer(mask, 0, bs_from_mag_clamped(float_from_int(s % 1000) / 1000.0));
+
+    let s = prng_next(s);
+    let mask = state_set_layer(mask, 1, bs_from_mag_clamped(float_from_int(s % 1000) / 1000.0));
+
+    let s = prng_next(s);
+    let mask = state_set_layer(mask, 2, bs_from_mag_clamped(float_from_int(s % 1000) / 1000.0));
+
+    let s = prng_next(s);
+    let mask = state_set_layer(mask, 3, bs_from_mag_clamped(float_from_int(s % 1000) / 1000.0));
+
+    let s = prng_next(s);
+    let mask = state_set_layer(mask, 4, bs_from_mag_clamped(float_from_int(s % 1000) / 1000.0));
+
+    let s = prng_next(s);
+    let mask = state_set_layer(mask, 5, bs_from_mag_clamped(float_from_int(s % 1000) / 1000.0));
+
+    let s = prng_next(s);
+    let mask = state_set_layer(mask, 6, bs_from_mag_clamped(float_from_int(s % 1000) / 1000.0));
+
+    let s = prng_next(s);
+    let mask = state_set_layer(mask, 7, bs_from_mag_clamped(float_from_int(s % 1000) / 1000.0));
+
+    let s = prng_next(s);
+    let mask = state_set_layer(mask, 8, bs_from_mag_clamped(float_from_int(s % 1000) / 1000.0));
+
+    let s = prng_next(s);
+    let mask = state_set_layer(mask, 9, bs_from_mag_clamped(float_from_int(s % 1000) / 1000.0));
+
+    let s = prng_next(s);
+    let mask = state_set_layer(mask, 10, bs_from_mag_clamped(float_from_int(s % 1000) / 1000.0));
+
+    let s = prng_next(s);
+    let mask = state_set_layer(mask, 11, bs_from_mag_clamped(float_from_int(s % 1000) / 1000.0));
+
+    let s = prng_next(s);
+    let mask = state_set_layer(mask, 12, bs_from_mag_clamped(float_from_int(s % 1000) / 1000.0));
+
+    let s = prng_next(s);
+    let mask = state_set_layer(mask, 13, bs_from_mag_clamped(float_from_int(s % 1000) / 1000.0));
+
+    let s = prng_next(s);
+    let mask = state_set_layer(mask, 14, bs_from_mag_clamped(float_from_int(s % 1000) / 1000.0));
+
+    let s = prng_next(s);
+    let mask = state_set_layer(mask, 15, bs_from_mag_clamped(float_from_int(s % 1000) / 1000.0));
+
+    return mask;
+}
+

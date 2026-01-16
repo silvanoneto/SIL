@@ -1,0 +1,383 @@
+// Paebiru ML Library - Spiking Neural Networks
+// SNN: Neuromorphic computing with leaky integrate-and-fire neurons
+
+use core::bytesil::{bs_mag, bs_from_mag_clamped};
+use core::state::{st_add, st_scale, st_mul};
+
+// =============================================================================
+// Leaky Integrate-and-Fire (LIF) Neuron
+// =============================================================================
+
+// LIF membrane potential update (single timestep)
+// v_new = decay * v_old + input - v_reset * spike
+// spike = 1 if v > threshold, 0 otherwise
+pub fn lif_step(v_mem: State, input: State, decay: Float, threshold: Float, v_reset: Float) -> State {
+    let result = state_vacuum();
+
+    let v0 = bs_mag(state_get_layer(v_mem, 0));
+    let i0 = bs_mag(state_get_layer(input, 0));
+    let v_new0 = decay * v0 + i0;
+    let spike0 = 0.0;
+    if v_new0 > threshold {
+        let spike0 = 1.0;
+        let v_new0 = v_new0 - v_reset;
+    }
+    let result = state_set_layer(result, 0, bs_from_mag_clamped(v_new0));
+
+    let v1 = bs_mag(state_get_layer(v_mem, 1));
+    let i1 = bs_mag(state_get_layer(input, 1));
+    let v_new1 = decay * v1 + i1;
+    if v_new1 > threshold {
+        let v_new1 = v_new1 - v_reset;
+    }
+    let result = state_set_layer(result, 1, bs_from_mag_clamped(v_new1));
+
+    let v2 = bs_mag(state_get_layer(v_mem, 2));
+    let i2 = bs_mag(state_get_layer(input, 2));
+    let v_new2 = decay * v2 + i2;
+    if v_new2 > threshold {
+        let v_new2 = v_new2 - v_reset;
+    }
+    let result = state_set_layer(result, 2, bs_from_mag_clamped(v_new2));
+
+    let v3 = bs_mag(state_get_layer(v_mem, 3));
+    let i3 = bs_mag(state_get_layer(input, 3));
+    let v_new3 = decay * v3 + i3;
+    if v_new3 > threshold {
+        let v_new3 = v_new3 - v_reset;
+    }
+    let result = state_set_layer(result, 3, bs_from_mag_clamped(v_new3));
+
+    let v4 = bs_mag(state_get_layer(v_mem, 4));
+    let i4 = bs_mag(state_get_layer(input, 4));
+    let v_new4 = decay * v4 + i4;
+    if v_new4 > threshold {
+        let v_new4 = v_new4 - v_reset;
+    }
+    let result = state_set_layer(result, 4, bs_from_mag_clamped(v_new4));
+
+    let v5 = bs_mag(state_get_layer(v_mem, 5));
+    let i5 = bs_mag(state_get_layer(input, 5));
+    let v_new5 = decay * v5 + i5;
+    if v_new5 > threshold {
+        let v_new5 = v_new5 - v_reset;
+    }
+    let result = state_set_layer(result, 5, bs_from_mag_clamped(v_new5));
+
+    let v6 = bs_mag(state_get_layer(v_mem, 6));
+    let i6 = bs_mag(state_get_layer(input, 6));
+    let v_new6 = decay * v6 + i6;
+    if v_new6 > threshold {
+        let v_new6 = v_new6 - v_reset;
+    }
+    let result = state_set_layer(result, 6, bs_from_mag_clamped(v_new6));
+
+    let v7 = bs_mag(state_get_layer(v_mem, 7));
+    let i7 = bs_mag(state_get_layer(input, 7));
+    let v_new7 = decay * v7 + i7;
+    if v_new7 > threshold {
+        let v_new7 = v_new7 - v_reset;
+    }
+    let result = state_set_layer(result, 7, bs_from_mag_clamped(v_new7));
+
+    let v8 = bs_mag(state_get_layer(v_mem, 8));
+    let i8 = bs_mag(state_get_layer(input, 8));
+    let v_new8 = decay * v8 + i8;
+    if v_new8 > threshold {
+        let v_new8 = v_new8 - v_reset;
+    }
+    let result = state_set_layer(result, 8, bs_from_mag_clamped(v_new8));
+
+    let v9 = bs_mag(state_get_layer(v_mem, 9));
+    let i9 = bs_mag(state_get_layer(input, 9));
+    let v_new9 = decay * v9 + i9;
+    if v_new9 > threshold {
+        let v_new9 = v_new9 - v_reset;
+    }
+    let result = state_set_layer(result, 9, bs_from_mag_clamped(v_new9));
+
+    let v10 = bs_mag(state_get_layer(v_mem, 10));
+    let i10 = bs_mag(state_get_layer(input, 10));
+    let v_new10 = decay * v10 + i10;
+    if v_new10 > threshold {
+        let v_new10 = v_new10 - v_reset;
+    }
+    let result = state_set_layer(result, 10, bs_from_mag_clamped(v_new10));
+
+    let v11 = bs_mag(state_get_layer(v_mem, 11));
+    let i11 = bs_mag(state_get_layer(input, 11));
+    let v_new11 = decay * v11 + i11;
+    if v_new11 > threshold {
+        let v_new11 = v_new11 - v_reset;
+    }
+    let result = state_set_layer(result, 11, bs_from_mag_clamped(v_new11));
+
+    let v12 = bs_mag(state_get_layer(v_mem, 12));
+    let i12 = bs_mag(state_get_layer(input, 12));
+    let v_new12 = decay * v12 + i12;
+    if v_new12 > threshold {
+        let v_new12 = v_new12 - v_reset;
+    }
+    let result = state_set_layer(result, 12, bs_from_mag_clamped(v_new12));
+
+    let v13 = bs_mag(state_get_layer(v_mem, 13));
+    let i13 = bs_mag(state_get_layer(input, 13));
+    let v_new13 = decay * v13 + i13;
+    if v_new13 > threshold {
+        let v_new13 = v_new13 - v_reset;
+    }
+    let result = state_set_layer(result, 13, bs_from_mag_clamped(v_new13));
+
+    let v14 = bs_mag(state_get_layer(v_mem, 14));
+    let i14 = bs_mag(state_get_layer(input, 14));
+    let v_new14 = decay * v14 + i14;
+    if v_new14 > threshold {
+        let v_new14 = v_new14 - v_reset;
+    }
+    let result = state_set_layer(result, 14, bs_from_mag_clamped(v_new14));
+
+    let v15 = bs_mag(state_get_layer(v_mem, 15));
+    let i15 = bs_mag(state_get_layer(input, 15));
+    let v_new15 = decay * v15 + i15;
+    if v_new15 > threshold {
+        let v_new15 = v_new15 - v_reset;
+    }
+    let result = state_set_layer(result, 15, bs_from_mag_clamped(v_new15));
+
+    return result;
+}
+
+// =============================================================================
+// Spike Generation
+// =============================================================================
+
+// Generate spikes from membrane potential (threshold comparison)
+// Returns binary spike state (1.0 for spike, 0.0 otherwise)
+pub fn generate_spikes(v_mem: State, threshold: Float) -> State {
+    let result = state_vacuum();
+
+    let v0 = bs_mag(state_get_layer(v_mem, 0));
+    let s0 = 0.0;
+    if v0 > threshold { let s0 = 1.0; }
+    let result = state_set_layer(result, 0, bs_from_mag_clamped(s0));
+
+    let v1 = bs_mag(state_get_layer(v_mem, 1));
+    let s1 = 0.0;
+    if v1 > threshold { let s1 = 1.0; }
+    let result = state_set_layer(result, 1, bs_from_mag_clamped(s1));
+
+    let v2 = bs_mag(state_get_layer(v_mem, 2));
+    let s2 = 0.0;
+    if v2 > threshold { let s2 = 1.0; }
+    let result = state_set_layer(result, 2, bs_from_mag_clamped(s2));
+
+    let v3 = bs_mag(state_get_layer(v_mem, 3));
+    let s3 = 0.0;
+    if v3 > threshold { let s3 = 1.0; }
+    let result = state_set_layer(result, 3, bs_from_mag_clamped(s3));
+
+    let v4 = bs_mag(state_get_layer(v_mem, 4));
+    let s4 = 0.0;
+    if v4 > threshold { let s4 = 1.0; }
+    let result = state_set_layer(result, 4, bs_from_mag_clamped(s4));
+
+    let v5 = bs_mag(state_get_layer(v_mem, 5));
+    let s5 = 0.0;
+    if v5 > threshold { let s5 = 1.0; }
+    let result = state_set_layer(result, 5, bs_from_mag_clamped(s5));
+
+    let v6 = bs_mag(state_get_layer(v_mem, 6));
+    let s6 = 0.0;
+    if v6 > threshold { let s6 = 1.0; }
+    let result = state_set_layer(result, 6, bs_from_mag_clamped(s6));
+
+    let v7 = bs_mag(state_get_layer(v_mem, 7));
+    let s7 = 0.0;
+    if v7 > threshold { let s7 = 1.0; }
+    let result = state_set_layer(result, 7, bs_from_mag_clamped(s7));
+
+    let v8 = bs_mag(state_get_layer(v_mem, 8));
+    let s8 = 0.0;
+    if v8 > threshold { let s8 = 1.0; }
+    let result = state_set_layer(result, 8, bs_from_mag_clamped(s8));
+
+    let v9 = bs_mag(state_get_layer(v_mem, 9));
+    let s9 = 0.0;
+    if v9 > threshold { let s9 = 1.0; }
+    let result = state_set_layer(result, 9, bs_from_mag_clamped(s9));
+
+    let v10 = bs_mag(state_get_layer(v_mem, 10));
+    let s10 = 0.0;
+    if v10 > threshold { let s10 = 1.0; }
+    let result = state_set_layer(result, 10, bs_from_mag_clamped(s10));
+
+    let v11 = bs_mag(state_get_layer(v_mem, 11));
+    let s11 = 0.0;
+    if v11 > threshold { let s11 = 1.0; }
+    let result = state_set_layer(result, 11, bs_from_mag_clamped(s11));
+
+    let v12 = bs_mag(state_get_layer(v_mem, 12));
+    let s12 = 0.0;
+    if v12 > threshold { let s12 = 1.0; }
+    let result = state_set_layer(result, 12, bs_from_mag_clamped(s12));
+
+    let v13 = bs_mag(state_get_layer(v_mem, 13));
+    let s13 = 0.0;
+    if v13 > threshold { let s13 = 1.0; }
+    let result = state_set_layer(result, 13, bs_from_mag_clamped(s13));
+
+    let v14 = bs_mag(state_get_layer(v_mem, 14));
+    let s14 = 0.0;
+    if v14 > threshold { let s14 = 1.0; }
+    let result = state_set_layer(result, 14, bs_from_mag_clamped(s14));
+
+    let v15 = bs_mag(state_get_layer(v_mem, 15));
+    let s15 = 0.0;
+    if v15 > threshold { let s15 = 1.0; }
+    let result = state_set_layer(result, 15, bs_from_mag_clamped(s15));
+
+    return result;
+}
+
+// =============================================================================
+// Spike Encoding
+// =============================================================================
+
+// Rate coding: encode value as spike probability
+// Higher values -> more spikes
+pub fn rate_encode(value: State, timestep: Int, seed: Float) -> State {
+    let result = state_vacuum();
+
+    // Simple pseudo-random threshold comparison
+    let rng = seed + float_from_int(timestep) * 0.1;
+
+    let v0 = bs_mag(state_get_layer(value, 0));
+    let r0 = rng - floor(rng);
+    let s0 = 0.0;
+    if v0 > r0 { let s0 = 1.0; }
+    let result = state_set_layer(result, 0, bs_from_mag_clamped(s0));
+
+    let v1 = bs_mag(state_get_layer(value, 1));
+    let r1 = (rng * 1.1) - floor(rng * 1.1);
+    let s1 = 0.0;
+    if v1 > r1 { let s1 = 1.0; }
+    let result = state_set_layer(result, 1, bs_from_mag_clamped(s1));
+
+    let v2 = bs_mag(state_get_layer(value, 2));
+    let r2 = (rng * 1.2) - floor(rng * 1.2);
+    let s2 = 0.0;
+    if v2 > r2 { let s2 = 1.0; }
+    let result = state_set_layer(result, 2, bs_from_mag_clamped(s2));
+
+    let v3 = bs_mag(state_get_layer(value, 3));
+    let r3 = (rng * 1.3) - floor(rng * 1.3);
+    let s3 = 0.0;
+    if v3 > r3 { let s3 = 1.0; }
+    let result = state_set_layer(result, 3, bs_from_mag_clamped(s3));
+
+    let v4 = bs_mag(state_get_layer(value, 4));
+    let r4 = (rng * 1.4) - floor(rng * 1.4);
+    let s4 = 0.0;
+    if v4 > r4 { let s4 = 1.0; }
+    let result = state_set_layer(result, 4, bs_from_mag_clamped(s4));
+
+    let v5 = bs_mag(state_get_layer(value, 5));
+    let r5 = (rng * 1.5) - floor(rng * 1.5);
+    let s5 = 0.0;
+    if v5 > r5 { let s5 = 1.0; }
+    let result = state_set_layer(result, 5, bs_from_mag_clamped(s5));
+
+    let v6 = bs_mag(state_get_layer(value, 6));
+    let r6 = (rng * 1.6) - floor(rng * 1.6);
+    let s6 = 0.0;
+    if v6 > r6 { let s6 = 1.0; }
+    let result = state_set_layer(result, 6, bs_from_mag_clamped(s6));
+
+    let v7 = bs_mag(state_get_layer(value, 7));
+    let r7 = (rng * 1.7) - floor(rng * 1.7);
+    let s7 = 0.0;
+    if v7 > r7 { let s7 = 1.0; }
+    let result = state_set_layer(result, 7, bs_from_mag_clamped(s7));
+
+    let v8 = bs_mag(state_get_layer(value, 8));
+    let r8 = (rng * 1.8) - floor(rng * 1.8);
+    let s8 = 0.0;
+    if v8 > r8 { let s8 = 1.0; }
+    let result = state_set_layer(result, 8, bs_from_mag_clamped(s8));
+
+    let v9 = bs_mag(state_get_layer(value, 9));
+    let r9 = (rng * 1.9) - floor(rng * 1.9);
+    let s9 = 0.0;
+    if v9 > r9 { let s9 = 1.0; }
+    let result = state_set_layer(result, 9, bs_from_mag_clamped(s9));
+
+    let v10 = bs_mag(state_get_layer(value, 10));
+    let r10 = (rng * 2.0) - floor(rng * 2.0);
+    let s10 = 0.0;
+    if v10 > r10 { let s10 = 1.0; }
+    let result = state_set_layer(result, 10, bs_from_mag_clamped(s10));
+
+    let v11 = bs_mag(state_get_layer(value, 11));
+    let r11 = (rng * 2.1) - floor(rng * 2.1);
+    let s11 = 0.0;
+    if v11 > r11 { let s11 = 1.0; }
+    let result = state_set_layer(result, 11, bs_from_mag_clamped(s11));
+
+    let v12 = bs_mag(state_get_layer(value, 12));
+    let r12 = (rng * 2.2) - floor(rng * 2.2);
+    let s12 = 0.0;
+    if v12 > r12 { let s12 = 1.0; }
+    let result = state_set_layer(result, 12, bs_from_mag_clamped(s12));
+
+    let v13 = bs_mag(state_get_layer(value, 13));
+    let r13 = (rng * 2.3) - floor(rng * 2.3);
+    let s13 = 0.0;
+    if v13 > r13 { let s13 = 1.0; }
+    let result = state_set_layer(result, 13, bs_from_mag_clamped(s13));
+
+    let v14 = bs_mag(state_get_layer(value, 14));
+    let r14 = (rng * 2.4) - floor(rng * 2.4);
+    let s14 = 0.0;
+    if v14 > r14 { let s14 = 1.0; }
+    let result = state_set_layer(result, 14, bs_from_mag_clamped(s14));
+
+    let v15 = bs_mag(state_get_layer(value, 15));
+    let r15 = (rng * 2.5) - floor(rng * 2.5);
+    let s15 = 0.0;
+    if v15 > r15 { let s15 = 1.0; }
+    let result = state_set_layer(result, 15, bs_from_mag_clamped(s15));
+
+    return result;
+}
+
+// =============================================================================
+// Synaptic Current
+// =============================================================================
+
+// Compute synaptic current from spikes and weights
+pub fn synaptic_current(spikes: State, weights: State) -> State {
+    return st_mul(spikes, weights);
+}
+
+// =============================================================================
+// Initialization
+// =============================================================================
+
+// Initialize membrane potential
+pub fn init_membrane() -> State {
+    return state_vacuum();
+}
+
+// Default LIF parameters
+pub fn lif_decay_default() -> Float {
+    return 0.9;  // tau_mem = 10ms equivalent
+}
+
+pub fn lif_threshold_default() -> Float {
+    return 1.0;
+}
+
+pub fn lif_reset_default() -> Float {
+    return 1.0;  // Subtract threshold on spike
+}
+

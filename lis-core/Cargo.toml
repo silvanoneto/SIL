@@ -1,0 +1,59 @@
+[package]
+name = "lis-core"
+version = "2026.1.16"
+edition = "2024"
+authors = ["Silvano Neto <dev@silvanoneto.com>"]
+license = "AGPL-3.0"
+description = "LIS (Language for Intelligent Systems) - A language for non-linear systems that compiles to SIL VSP bytecode"
+repository = "https://github.com/silvanoneto/SIL"
+keywords = ["compiler", "non-linear", "metaprogramming", "hardware-aware"]
+categories = ["compilers", "embedded"]
+
+[lib]
+name = "lis_core"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+sil-core = { path = "../sil-core" }
+logos = "0.14"
+chumsky = "0.9"
+thiserror = "1.0"
+base64 = "0.22"
+num-complex = "0.4"
+toml = "0.8"
+
+# Python FFI
+pyo3 = { version = "0.22", features = ["extension-module"], optional = true }
+
+# WASM FFI
+wasm-bindgen = { version = "0.2", optional = true }
+wasm-bindgen-futures = { version = "0.4", optional = true }
+serde-wasm-bindgen = { version = "0.6", optional = true }
+js-sys = { version = "0.3", optional = true }
+web-sys = { version = "0.3", optional = true }
+console_error_panic_hook = { version = "0.1", optional = true }
+
+# Serialization for WASM
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# HTTP client
+ureq = { version = "2.9", optional = true }
+urlencoding = { version = "2.1", optional = true }
+
+# LLVM JIT/AOT compilation (use llvm-any for system LLVM, or llvm18-0 for specific version)
+inkwell = { version = "0.5", features = ["llvm18-0"], optional = true }
+
+[dev-dependencies]
+criterion = "0.5"
+tempfile = "3.10"
+
+[features]
+default = ["jsil"]
+jsil = []
+bytecode = []
+http = ["dep:ureq", "dep:urlencoding"]
+python = ["dep:pyo3"]
+wasm = ["dep:wasm-bindgen", "dep:wasm-bindgen-futures", "dep:serde-wasm-bindgen", "dep:js-sys", "dep:web-sys", "dep:console_error_panic_hook"]
+ml = []  # Machine Learning stdlib module
+llvm = ["dep:inkwell"]  # LLVM JIT/AOT compilation backend

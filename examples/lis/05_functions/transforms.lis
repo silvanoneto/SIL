@@ -1,0 +1,206 @@
+// LIS Example: Transforms
+// Demonstra: Keyword 'transform' para transformações especializadas
+// Documentação: Seção 5.2
+
+// =========================================
+// Transforms vs Functions
+// =========================================
+// 'transform' é uma keyword especial para definir
+// transformações em dados, especialmente State.
+// Semanticamente similar a 'fn', mas indica
+// intenção de transformação pura.
+
+// =========================================
+// Transform Básico de State
+// =========================================
+
+transform double_magnitude(s: State) -> State {
+    return transform_magnitude_scale(s, 2);
+}
+
+transform half_magnitude(s: State) -> State {
+    return transform_magnitude_scale(s, 1);  // Scale by 1 (no change)
+}
+
+transform shift_phase_90(s: State) -> State {
+    return transform_phase_shift(s, 4);  // phase increment (approx pi/2)
+}
+
+transform shift_phase_180(s: State) -> State {
+    return transform_phase_shift(s, 8);  // phase increment (approx pi)
+}
+
+// =========================================
+// Transform de Normalização
+// =========================================
+
+transform normalize(s: State) -> State {
+    return state_normalize(s);
+}
+
+transform to_vacuum(s: State) -> State {
+    return state_vacuum();
+}
+
+transform to_neutral(s: State) -> State {
+    return state_neutral();
+}
+
+// =========================================
+// Transform de Ativação (Neural Network)
+// =========================================
+
+transform relu(s: State) -> State {
+    return relu_state(s);
+}
+
+// Transform com lógica personalizada
+transform threshold(s: State) -> State {
+    // Aplicar threshold: valores abaixo de certo nível viram zero
+    let result = state_vacuum();
+    let threshold_val = 0.5;
+
+    let l0 = state_get_layer(s, 0);
+    let mag0 = bytesil_magnitude(l0);
+    if mag0 > threshold_val {
+        let result = state_set_layer(result, 0, l0);
+    }
+
+    // Repetir para outras camadas...
+    let l1 = state_get_layer(s, 1);
+    let mag1 = bytesil_magnitude(l1);
+    if mag1 > threshold_val {
+        let result = state_set_layer(result, 1, l1);
+    }
+
+    return result;
+}
+
+// =========================================
+// Transform de Camadas
+// =========================================
+
+transform rotate_layers_left(s: State) -> State {
+    return rotate_layers(s, 1);
+}
+
+transform rotate_layers_right(s: State) -> State {
+    return rotate_layers(s, -1);
+}
+
+transform shift_up(s: State) -> State {
+    return shift_layers_up(s);
+}
+
+transform shift_down(s: State) -> State {
+    return shift_layers_down(s);
+}
+
+// =========================================
+// Transform Composto
+// =========================================
+
+transform preprocess(s: State) -> State {
+    let s = normalize(s);
+    let s = double_magnitude(s);
+    return s;
+}
+
+transform postprocess(s: State) -> State {
+    let s = relu(s);
+    let s = normalize(s);
+    return s;
+}
+
+// =========================================
+// Transform com Pipeline
+// =========================================
+
+transform full_pipeline(s: State) -> State {
+    return s
+        |> normalize
+        |> double_magnitude
+        |> shift_phase_90
+        |> relu
+        |> normalize;
+}
+
+// =========================================
+// Transform de ByteSil
+// =========================================
+
+transform conjugate_bs(b: ByteSil) -> ByteSil {
+    return bytesil_conj(b);
+}
+
+transform double_bs(b: ByteSil) -> ByteSil {
+    return complex_scale(b, 2.0);
+}
+
+transform rotate_bs_45(b: ByteSil) -> ByteSil {
+    return complex_rotate(b, 0.7854);  // pi/4
+}
+
+fn main() {
+    print_string("=== Transforms Demo ===");
+
+    // =========================================
+    // Usando Transforms
+    // =========================================
+    let s = state_neutral();
+
+    print_string("--- Basic Transforms ---");
+
+    let doubled = double_magnitude(s);
+    print_string("After double_magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(doubled, 0)));
+
+    let shifted = shift_phase_90(s);
+    print_string("After shift_phase_90:");
+    print_float(bytesil_phase_radians(state_get_layer(shifted, 0)));
+
+    // =========================================
+    // Pipeline de Transforms
+    // =========================================
+    print_string("--- Transform Pipeline ---");
+
+    let input = state_neutral();
+    let output = input
+        |> normalize
+        |> double_magnitude
+        |> relu;
+
+    print_string("Pipeline result magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(output, 0)));
+
+    // =========================================
+    // Transform Composto
+    // =========================================
+    print_string("--- Composite Transform ---");
+
+    let preprocessed = preprocess(state_neutral());
+    print_string("After preprocess:");
+    print_float(bytesil_magnitude(state_get_layer(preprocessed, 0)));
+
+    // =========================================
+    // Full Pipeline
+    // =========================================
+    print_string("--- Full Pipeline Transform ---");
+
+    let final_result = full_pipeline(state_neutral());
+    print_string("After full_pipeline:");
+    print_float(bytesil_magnitude(state_get_layer(final_result, 0)));
+
+    // =========================================
+    // ByteSil Transforms
+    // =========================================
+    print_string("--- ByteSil Transforms ---");
+
+    let bs = bytesil_new(8, 0);
+    let bs_doubled = double_bs(bs);
+
+    print_string("Original magnitude:");
+    print_float(bytesil_magnitude(bs));
+    print_string("Doubled magnitude:");
+    print_float(bytesil_magnitude(bs_doubled));
+}

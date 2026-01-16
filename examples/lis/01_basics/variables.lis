@@ -1,0 +1,79 @@
+// LIS Example: Variáveis
+// Demonstra: let binding, inferência de tipos, shadowing
+// Documentação: Seções 4.3, 7.1
+
+fn main() {
+    // =========================================
+    // Let Binding com Inferência de Tipos
+    // =========================================
+
+    // Tipo inferido como Int
+    let x = 42;
+    print_string("x (inferido Int):");
+    print_int(x);
+
+    // Tipo inferido como Float
+    let y = 3.14;
+    print_string("y (inferido Float):");
+    print_float(y);
+
+    // Tipo inferido como Bool
+    let flag = true;
+
+    // Tipo inferido como String
+    let message = "hello";
+    print_string(message);
+
+    // =========================================
+    // Let Binding com Tipo Explícito
+    // =========================================
+
+    let a: Int = 100;
+    let b: Float = 2.718;
+    let c: Bool = false;
+    let d: String = "explicit type";
+
+    print_string("Tipos explicitos:");
+    print_int(a);
+    print_float(b);
+    print_string(d);
+
+    // =========================================
+    // Promoção de Tipos
+    // =========================================
+
+    // Int promovido para Float
+    let promoted: Float = 42;
+    print_string("Int promovido para Float:");
+    print_float(promoted);
+
+    // =========================================
+    // Shadowing (Rebinding)
+    // =========================================
+
+    // LIS permite shadowing - redefinir variável no mesmo escopo
+    let value = 10;
+    print_string("value inicial:");
+    print_int(value);
+
+    let value = value + 5;  // Shadowing: nova variável com mesmo nome
+    print_string("value apos shadowing:");
+    print_int(value);
+
+    let value = value * 2;  // Outro shadowing
+    print_string("value final:");
+    print_int(value);
+
+    // =========================================
+    // Uso de Variáveis em Expressões
+    // =========================================
+
+    let first = 10;
+    let second = 20;
+    let sum = first + second;
+    let product = first * second;
+
+    print_string("Expressoes com variaveis:");
+    print_int(sum);
+    print_int(product);
+}

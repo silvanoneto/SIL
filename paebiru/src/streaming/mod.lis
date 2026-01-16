@@ -1,0 +1,324 @@
+// Paebiru ML Library - Streaming Module
+// Data transformation pipelines and windowing
+
+use core::bytesil::{bs_mag, bs_from_mag_clamped};
+use core::state::{st_add, st_scale, st_mean};
+
+// =============================================================================
+// Transform Types
+// =============================================================================
+
+pub fn TRANSFORM_JSON() -> Int { return 0; }
+pub fn TRANSFORM_ARROW() -> Int { return 1; }
+pub fn TRANSFORM_PARQUET() -> Int { return 2; }
+pub fn TRANSFORM_IMAGE() -> Int { return 3; }
+pub fn TRANSFORM_AUDIO() -> Int { return 4; }
+pub fn TRANSFORM_TEXT() -> Int { return 5; }
+pub fn TRANSFORM_SENSOR() -> Int { return 6; }
+pub fn TRANSFORM_BYTESIL() -> Int { return 7; }
+
+// =============================================================================
+// Window Types
+// =============================================================================
+
+pub fn WINDOW_TUMBLING() -> Int { return 0; }
+pub fn WINDOW_SLIDING() -> Int { return 1; }
+pub fn WINDOW_COUNT() -> Int { return 2; }
+
+// =============================================================================
+// Aggregation Types
+// =============================================================================
+
+pub fn AGG_MEAN() -> Int { return 0; }
+pub fn AGG_MAX() -> Int { return 1; }
+pub fn AGG_MIN() -> Int { return 2; }
+pub fn AGG_SUM() -> Int { return 3; }
+pub fn AGG_COUNT() -> Int { return 4; }
+
+// =============================================================================
+// Window Operations
+// =============================================================================
+
+// Aggregate 2 States using specified method
+pub fn aggregate_2(s0: State, s1: State, agg_type: Int) -> State {
+    if agg_type == AGG_MEAN() {
+        let sum = st_add(s0, s1);
+        return st_scale(sum, 0.5);
+    }
+
+    if agg_type == AGG_SUM() {
+        return st_add(s0, s1);
+    }
+
+    if agg_type == AGG_MAX() {
+        return state_max(s0, s1);
+    }
+
+    if agg_type == AGG_MIN() {
+        return state_min(s0, s1);
+    }
+
+    // Default: return first
+    return s0;
+}
+
+// Aggregate 4 States
+pub fn aggregate_4(s0: State, s1: State, s2: State, s3: State, agg_type: Int) -> State {
+    let a01 = aggregate_2(s0, s1, agg_type);
+    let a23 = aggregate_2(s2, s3, agg_type);
+    return aggregate_2(a01, a23, agg_type);
+}
+
+// Element-wise max of two States
+fn state_max(a: State, b: State) -> State {
+    let result = state_vacuum();
+
+    let m0 = max_float(bs_mag(state_get_layer(a, 0)), bs_mag(state_get_layer(b, 0)));
+    let result = state_set_layer(result, 0, bs_from_mag_clamped(m0));
+
+    let m1 = max_float(bs_mag(state_get_layer(a, 1)), bs_mag(state_get_layer(b, 1)));
+    let result = state_set_layer(result, 1, bs_from_mag_clamped(m1));
+
+    let m2 = max_float(bs_mag(state_get_layer(a, 2)), bs_mag(state_get_layer(b, 2)));
+    let result = state_set_layer(result, 2, bs_from_mag_clamped(m2));
+
+    let m3 = max_float(bs_mag(state_get_layer(a, 3)), bs_mag(state_get_layer(b, 3)));
+    let result = state_set_layer(result, 3, bs_from_mag_clamped(m3));
+
+    let m4 = max_float(bs_mag(state_get_layer(a, 4)), bs_mag(state_get_layer(b, 4)));
+    let result = state_set_layer(result, 4, bs_from_mag_clamped(m4));
+
+    let m5 = max_float(bs_mag(state_get_layer(a, 5)), bs_mag(state_get_layer(b, 5)));
+    let result = state_set_layer(result, 5, bs_from_mag_clamped(m5));
+
+    let m6 = max_float(bs_mag(state_get_layer(a, 6)), bs_mag(state_get_layer(b, 6)));
+    let result = state_set_layer(result, 6, bs_from_mag_clamped(m6));
+
+    let m7 = max_float(bs_mag(state_get_layer(a, 7)), bs_mag(state_get_layer(b, 7)));
+    let result = state_set_layer(result, 7, bs_from_mag_clamped(m7));
+
+    let m8 = max_float(bs_mag(state_get_layer(a, 8)), bs_mag(state_get_layer(b, 8)));
+    let result = state_set_layer(result, 8, bs_from_mag_clamped(m8));
+
+    let m9 = max_float(bs_mag(state_get_layer(a, 9)), bs_mag(state_get_layer(b, 9)));
+    let result = state_set_layer(result, 9, bs_from_mag_clamped(m9));
+
+    let m10 = max_float(bs_mag(state_get_layer(a, 10)), bs_mag(state_get_layer(b, 10)));
+    let result = state_set_layer(result, 10, bs_from_mag_clamped(m10));
+
+    let m11 = max_float(bs_mag(state_get_layer(a, 11)), bs_mag(state_get_layer(b, 11)));
+    let result = state_set_layer(result, 11, bs_from_mag_clamped(m11));
+
+    let m12 = max_float(bs_mag(state_get_layer(a, 12)), bs_mag(state_get_layer(b, 12)));
+    let result = state_set_layer(result, 12, bs_from_mag_clamped(m12));
+
+    let m13 = max_float(bs_mag(state_get_layer(a, 13)), bs_mag(state_get_layer(b, 13)));
+    let result = state_set_layer(result, 13, bs_from_mag_clamped(m13));
+
+    let m14 = max_float(bs_mag(state_get_layer(a, 14)), bs_mag(state_get_layer(b, 14)));
+    let result = state_set_layer(result, 14, bs_from_mag_clamped(m14));
+
+    let m15 = max_float(bs_mag(state_get_layer(a, 15)), bs_mag(state_get_layer(b, 15)));
+    let result = state_set_layer(result, 15, bs_from_mag_clamped(m15));
+
+    return result;
+}
+
+// Element-wise min of two States
+fn state_min(a: State, b: State) -> State {
+    let result = state_vacuum();
+
+    let m0 = min_float(bs_mag(state_get_layer(a, 0)), bs_mag(state_get_layer(b, 0)));
+    let result = state_set_layer(result, 0, bs_from_mag_clamped(m0));
+
+    let m1 = min_float(bs_mag(state_get_layer(a, 1)), bs_mag(state_get_layer(b, 1)));
+    let result = state_set_layer(result, 1, bs_from_mag_clamped(m1));
+
+    let m2 = min_float(bs_mag(state_get_layer(a, 2)), bs_mag(state_get_layer(b, 2)));
+    let result = state_set_layer(result, 2, bs_from_mag_clamped(m2));
+
+    let m3 = min_float(bs_mag(state_get_layer(a, 3)), bs_mag(state_get_layer(b, 3)));
+    let result = state_set_layer(result, 3, bs_from_mag_clamped(m3));
+
+    let m4 = min_float(bs_mag(state_get_layer(a, 4)), bs_mag(state_get_layer(b, 4)));
+    let result = state_set_layer(result, 4, bs_from_mag_clamped(m4));
+
+    let m5 = min_float(bs_mag(state_get_layer(a, 5)), bs_mag(state_get_layer(b, 5)));
+    let result = state_set_layer(result, 5, bs_from_mag_clamped(m5));
+
+    let m6 = min_float(bs_mag(state_get_layer(a, 6)), bs_mag(state_get_layer(b, 6)));
+    let result = state_set_layer(result, 6, bs_from_mag_clamped(m6));
+
+    let m7 = min_float(bs_mag(state_get_layer(a, 7)), bs_mag(state_get_layer(b, 7)));
+    let result = state_set_layer(result, 7, bs_from_mag_clamped(m7));
+
+    let m8 = min_float(bs_mag(state_get_layer(a, 8)), bs_mag(state_get_layer(b, 8)));
+    let result = state_set_layer(result, 8, bs_from_mag_clamped(m8));
+
+    let m9 = min_float(bs_mag(state_get_layer(a, 9)), bs_mag(state_get_layer(b, 9)));
+    let result = state_set_layer(result, 9, bs_from_mag_clamped(m9));
+
+    let m10 = min_float(bs_mag(state_get_layer(a, 10)), bs_mag(state_get_layer(b, 10)));
+    let result = state_set_layer(result, 10, bs_from_mag_clamped(m10));
+
+    let m11 = min_float(bs_mag(state_get_layer(a, 11)), bs_mag(state_get_layer(b, 11)));
+    let result = state_set_layer(result, 11, bs_from_mag_clamped(m11));
+
+    let m12 = min_float(bs_mag(state_get_layer(a, 12)), bs_mag(state_get_layer(b, 12)));
+    let result = state_set_layer(result, 12, bs_from_mag_clamped(m12));
+
+    let m13 = min_float(bs_mag(state_get_layer(a, 13)), bs_mag(state_get_layer(b, 13)));
+    let result = state_set_layer(result, 13, bs_from_mag_clamped(m13));
+
+    let m14 = min_float(bs_mag(state_get_layer(a, 14)), bs_mag(state_get_layer(b, 14)));
+    let result = state_set_layer(result, 14, bs_from_mag_clamped(m14));
+
+    let m15 = min_float(bs_mag(state_get_layer(a, 15)), bs_mag(state_get_layer(b, 15)));
+    let result = state_set_layer(result, 15, bs_from_mag_clamped(m15));
+
+    return result;
+}
+
+// =============================================================================
+// Data Transforms
+// =============================================================================
+
+// Normalize State to [0, 1] range
+pub fn transform_normalize(s: State) -> State {
+    use core::state::{st_max_mag, st_min_mag};
+
+    let max_val = st_max_mag(s);
+    let min_val = st_min_mag(s);
+    let range = max_val - min_val;
+
+    if range < 0.0001 {
+        return s;  // Already normalized or constant
+    }
+
+    let result = state_vacuum();
+
+    let v0 = (bs_mag(state_get_layer(s, 0)) - min_val) / range;
+    let result = state_set_layer(result, 0, bs_from_mag_clamped(v0));
+
+    let v1 = (bs_mag(state_get_layer(s, 1)) - min_val) / range;
+    let result = state_set_layer(result, 1, bs_from_mag_clamped(v1));
+
+    let v2 = (bs_mag(state_get_layer(s, 2)) - min_val) / range;
+    let result = state_set_layer(result, 2, bs_from_mag_clamped(v2));
+
+    let v3 = (bs_mag(state_get_layer(s, 3)) - min_val) / range;
+    let result = state_set_layer(result, 3, bs_from_mag_clamped(v3));
+
+    let v4 = (bs_mag(state_get_layer(s, 4)) - min_val) / range;
+    let result = state_set_layer(result, 4, bs_from_mag_clamped(v4));
+
+    let v5 = (bs_mag(state_get_layer(s, 5)) - min_val) / range;
+    let result = state_set_layer(result, 5, bs_from_mag_clamped(v5));
+
+    let v6 = (bs_mag(state_get_layer(s, 6)) - min_val) / range;
+    let result = state_set_layer(result, 6, bs_from_mag_clamped(v6));
+
+    let v7 = (bs_mag(state_get_layer(s, 7)) - min_val) / range;
+    let result = state_set_layer(result, 7, bs_from_mag_clamped(v7));
+
+    let v8 = (bs_mag(state_get_layer(s, 8)) - min_val) / range;
+    let result = state_set_layer(result, 8, bs_from_mag_clamped(v8));
+
+    let v9 = (bs_mag(state_get_layer(s, 9)) - min_val) / range;
+    let result = state_set_layer(result, 9, bs_from_mag_clamped(v9));
+
+    let v10 = (bs_mag(state_get_layer(s, 10)) - min_val) / range;
+    let result = state_set_layer(result, 10, bs_from_mag_clamped(v10));
+
+    let v11 = (bs_mag(state_get_layer(s, 11)) - min_val) / range;
+    let result = state_set_layer(result, 11, bs_from_mag_clamped(v11));
+
+    let v12 = (bs_mag(state_get_layer(s, 12)) - min_val) / range;
+    let result = state_set_layer(result, 12, bs_from_mag_clamped(v12));
+
+    let v13 = (bs_mag(state_get_layer(s, 13)) - min_val) / range;
+    let result = state_set_layer(result, 13, bs_from_mag_clamped(v13));
+
+    let v14 = (bs_mag(state_get_layer(s, 14)) - min_val) / range;
+    let result = state_set_layer(result, 14, bs_from_mag_clamped(v14));
+
+    let v15 = (bs_mag(state_get_layer(s, 15)) - min_val) / range;
+    let result = state_set_layer(result, 15, bs_from_mag_clamped(v15));
+
+    return result;
+}
+
+// Standardize State (z-score normalization)
+pub fn transform_standardize(s: State) -> State {
+    use core::state::{st_mean, st_std_dev};
+
+    let mean = st_mean(s);
+    let std = st_std_dev(s);
+
+    if std < 0.0001 {
+        return state_vacuum();  // All zeros for constant input
+    }
+
+    let result = state_vacuum();
+
+    let v0 = (bs_mag(state_get_layer(s, 0)) - mean) / std;
+    let result = state_set_layer(result, 0, bs_from_mag_clamped(abs_float(v0)));
+
+    let v1 = (bs_mag(state_get_layer(s, 1)) - mean) / std;
+    let result = state_set_layer(result, 1, bs_from_mag_clamped(abs_float(v1)));
+
+    let v2 = (bs_mag(state_get_layer(s, 2)) - mean) / std;
+    let result = state_set_layer(result, 2, bs_from_mag_clamped(abs_float(v2)));
+
+    let v3 = (bs_mag(state_get_layer(s, 3)) - mean) / std;
+    let result = state_set_layer(result, 3, bs_from_mag_clamped(abs_float(v3)));
+
+    let v4 = (bs_mag(state_get_layer(s, 4)) - mean) / std;
+    let result = state_set_layer(result, 4, bs_from_mag_clamped(abs_float(v4)));
+
+    let v5 = (bs_mag(state_get_layer(s, 5)) - mean) / std;
+    let result = state_set_layer(result, 5, bs_from_mag_clamped(abs_float(v5)));
+
+    let v6 = (bs_mag(state_get_layer(s, 6)) - mean) / std;
+    let result = state_set_layer(result, 6, bs_from_mag_clamped(abs_float(v6)));
+
+    let v7 = (bs_mag(state_get_layer(s, 7)) - mean) / std;
+    let result = state_set_layer(result, 7, bs_from_mag_clamped(abs_float(v7)));
+
+    let v8 = (bs_mag(state_get_layer(s, 8)) - mean) / std;
+    let result = state_set_layer(result, 8, bs_from_mag_clamped(abs_float(v8)));
+
+    let v9 = (bs_mag(state_get_layer(s, 9)) - mean) / std;
+    let result = state_set_layer(result, 9, bs_from_mag_clamped(abs_float(v9)));
+
+    let v10 = (bs_mag(state_get_layer(s, 10)) - mean) / std;
+    let result = state_set_layer(result, 10, bs_from_mag_clamped(abs_float(v10)));
+
+    let v11 = (bs_mag(state_get_layer(s, 11)) - mean) / std;
+    let result = state_set_layer(result, 11, bs_from_mag_clamped(abs_float(v11)));
+
+    let v12 = (bs_mag(state_get_layer(s, 12)) - mean) / std;
+    let result = state_set_layer(result, 12, bs_from_mag_clamped(abs_float(v12)));
+
+    let v13 = (bs_mag(state_get_layer(s, 13)) - mean) / std;
+    let result = state_set_layer(result, 13, bs_from_mag_clamped(abs_float(v13)));
+
+    let v14 = (bs_mag(state_get_layer(s, 14)) - mean) / std;
+    let result = state_set_layer(result, 14, bs_from_mag_clamped(abs_float(v14)));
+
+    let v15 = (bs_mag(state_get_layer(s, 15)) - mean) / std;
+    let result = state_set_layer(result, 15, bs_from_mag_clamped(abs_float(v15)));
+
+    return result;
+}
+
+// =============================================================================
+// Pipeline
+// =============================================================================
+
+// Apply multiple transforms in sequence
+pub fn pipeline_normalize_standardize(s: State) -> State {
+    let normalized = transform_normalize(s);
+    return transform_standardize(normalized);
+}
+

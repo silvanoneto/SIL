@@ -1,0 +1,412 @@
+// Paebiru Distributed ML - Byzantine-Resilient Aggregation
+// Implementa metodos robustos que toleram clientes maliciosos
+//
+// Metodos incluem:
+// - Coordinate-wise median
+// - Trimmed mean
+// - Krum
+// - Geometric median approximation
+
+use core::bytesil::{bs_mag, bs_from_mag_clamped};
+use core::state::{st_add, st_sub, st_scale, st_sum_mag_sq};
+use core::stats::{median_3};
+
+// =============================================================================
+// Coordinate-wise Median
+// =============================================================================
+
+// Coordinate-wise median de 3 modelos
+pub fn byzantine_median_3(m1: State, m2: State, m3: State) -> State {
+    let r = state_vacuum();
+
+    let v0 = median_3(
+        bs_mag(state_get_layer(m1, 0)),
+        bs_mag(state_get_layer(m2, 0)),
+        bs_mag(state_get_layer(m3, 0))
+    );
+    let r = state_set_layer(r, 0, bs_from_mag_clamped(v0));
+
+    let v1 = median_3(
+        bs_mag(state_get_layer(m1, 1)),
+        bs_mag(state_get_layer(m2, 1)),
+        bs_mag(state_get_layer(m3, 1))
+    );
+    let r = state_set_layer(r, 1, bs_from_mag_clamped(v1));
+
+    let v2 = median_3(
+        bs_mag(state_get_layer(m1, 2)),
+        bs_mag(state_get_layer(m2, 2)),
+        bs_mag(state_get_layer(m3, 2))
+    );
+    let r = state_set_layer(r, 2, bs_from_mag_clamped(v2));
+
+    let v3 = median_3(
+        bs_mag(state_get_layer(m1, 3)),
+        bs_mag(state_get_layer(m2, 3)),
+        bs_mag(state_get_layer(m3, 3))
+    );
+    let r = state_set_layer(r, 3, bs_from_mag_clamped(v3));
+
+    let v4 = median_3(
+        bs_mag(state_get_layer(m1, 4)),
+        bs_mag(state_get_layer(m2, 4)),
+        bs_mag(state_get_layer(m3, 4))
+    );
+    let r = state_set_layer(r, 4, bs_from_mag_clamped(v4));
+
+    let v5 = median_3(
+        bs_mag(state_get_layer(m1, 5)),
+        bs_mag(state_get_layer(m2, 5)),
+        bs_mag(state_get_layer(m3, 5))
+    );
+    let r = state_set_layer(r, 5, bs_from_mag_clamped(v5));
+
+    let v6 = median_3(
+        bs_mag(state_get_layer(m1, 6)),
+        bs_mag(state_get_layer(m2, 6)),
+        bs_mag(state_get_layer(m3, 6))
+    );
+    let r = state_set_layer(r, 6, bs_from_mag_clamped(v6));
+
+    let v7 = median_3(
+        bs_mag(state_get_layer(m1, 7)),
+        bs_mag(state_get_layer(m2, 7)),
+        bs_mag(state_get_layer(m3, 7))
+    );
+    let r = state_set_layer(r, 7, bs_from_mag_clamped(v7));
+
+    let v8 = median_3(
+        bs_mag(state_get_layer(m1, 8)),
+        bs_mag(state_get_layer(m2, 8)),
+        bs_mag(state_get_layer(m3, 8))
+    );
+    let r = state_set_layer(r, 8, bs_from_mag_clamped(v8));
+
+    let v9 = median_3(
+        bs_mag(state_get_layer(m1, 9)),
+        bs_mag(state_get_layer(m2, 9)),
+        bs_mag(state_get_layer(m3, 9))
+    );
+    let r = state_set_layer(r, 9, bs_from_mag_clamped(v9));
+
+    let v10 = median_3(
+        bs_mag(state_get_layer(m1, 10)),
+        bs_mag(state_get_layer(m2, 10)),
+        bs_mag(state_get_layer(m3, 10))
+    );
+    let r = state_set_layer(r, 10, bs_from_mag_clamped(v10));
+
+    let v11 = median_3(
+        bs_mag(state_get_layer(m1, 11)),
+        bs_mag(state_get_layer(m2, 11)),
+        bs_mag(state_get_layer(m3, 11))
+    );
+    let r = state_set_layer(r, 11, bs_from_mag_clamped(v11));
+
+    let v12 = median_3(
+        bs_mag(state_get_layer(m1, 12)),
+        bs_mag(state_get_layer(m2, 12)),
+        bs_mag(state_get_layer(m3, 12))
+    );
+    let r = state_set_layer(r, 12, bs_from_mag_clamped(v12));
+
+    let v13 = median_3(
+        bs_mag(state_get_layer(m1, 13)),
+        bs_mag(state_get_layer(m2, 13)),
+        bs_mag(state_get_layer(m3, 13))
+    );
+    let r = state_set_layer(r, 13, bs_from_mag_clamped(v13));
+
+    let v14 = median_3(
+        bs_mag(state_get_layer(m1, 14)),
+        bs_mag(state_get_layer(m2, 14)),
+        bs_mag(state_get_layer(m3, 14))
+    );
+    let r = state_set_layer(r, 14, bs_from_mag_clamped(v14));
+
+    let v15 = median_3(
+        bs_mag(state_get_layer(m1, 15)),
+        bs_mag(state_get_layer(m2, 15)),
+        bs_mag(state_get_layer(m3, 15))
+    );
+    let r = state_set_layer(r, 15, bs_from_mag_clamped(v15));
+
+    return r;
+}
+
+// =============================================================================
+// Trimmed Mean
+// =============================================================================
+
+// Trimmed mean of 4 values (removes 1 max and 1 min)
+fn trimmed_mean_4(a: Float, b: Float, c: Float, d: Float) -> Float {
+    let min_val = min_float(min_float(a, b), min_float(c, d));
+    let max_val = max_float(max_float(a, b), max_float(c, d));
+    let sum = a + b + c + d - min_val - max_val;
+    return sum / 2.0;
+}
+
+// Coordinate-wise trimmed mean of 4 models
+pub fn byzantine_trimmed_4(m1: State, m2: State, m3: State, m4: State) -> State {
+    let r = state_vacuum();
+
+    let v0 = trimmed_mean_4(
+        bs_mag(state_get_layer(m1, 0)),
+        bs_mag(state_get_layer(m2, 0)),
+        bs_mag(state_get_layer(m3, 0)),
+        bs_mag(state_get_layer(m4, 0))
+    );
+    let r = state_set_layer(r, 0, bs_from_mag_clamped(v0));
+
+    let v1 = trimmed_mean_4(
+        bs_mag(state_get_layer(m1, 1)),
+        bs_mag(state_get_layer(m2, 1)),
+        bs_mag(state_get_layer(m3, 1)),
+        bs_mag(state_get_layer(m4, 1))
+    );
+    let r = state_set_layer(r, 1, bs_from_mag_clamped(v1));
+
+    let v2 = trimmed_mean_4(
+        bs_mag(state_get_layer(m1, 2)),
+        bs_mag(state_get_layer(m2, 2)),
+        bs_mag(state_get_layer(m3, 2)),
+        bs_mag(state_get_layer(m4, 2))
+    );
+    let r = state_set_layer(r, 2, bs_from_mag_clamped(v2));
+
+    let v3 = trimmed_mean_4(
+        bs_mag(state_get_layer(m1, 3)),
+        bs_mag(state_get_layer(m2, 3)),
+        bs_mag(state_get_layer(m3, 3)),
+        bs_mag(state_get_layer(m4, 3))
+    );
+    let r = state_set_layer(r, 3, bs_from_mag_clamped(v3));
+
+    let v4 = trimmed_mean_4(
+        bs_mag(state_get_layer(m1, 4)),
+        bs_mag(state_get_layer(m2, 4)),
+        bs_mag(state_get_layer(m3, 4)),
+        bs_mag(state_get_layer(m4, 4))
+    );
+    let r = state_set_layer(r, 4, bs_from_mag_clamped(v4));
+
+    let v5 = trimmed_mean_4(
+        bs_mag(state_get_layer(m1, 5)),
+        bs_mag(state_get_layer(m2, 5)),
+        bs_mag(state_get_layer(m3, 5)),
+        bs_mag(state_get_layer(m4, 5))
+    );
+    let r = state_set_layer(r, 5, bs_from_mag_clamped(v5));
+
+    let v6 = trimmed_mean_4(
+        bs_mag(state_get_layer(m1, 6)),
+        bs_mag(state_get_layer(m2, 6)),
+        bs_mag(state_get_layer(m3, 6)),
+        bs_mag(state_get_layer(m4, 6))
+    );
+    let r = state_set_layer(r, 6, bs_from_mag_clamped(v6));
+
+    let v7 = trimmed_mean_4(
+        bs_mag(state_get_layer(m1, 7)),
+        bs_mag(state_get_layer(m2, 7)),
+        bs_mag(state_get_layer(m3, 7)),
+        bs_mag(state_get_layer(m4, 7))
+    );
+    let r = state_set_layer(r, 7, bs_from_mag_clamped(v7));
+
+    let v8 = trimmed_mean_4(
+        bs_mag(state_get_layer(m1, 8)),
+        bs_mag(state_get_layer(m2, 8)),
+        bs_mag(state_get_layer(m3, 8)),
+        bs_mag(state_get_layer(m4, 8))
+    );
+    let r = state_set_layer(r, 8, bs_from_mag_clamped(v8));
+
+    let v9 = trimmed_mean_4(
+        bs_mag(state_get_layer(m1, 9)),
+        bs_mag(state_get_layer(m2, 9)),
+        bs_mag(state_get_layer(m3, 9)),
+        bs_mag(state_get_layer(m4, 9))
+    );
+    let r = state_set_layer(r, 9, bs_from_mag_clamped(v9));
+
+    let v10 = trimmed_mean_4(
+        bs_mag(state_get_layer(m1, 10)),
+        bs_mag(state_get_layer(m2, 10)),
+        bs_mag(state_get_layer(m3, 10)),
+        bs_mag(state_get_layer(m4, 10))
+    );
+    let r = state_set_layer(r, 10, bs_from_mag_clamped(v10));
+
+    let v11 = trimmed_mean_4(
+        bs_mag(state_get_layer(m1, 11)),
+        bs_mag(state_get_layer(m2, 11)),
+        bs_mag(state_get_layer(m3, 11)),
+        bs_mag(state_get_layer(m4, 11))
+    );
+    let r = state_set_layer(r, 11, bs_from_mag_clamped(v11));
+
+    let v12 = trimmed_mean_4(
+        bs_mag(state_get_layer(m1, 12)),
+        bs_mag(state_get_layer(m2, 12)),
+        bs_mag(state_get_layer(m3, 12)),
+        bs_mag(state_get_layer(m4, 12))
+    );
+    let r = state_set_layer(r, 12, bs_from_mag_clamped(v12));
+
+    let v13 = trimmed_mean_4(
+        bs_mag(state_get_layer(m1, 13)),
+        bs_mag(state_get_layer(m2, 13)),
+        bs_mag(state_get_layer(m3, 13)),
+        bs_mag(state_get_layer(m4, 13))
+    );
+    let r = state_set_layer(r, 13, bs_from_mag_clamped(v13));
+
+    let v14 = trimmed_mean_4(
+        bs_mag(state_get_layer(m1, 14)),
+        bs_mag(state_get_layer(m2, 14)),
+        bs_mag(state_get_layer(m3, 14)),
+        bs_mag(state_get_layer(m4, 14))
+    );
+    let r = state_set_layer(r, 14, bs_from_mag_clamped(v14));
+
+    let v15 = trimmed_mean_4(
+        bs_mag(state_get_layer(m1, 15)),
+        bs_mag(state_get_layer(m2, 15)),
+        bs_mag(state_get_layer(m3, 15)),
+        bs_mag(state_get_layer(m4, 15))
+    );
+    let r = state_set_layer(r, 15, bs_from_mag_clamped(v15));
+
+    return r;
+}
+
+// =============================================================================
+// Krum
+// =============================================================================
+
+// L2 distance between two states
+pub fn state_distance(a: State, b: State) -> Float {
+    let diff = st_sub(a, b);
+    let sq_sum = st_sum_mag_sq(diff);
+    return sqrt(sq_sum);
+}
+
+// Krum for 3 models (select 1 with min distance to others)
+pub fn krum_3(m1: State, m2: State, m3: State) -> State {
+    let d12 = state_distance(m1, m2);
+    let d13 = state_distance(m1, m3);
+    let d23 = state_distance(m2, m3);
+
+    let score1 = d12 + d13;
+    let score2 = d12 + d23;
+    let score3 = d13 + d23;
+
+    if score1 <= score2 {
+        if score1 <= score3 {
+            return m1;
+        }
+        return m3;
+    }
+    if score2 <= score3 {
+        return m2;
+    }
+    return m3;
+}
+
+// Krum for 4 models
+pub fn krum_4(m1: State, m2: State, m3: State, m4: State) -> State {
+    let d12 = state_distance(m1, m2);
+    let d13 = state_distance(m1, m3);
+    let d14 = state_distance(m1, m4);
+    let d23 = state_distance(m2, m3);
+    let d24 = state_distance(m2, m4);
+    let d34 = state_distance(m3, m4);
+
+    let score1 = d12 + d13 + d14;
+    let score2 = d12 + d23 + d24;
+    let score3 = d13 + d23 + d34;
+    let score4 = d14 + d24 + d34;
+
+    let min_score = min_float(min_float(score1, score2), min_float(score3, score4));
+
+    if score1 == min_score {
+        return m1;
+    }
+    if score2 == min_score {
+        return m2;
+    }
+    if score3 == min_score {
+        return m3;
+    }
+    return m4;
+}
+
+// =============================================================================
+// Geometric Median Approximation
+// =============================================================================
+
+// Weiszfeld step
+fn geometric_median_step(current: State, m1: State, m2: State, m3: State) -> State {
+    let eps = 0.0001;
+
+    let d1 = max_float(state_distance(current, m1), eps);
+    let d2 = max_float(state_distance(current, m2), eps);
+    let d3 = max_float(state_distance(current, m3), eps);
+
+    let w1 = 1.0 / d1;
+    let w2 = 1.0 / d2;
+    let w3 = 1.0 / d3;
+
+    let total_w = w1 + w2 + w3;
+
+    let scaled1 = st_scale(m1, w1 / total_w);
+    let scaled2 = st_scale(m2, w2 / total_w);
+    let scaled3 = st_scale(m3, w3 / total_w);
+
+    return st_add(st_add(scaled1, scaled2), scaled3);
+}
+
+// Approximate geometric median (2 Weiszfeld iterations)
+pub fn geometric_median_3(m1: State, m2: State, m3: State) -> State {
+    let mean = st_add(st_add(m1, m2), m3);
+    let mean = st_scale(mean, 0.333333);
+
+    let step1 = geometric_median_step(mean, m1, m2, m3);
+    let step2 = geometric_median_step(step1, m1, m2, m3);
+
+    return step2;
+}
+
+// =============================================================================
+// Outlier Detection
+// =============================================================================
+
+// Check if model is an outlier
+pub fn is_outlier(model: State, mean: State, threshold: Float) -> Bool {
+    let dist = state_distance(model, mean);
+    return dist > threshold;
+}
+
+// Compute mean distance to centroid
+pub fn mean_distance_to_centroid(m1: State, m2: State, m3: State, centroid: State) -> Float {
+    let d1 = state_distance(m1, centroid);
+    let d2 = state_distance(m2, centroid);
+    let d3 = state_distance(m3, centroid);
+    return (d1 + d2 + d3) / 3.0;
+}
+
+// =============================================================================
+// Robust Aggregation Wrappers
+// =============================================================================
+
+// Robust aggregation for 3 models
+pub fn robust_aggregate_3(m1: State, m2: State, m3: State) -> State {
+    return byzantine_median_3(m1, m2, m3);
+}
+
+// Robust aggregation for 4 models
+pub fn robust_aggregate_4(m1: State, m2: State, m3: State, m4: State) -> State {
+    return byzantine_trimmed_4(m1, m2, m3, m4);
+}
+

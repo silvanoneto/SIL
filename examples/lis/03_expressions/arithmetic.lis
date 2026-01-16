@@ -1,0 +1,90 @@
+// LIS Example: Operadores Aritméticos
+// Demonstra: +, -, *, /, ** (potência)
+// Documentação: Seção 6.4
+
+fn main() {
+    print_string("=== Arithmetic Operators ===");
+
+    // =========================================
+    // Adição (+)
+    // =========================================
+    let a = 10;
+    let b = 3;
+
+    let sum = a + b;
+    print_string("10 + 3 =");
+    print_int(sum);
+
+    let float_sum = 3.14 + 2.86;
+    print_string("3.14 + 2.86 =");
+    print_float(float_sum);
+
+    // =========================================
+    // Subtração (-)
+    // =========================================
+    let diff = a - b;
+    print_string("10 - 3 =");
+    print_int(diff);
+
+    let neg_result = b - a;
+    print_string("3 - 10 =");
+    print_int(neg_result);
+
+    // =========================================
+    // Multiplicação (*)
+    // =========================================
+    let product = a * b;
+    print_string("10 * 3 =");
+    print_int(product);
+
+    let float_product = 2.5 * 4.0;
+    print_string("2.5 * 4.0 =");
+    print_float(float_product);
+
+    // =========================================
+    // Divisão (/)
+    // =========================================
+    let quotient = a / b;
+    print_string("10 / 3 =");
+    print_int(quotient);  // Divisão inteira
+
+    let float_quotient = 10.0 / 3.0;
+    print_string("10.0 / 3.0 =");
+    print_float(float_quotient);
+
+    // =========================================
+    // Potência (**)
+    // =========================================
+    let power = 2 ** 10;
+    print_string("2 ** 10 =");
+    print_int(power);  // 1024
+
+    let float_power = 2.0 ** 0.5;
+    print_string("2.0 ** 0.5 (sqrt 2) =");
+    print_float(float_power);
+
+    // =========================================
+    // Expressões Compostas
+    // =========================================
+    let expr1 = (a + b) * 2;
+    print_string("(10 + 3) * 2 =");
+    print_int(expr1);
+
+    let expr2 = a + b * 2;  // Multiplicação tem precedência
+    print_string("10 + 3 * 2 =");
+    print_int(expr2);
+
+    let expr3 = a ** 2 + b ** 2;
+    print_string("10^2 + 3^2 =");
+    print_int(expr3);
+
+    // =========================================
+    // Operações com Tipos Mistos
+    // =========================================
+    let int_val = 5;
+    let float_val = 2.5;
+
+    let mixed = int_val + float_val;  // Int promovido para Float
+    print_string("5 + 2.5 =");
+    print_float(mixed);
+}

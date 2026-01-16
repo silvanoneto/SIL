@@ -1,0 +1,16 @@
+[package]
+name = "sil-environment"
+version = "2026.1.16"
+edition = "2024"
+authors = ["Silvano Neto <dev@silvanoneto.com>"]
+license = "AGPL-3.0"
+rust-version = "1.92"
+
+[dependencies]
+sil-core = { path = "../sil-core" }
+thiserror = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+serde_json = "1.0"
+criterion = "0.5"

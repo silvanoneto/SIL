@@ -1,0 +1,6 @@
+# VS Code Extension for SIL
+
+node_modules/
+out/
+*.vsix
+.vscode-test/

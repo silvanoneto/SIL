@@ -1,0 +1,41 @@
+{
+  "name": "@sil/sil-core",
+  "version": "2026.1.16",
+  "description": "SIL-Core — WebAssembly bindings for Symbolic Integration Layer runtime and VSP",
+  "main": "pkg/sil_core.js",
+  "types": "pkg/sil_core.d.ts",
+  "files": [
+    "pkg"
+  ],
+  "scripts": {
+    "build": "wasm-pack build --target bundler --out-dir pkg --features wasm",
+    "build:web": "wasm-pack build --target web --out-dir pkg-web --features wasm",
+    "build:node": "wasm-pack build --target nodejs --out-dir pkg-node --features wasm",
+    "build:all": "npm run build && npm run build:web && npm run build:node",
+    "test": "wasm-pack test --node",
+    "pack": "wasm-pack pack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/silvanoneto/SIL.git"
+  },
+  "keywords": [
+    "sil",
+    "webassembly",
+    "wasm",
+    "edge-computing",
+    "complex-numbers",
+    "bytecode",
+    "virtual-machine",
+    "vsp"
+  ],
+  "author": "Silvano Neto <dev@silvanoneto.com>",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/silvanoneto/SIL/issues"
+  },
+  "homepage": "https://github.com/silvanoneto/SIL",
+  "devDependencies": {
+    "wasm-pack": "^0.12.1"
+  }
+}

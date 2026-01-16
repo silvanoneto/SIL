@@ -1,0 +1,8 @@
+// Paebiru ML Library - Layers Module
+// Camadas para redes neurais
+
+pub mod dense;
+pub mod norm;
+pub mod dropout;
+pub mod residual;
+

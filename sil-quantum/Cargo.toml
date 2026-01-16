@@ -1,0 +1,22 @@
+[package]
+name = "sil-quantum"
+version = "2026.1.16"
+edition = "2024"
+authors = ["Silvano Neto <dev@silvanoneto.com>"]
+license = "AGPL-3.0"
+rust-version = "1.92"
+description = "Quantum state simulation with superposition and collapse for SIL"
+
+[features]
+default = []
+gpu = ["sil-core/gpu"]
+
+[dependencies]
+sil-core = { path = "../sil-core" }
+thiserror = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+num-complex = "0.4"
+
+[dev-dependencies]
+criterion = "0.5"
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }

@@ -1,0 +1,21 @@
+[package]
+name = "sil-cosmopolitan"
+version = "2026.1.16"
+edition = "2021"
+description = "L(A) Cosmopolitan layer - Ethics, species, and hospitality protocol for SIL"
+authors = ["Silvano Neto <dev@silvanoneto.com>"]
+license = "AGPL-3.0"
+repository = "https://github.com/silvanoneto/SIL.git"
+keywords = ["sil", "ethics", "cosmopolitan", "hospitality", ""]
+categories = ["no-std", "embedded"]
+
+[dependencies]
+sil-core = { path = "../sil-core" }
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "1.0"
+
+[dev-dependencies]
+rand = "0.8"
+
+[features]
+default = []

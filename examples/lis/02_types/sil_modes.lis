@@ -1,0 +1,307 @@
+// LIS Example: Modos SIL e Representação Interna
+// Demonstra: Compatibilidade com modos SIL (8, 16, 32, 64, 128 bits)
+// Documentação: Seção 2.1 - SilMode
+
+// =========================================
+// Modos SIL (Signal Intermediate Language)
+// =========================================
+// SIL suporta 5 modos baseados em número de camadas:
+//
+// | Modo   | Camadas | Bits Totais |
+// |--------|---------|-------------|
+// | Sil8   | 1       | 8           |
+// | Sil16  | 2       | 16          |
+// | Sil32  | 4       | 32          |
+// | Sil64  | 8       | 64          |
+// | Sil128 | 16      | 128         |
+
+// =========================================
+// IMPORTANTE: Representação Log-Polar
+// =========================================
+// A VM SIL NÃO usa tipos inteiros/float tradicionais (i16, i32, f32, etc.)
+// Internamente, TODOS os valores são representados como ByteSil:
+//
+// ByteSil = número complexo em coordenadas log-polares
+//   - rho (ρ): 4 bits signed (-8 a +7) = log da magnitude
+//   - theta (θ): 4 bits unsigned (0-15) = fase (0 a 2π)
+//
+// Isso significa:
+// - Int em LIS → convertido para magnitude em ByteSil
+// - Float em LIS → convertido para (rho, theta) escalado
+// - Operações são feitas no domínio complexo log-polar
+
+// =========================================
+// ByteSil: Unidade Fundamental (sempre 8 bits)
+// =========================================
+
+fn demo_bytesil() {
+    // ByteSil é SEMPRE 8 bits independente do modo SIL
+    // É a unidade atômica da VM
+
+    // Estrutura interna:
+    // [rho: 4 bits | theta: 4 bits] = 8 bits total
+
+    let bs = bytesil_new(7, 8);  // rho=7 (max positivo), theta=8 (π)
+
+    // rho: logaritmo da magnitude
+    //   -8 = magnitude mínima (quase zero)
+    //   +7 = magnitude máxima
+    // theta: fase do número complexo
+    //   0 = 0 rad, 8 = π rad, 15 ≈ 2π rad
+
+    print_string("=== ByteSil (always 8 bits) ===");
+    print_string("rho (log magnitude, -8 to +7):");
+    print_int(bytesil_rho(bs));
+    print_string("theta (phase, 0 to 15):");
+    print_int(bytesil_theta(bs));
+
+    // Conversão para magnitude real
+    print_string("Decoded magnitude:");
+    print_float(bytesil_magnitude(bs));
+
+    // Fase em radianos
+    print_string("Phase in radians:");
+    print_float(bytesil_phase_radians(bs));
+}
+
+// =========================================
+// State: Vetor de ByteSils
+// =========================================
+
+fn demo_state_layers() {
+    // State é um vetor de 16 ByteSils (em Sil128)
+    // Cada camada é um ByteSil independente
+
+    // | Modo   | Camadas Ativas |
+    // |--------|----------------|
+    // | Sil8   | L0             |
+    // | Sil16  | L0, L1         |
+    // | Sil32  | L0..L3         |
+    // | Sil64  | L0..L7         |
+    // | Sil128 | L0..L15        |
+
+    let s = state_neutral();
+
+    print_string("=== State Layers ===");
+
+    // Acessar camada individual (retorna ByteSil)
+    let l0 = state_get_layer(s, 0);
+    print_string("Layer 0 magnitude:");
+    print_float(bytesil_magnitude(l0));
+
+    // Todas as 16 camadas sempre existem na memória,
+    // mas o modo determina quais são "ativas" para operações
+    let l15 = state_get_layer(s, 15);
+    print_string("Layer 15 magnitude:");
+    print_float(bytesil_magnitude(l15));
+}
+
+// =========================================
+// Int em LIS: Conversão para VM
+// =========================================
+
+fn demo_int_representation() {
+    // Quando você escreve um Int em LIS:
+    //   let x = 42;
+    //
+    // O compilador emite: MOVI R, 42
+    // O valor 42 é armazenado como imediato na instrução
+    //
+    // NÃO existe i16/i32/i64/i128 na VM!
+    // O valor é tratado pelo sistema de instruções diretamente
+
+    let small = 100;
+    let medium = 10000;
+    let large = 1000000;
+
+    print_string("=== Int in LIS ===");
+    print_string("Int values (stored as instruction immediates):");
+    print_int(small);
+    print_int(medium);
+    print_int(large);
+
+    // Operações aritméticas são feitas nas instruções
+    let sum = small + medium;
+    print_string("Sum:");
+    print_int(sum);
+}
+
+// =========================================
+// Float em LIS: Conversão Log-Polar
+// =========================================
+
+fn demo_float_representation() {
+    // Quando você escreve um Float em LIS:
+    //   let x = 3.14;
+    //
+    // O compilador converte para coordenadas log-polares:
+    //   1. Escala por 1000 (para preservar precisão)
+    //   2. Calcula rho = ln(|valor|) escalado para 4 bits
+    //   3. Calcula theta = arctan2(imag, real) escalado para 4 bits
+    //   4. Emite: COMPLEX R, rho, theta
+    //
+    // NÃO existe f16/f32/f64/f128 tradicional na VM!
+
+    let pi_val = 3.14159;
+    let small = 0.001;
+    let large = 1000.0;
+
+    print_string("=== Float in LIS ===");
+    print_string("Float values (converted to log-polar):");
+    print_float(pi_val);
+    print_float(small);
+    print_float(large);
+
+    // A precisão é limitada pela representação log-polar
+    // (4 bits rho + 4 bits theta = 256 valores distintos por ByteSil)
+}
+
+// =========================================
+// Modos e Operações
+// =========================================
+
+fn demo_mode_operations() {
+    // O modo SIL afeta:
+    // 1. Quantas camadas do State são consideradas "ativas"
+    // 2. Promoção automática quando operando entre modos diferentes
+    // 3. Estratégia de demoção quando reduzindo modos
+
+    print_string("=== Mode Operations ===");
+
+    // Estado neutro (todas camadas = (1, 0) = magnitude 1, fase 0)
+    let neutral = state_neutral();
+
+    // Estado vácuo (todas camadas = zero)
+    let vacuum = state_vacuum();
+
+    // Operações State-wise operam em todas camadas ativas
+    let combined = state_add(neutral, vacuum);
+
+    print_string("Neutral + Vacuum, L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(combined, 0)));
+}
+
+// =========================================
+// Estratégias de Demoção
+// =========================================
+
+fn demo_demotion_strategies() {
+    // Quando um State de modo maior precisa ser reduzido:
+    //
+    // | Estratégia | Descrição                          |
+    // |------------|-------------------------------------|
+    // | Truncate   | Ignora camadas superiores           |
+    // | XOR        | XOR bit-a-bit de todas camadas      |
+    // | Average    | Média das camadas (domínio complexo)|
+    // | Max        | Máxima magnitude entre camadas      |
+
+    print_string("=== Demotion Strategies ===");
+
+    let s = state_neutral();
+
+    // Modificar algumas camadas para demonstrar
+    let s = state_set_layer(s, 0, bytesil_new(5, 0));
+    let s = state_set_layer(s, 1, bytesil_new(3, 4));
+    let s = state_set_layer(s, 2, bytesil_new(7, 8));
+
+    // Colapsar para único ByteSil usando XOR
+    let collapsed = state_collapse_xor(s);
+    print_string("Collapsed (XOR) magnitude:");
+    print_float(bytesil_magnitude(collapsed));
+
+    // Colapsar usando média
+    let avg = state_collapse_average(s);
+    print_string("Collapsed (Average) magnitude:");
+    print_float(bytesil_magnitude(avg));
+}
+
+// =========================================
+// Promoção de Modo
+// =========================================
+
+fn demo_mode_promotion() {
+    // Promoção: modo menor → modo maior
+    // Camadas extras são preenchidas com:
+    // - Vacuum (zeros) para dados
+    // - Neutral (1, 0) para multiplicadores
+
+    print_string("=== Mode Promotion ===");
+
+    // Um ByteSil pode ser "promovido" para State
+    let bs = bytesil_new(5, 2);
+
+    // Criar state a partir de um ByteSil (L0 = bs, resto = vacuum)
+    let s = state_vacuum();
+    let s = state_set_layer(s, 0, bs);
+
+    print_string("Single ByteSil promoted to State:");
+    print_string("L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(s, 0)));
+    print_string("L1 magnitude (should be 0):");
+    print_float(bytesil_magnitude(state_get_layer(s, 1)));
+}
+
+// =========================================
+// Implicações Práticas
+// =========================================
+
+fn demo_practical_implications() {
+    print_string("=== Practical Implications ===");
+
+    // 1. Precisão limitada pela representação log-polar
+    print_string("1. Limited precision (8 bits per ByteSil)");
+
+    // 2. Operações são naturalmente complexas
+    print_string("2. Operations are naturally complex-valued");
+
+    // 3. Estado preserva magnitude E fase
+    let bs1 = bytesil_new(5, 0);   // Fase 0
+    let bs2 = bytesil_new(5, 8);   // Fase π (mesma magnitude!)
+
+    print_string("Same magnitude, different phase:");
+    print_string("bs1 (phase 0):");
+    print_float(bytesil_phase_radians(bs1));
+    print_string("bs2 (phase pi):");
+    print_float(bytesil_phase_radians(bs2));
+
+    // 4. XOR é fundamental (não AND/OR tradicionais)
+    print_string("4. XOR is the primary bitwise operation");
+    let xor_result = bytesil_xor(bs1, bs2);
+    print_string("XOR result magnitude:");
+    print_float(bytesil_magnitude(xor_result));
+}
+
+fn main() {
+    print_string("========================================");
+    print_string("SIL Modes and Internal Representation");
+    print_string("========================================");
+
+    demo_bytesil();
+    print_string("");
+
+    demo_state_layers();
+    print_string("");
+
+    demo_int_representation();
+    print_string("");
+
+    demo_float_representation();
+    print_string("");
+
+    demo_mode_operations();
+    print_string("");
+
+    demo_demotion_strategies();
+    print_string("");
+
+    demo_mode_promotion();
+    print_string("");
+
+    demo_practical_implications();
+
+    print_string("");
+    print_string("========================================");
+    print_string("Key Takeaway: VM uses log-polar ByteSil,");
+    print_string("NOT traditional i16/i32/f32/f64 types!");
+    print_string("========================================");
+}

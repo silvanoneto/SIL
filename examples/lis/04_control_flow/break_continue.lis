@@ -1,0 +1,173 @@
+// LIS Example: Break e Continue
+// Demonstra: Controle de iteração com break e continue
+// Documentação: Seção 7.6
+
+fn main() {
+    print_string("=== Break and Continue ===");
+
+    // =========================================
+    // Break - Sair do Loop
+    // =========================================
+    print_string("--- Break: Exit Loop ---");
+
+    let i = 0;
+    loop {
+        let i = i + 1;
+
+        if i == 5 {
+            print_string("Found 5, breaking!");
+            break;
+        }
+
+        print_string("i =");
+        print_int(i);
+    }
+
+    print_string("After loop (broke at 5)");
+
+    // =========================================
+    // Continue - Pular Iteração
+    // =========================================
+    print_string("--- Continue: Skip Iteration ---");
+
+    // Imprimir apenas números ímpares
+    let j = 0;
+    loop {
+        let j = j + 1;
+
+        if j > 10 {
+            break;
+        }
+
+        // Pular números pares
+        let remainder = j - (j / 2) * 2;
+        if remainder == 0 {
+            continue;
+        }
+
+        print_string("Odd:");
+        print_int(j);
+    }
+
+    // =========================================
+    // Combinando Break e Continue
+    // =========================================
+    print_string("--- Combined: Find First Multiple ---");
+
+    // Encontrar o primeiro múltiplo de 7 maior que 50
+    let n = 0;
+    loop {
+        let n = n + 1;
+
+        if n > 100 {
+            print_string("Not found in range");
+            break;
+        }
+
+        // Pular se menor que 50
+        if n < 50 {
+            continue;
+        }
+
+        // Verificar se é múltiplo de 7
+        let rem = n - (n / 7) * 7;
+        if rem == 0 {
+            print_string("Found first multiple of 7 > 50:");
+            print_int(n);  // Should be 56
+            break;
+        }
+    }
+
+    // =========================================
+    // Continue em Loop Aninhado
+    // =========================================
+    print_string("--- Continue in Nested Loop ---");
+
+    let outer = 0;
+    loop {
+        let outer = outer + 1;
+
+        if outer > 3 {
+            break;
+        }
+
+        print_string("Outer:");
+        print_int(outer);
+
+        let inner = 0;
+        loop {
+            let inner = inner + 1;
+
+            if inner > 3 {
+                break;
+            }
+
+            // Pular quando outer == inner
+            if outer == inner {
+                continue;
+            }
+
+            print_string("  Inner:");
+            print_int(inner);
+        }
+    }
+
+    // =========================================
+    // Padrão: Processar até Encontrar
+    // =========================================
+    print_string("--- Pattern: Process Until Found ---");
+
+    let target = 13;
+    let current = 0;
+    let found = false;
+
+    loop {
+        let current = current + 1;
+
+        if current > 20 {
+            break;
+        }
+
+        // Pular não-primos (simplificado)
+        if current == 4 || current == 6 || current == 8 || current == 9 ||
+           current == 10 || current == 12 || current == 14 || current == 15 ||
+           current == 16 || current == 18 || current == 20 {
+            continue;
+        }
+
+        // Verificar se é o alvo
+        if current == target {
+            print_string("Found target prime:");
+            print_int(current);
+            let found = true;
+            break;
+        }
+    }
+
+    // =========================================
+    // Break Imediato após Condição
+    // =========================================
+    print_string("--- Immediate Break Pattern ---");
+
+    let data = 42;
+    let valid = false;
+
+    loop {
+        // Validação
+        if data < 0 {
+            print_string("Invalid: negative");
+            break;
+        }
+
+        if data > 100 {
+            print_string("Invalid: too large");
+            break;
+        }
+
+        // Processamento
+        print_string("Valid data:");
+        print_int(data);
+        let valid = true;
+        break;  // Processou uma vez, sai
+    }
+}

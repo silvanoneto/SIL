@@ -1,0 +1,305 @@
+// Paebiru Edge Computing - Device Profiles
+// Classifica dispositivos por capacidade e determina workloads apropriados
+//
+// Classes de dispositivo (por capacidade crescente):
+// 0: Nano - Sensores, microcontroladores (ESP32, Arduino)
+// 1: Micro - Wearables, pequenos IoT (RPi Pico, STM32)
+// 2: Mini - Smartphones, tablets (ARM Cortex-A)
+// 3: Standard - Laptops, desktops (x86/ARM com GPU)
+// 4: Edge - Servidores edge (multi-GPU, TPU)
+// 5: Cloud - Data center (clusters HPC)
+//
+// Zonas cromaticas (por distancia de rede):
+// 0: UltraLocal - Somente no dispositivo
+// 1: Local - Mesma LAN/predio
+// 2: Near - Mesma metro/regiao
+// 3: Far - Cross-region
+// 4: HPC - Global HPC/cloud
+
+// =============================================================================
+// Device Class Constants
+// =============================================================================
+
+pub fn DEVICE_NANO() -> Int { return 0; }
+pub fn DEVICE_MICRO() -> Int { return 1; }
+pub fn DEVICE_MINI() -> Int { return 2; }
+pub fn DEVICE_STANDARD() -> Int { return 3; }
+pub fn DEVICE_EDGE() -> Int { return 4; }
+pub fn DEVICE_CLOUD() -> Int { return 5; }
+
+// =============================================================================
+// Chromatic Zone Constants
+// =============================================================================
+
+pub fn ZONE_ULTRALOCAL() -> Int { return 0; }
+pub fn ZONE_LOCAL() -> Int { return 1; }
+pub fn ZONE_NEAR() -> Int { return 2; }
+pub fn ZONE_FAR() -> Int { return 3; }
+pub fn ZONE_HPC() -> Int { return 4; }
+
+// =============================================================================
+// Device Classification
+// =============================================================================
+
+// Classifica dispositivo baseado em capacidade (0.0 a 1.0)
+pub fn device_class_from_capability(capability: Float) -> Int {
+    if capability < 0.1 {
+        return 0;  // Nano
+    }
+    if capability < 0.25 {
+        return 1;  // Micro
+    }
+    if capability < 0.45 {
+        return 2;  // Mini
+    }
+    if capability < 0.65 {
+        return 3;  // Standard
+    }
+    if capability < 0.85 {
+        return 4;  // Edge
+    }
+    return 5;  // Cloud
+}
+
+// Determina zona cromatica a partir do rho_sil
+pub fn chromatic_zone_from_rho(rho: Float) -> Int {
+    if rho < 0.15 {
+        return 0;  // UltraLocal
+    }
+    if rho < 0.35 {
+        return 1;  // Local
+    }
+    if rho < 0.55 {
+        return 2;  // Near
+    }
+    if rho < 0.75 {
+        return 3;  // Far
+    }
+    return 4;  // HPC
+}
+
+// =============================================================================
+// Device Capabilities
+// =============================================================================
+
+// Maximo rho que uma classe de dispositivo pode processar eficientemente
+pub fn max_rho_for_device_class(device_class: Int) -> Float {
+    if device_class == 0 {
+        return 0.1;   // Nano
+    }
+    if device_class == 1 {
+        return 0.25;  // Micro
+    }
+    if device_class == 2 {
+        return 0.45;  // Mini
+    }
+    if device_class == 3 {
+        return 0.65;  // Standard
+    }
+    if device_class == 4 {
+        return 0.85;  // Edge
+    }
+    return 1.0;  // Cloud
+}
+
+// Latencia tipica em ms para zona cromatica
+pub fn zone_latency_ms(zone: Int) -> Float {
+    if zone == 0 {
+        return 0.1;    // UltraLocal
+    }
+    if zone == 1 {
+        return 2.0;    // Local
+    }
+    if zone == 2 {
+        return 20.0;   // Near
+    }
+    if zone == 3 {
+        return 100.0;  // Far
+    }
+    return 500.0;  // HPC
+}
+
+// Bandwidth tipica em Mbps para zona cromatica
+pub fn zone_bandwidth_mbps(zone: Int) -> Float {
+    if zone == 0 {
+        return 10000.0;  // UltraLocal
+    }
+    if zone == 1 {
+        return 1000.0;   // Local
+    }
+    if zone == 2 {
+        return 100.0;    // Near
+    }
+    if zone == 3 {
+        return 50.0;     // Far
+    }
+    return 10.0;  // HPC
+}
+
+// =============================================================================
+// Energy and Cost
+// =============================================================================
+
+// Multiplicador de energia para classe de dispositivo
+pub fn energy_multiplier(device_class: Int) -> Float {
+    if device_class == 0 {
+        return 1.0;     // Nano
+    }
+    if device_class == 1 {
+        return 2.0;     // Micro
+    }
+    if device_class == 2 {
+        return 10.0;    // Mini
+    }
+    if device_class == 3 {
+        return 50.0;    // Standard
+    }
+    if device_class == 4 {
+        return 200.0;   // Edge
+    }
+    return 1000.0;  // Cloud
+}
+
+// Score de capacidade computacional (TFLOPS normalizado)
+pub fn compute_tflops(device_class: Int) -> Float {
+    if device_class == 0 {
+        return 0.001;   // Nano
+    }
+    if device_class == 1 {
+        return 0.01;    // Micro
+    }
+    if device_class == 2 {
+        return 0.5;     // Mini
+    }
+    if device_class == 3 {
+        return 10.0;    // Standard
+    }
+    if device_class == 4 {
+        return 100.0;   // Edge
+    }
+    return 1000.0;  // Cloud
+}
+
+// =============================================================================
+// Workload Matching
+// =============================================================================
+
+// Verifica se dispositivo pode processar workload com dado rho
+pub fn can_handle_workload(device_class: Int, rho: Float) -> Bool {
+    let max_rho = max_rho_for_device_class(device_class);
+    return rho <= max_rho;
+}
+
+// Classe minima de dispositivo necessaria para dado rho
+pub fn min_device_for_rho(rho: Float) -> Int {
+    if rho <= 0.1 {
+        return 0;  // Nano
+    }
+    if rho <= 0.25 {
+        return 1;  // Micro
+    }
+    if rho <= 0.45 {
+        return 2;  // Mini
+    }
+    if rho <= 0.65 {
+        return 3;  // Standard
+    }
+    if rho <= 0.85 {
+        return 4;  // Edge
+    }
+    return 5;  // Cloud
+}
+
+// =============================================================================
+// Cost Computation
+// =============================================================================
+
+// Compute cost score (menor eh melhor)
+pub fn compute_cost_score(
+    device_class: Int,
+    zone: Int,
+    rho: Float,
+    latency_weight: Float,
+    energy_weight: Float,
+    cost_weight: Float
+) -> Float {
+    let latency = zone_latency_ms(zone);
+    let latency_score = latency / 100.0;
+
+    let energy = energy_multiplier(device_class);
+    let energy_score = energy / 100.0;
+
+    let compute = compute_tflops(device_class);
+    let cost_score = (rho * compute) / 10.0;
+
+    return latency_weight * latency_score +
+           energy_weight * energy_score +
+           cost_weight * cost_score;
+}
+
+// =============================================================================
+// Optimal Selection
+// =============================================================================
+
+// Seleciona dispositivo e zona otimos para workload
+// Retorna valor codificado: device_class * 10 + zone
+pub fn select_optimal_compute(
+    rho: Float,
+    available_devices: Int,
+    latency_constraint_ms: Float
+) -> Int {
+    let min_device = min_device_for_rho(rho);
+    let selected_device = min_device;
+
+    let selected_zone = 0;
+    if latency_constraint_ms > 2.0 {
+        let selected_zone = 1;
+    }
+    if latency_constraint_ms > 20.0 {
+        let selected_zone = 2;
+    }
+    if latency_constraint_ms > 100.0 {
+        let selected_zone = 3;
+    }
+    if latency_constraint_ms > 500.0 {
+        let selected_zone = 4;
+    }
+
+    return selected_device * 10 + selected_zone;
+}
+
+// Decode device from select_optimal_compute result
+pub fn decode_device(encoded: Int) -> Int {
+    return encoded / 10;
+}
+
+// Decode zone from select_optimal_compute result
+pub fn decode_zone(encoded: Int) -> Int {
+    let device = encoded / 10;
+    return encoded - device * 10;
+}
+
+// =============================================================================
+// Time Estimation
+// =============================================================================
+
+// Estima tempo de conclusao em ms
+pub fn estimate_completion_time(
+    rho: Float,
+    device_class: Int,
+    zone: Int,
+    state_size_bytes: Float
+) -> Float {
+    let bandwidth = zone_bandwidth_mbps(zone);
+    let transfer_time = (state_size_bytes * 8.0) / (bandwidth * 1000.0);
+
+    let network_latency = zone_latency_ms(zone);
+
+    let tflops = compute_tflops(device_class);
+    let base_ops = 1000000.0;
+    let ops = base_ops * rho * rho;
+    let compute_time = ops / (tflops * 1000000000.0) * 1000.0;
+
+    return transfer_time + network_latency + compute_time;
+}
+

@@ -1,0 +1,125 @@
+// LIS Example: Operadores Bitwise
+// Demonstra: ^ (XOR) - principal operador bitwise em LIS
+// Documentação: Seção 6.4
+
+// NOTA: LIS suporta apenas ^ (XOR) como operador bitwise direto.
+// Operações AND e OR podem ser feitas via funções intrínsecas.
+
+fn main() {
+    print_string("=== Bitwise Operators ===");
+
+    // =========================================
+    // XOR (^) com Inteiros
+    // =========================================
+    print_string("--- XOR (^) with Integers ---");
+
+    let a = 12;  // Binary: 1100
+    let b = 10;  // Binary: 1010
+
+    // 1100 ^ 1010 = 0110 (6)
+    let xor_result = a ^ b;
+    print_string("12 ^ 10 =");
+    print_int(xor_result);
+
+    // XOR properties
+    let self_xor = a ^ a;  // Should be 0
+    print_string("12 ^ 12 (self XOR) =");
+    print_int(self_xor);
+
+    let zero_xor = a ^ 0;  // Should be a
+    print_string("12 ^ 0 =");
+    print_int(zero_xor);
+
+    // XOR é comutativo: a ^ b == b ^ a
+    let commutative = b ^ a;
+    print_string("10 ^ 12 (comutativo) =");
+    print_int(commutative);
+
+    // XOR é associativo: (a ^ b) ^ c == a ^ (b ^ c)
+    let c = 5;
+    let assoc1 = (a ^ b) ^ c;
+    let assoc2 = a ^ (b ^ c);
+    print_string("(12 ^ 10) ^ 5 =");
+    print_int(assoc1);
+    print_string("12 ^ (10 ^ 5) =");
+    print_int(assoc2);
+
+    // =========================================
+    // XOR para Toggle de Bits
+    // =========================================
+    print_string("--- Bit Toggle with XOR ---");
+
+    let value = 8;  // 1000
+    let toggle_mask = 8;
+    let toggled = value ^ toggle_mask;
+    print_string("8 ^ 8 (toggle bit) =");
+    print_int(toggled);  // 0
+
+    // Toggle de volta
+    let toggled_back = toggled ^ toggle_mask;
+    print_string("0 ^ 8 (toggle back) =");
+    print_int(toggled_back);  // 8
+
+    // =========================================
+    // XOR com ByteSil
+    // =========================================
+    print_string("--- XOR with ByteSil ---");
+
+    let bs1 = bytesil_new(5, 0);
+    let bs2 = bytesil_new(3, 4);
+
+    let bs_xor = bytesil_xor(bs1, bs2);
+    print_string("ByteSil XOR magnitude:");
+    print_float(bytesil_magnitude(bs_xor));
+
+    // =========================================
+    // XOR com State
+    // =========================================
+    print_string("--- XOR with State ---");
+
+    // XOR de estados - combinação de informação
+    let s1 = state_neutral();
+    let s2 = state_neutral();
+    let s_xor = state_xor(s1, s2);
+
+    print_string("State XOR L0 magnitude:");
+    print_float(bytesil_magnitude(state_get_layer(s_xor, 0)));
+
+    // XOR com vacuum (identidade)
+    let s_vacuum = state_vacuum();
+    let s_identity = state_xor(s1, s_vacuum);
+    print_string("State XOR vacuum (identity) L0:");
+    print_float(bytesil_magnitude(state_get_layer(s_identity, 0)));
+
+    // =========================================
+    // Aplicações Práticas do XOR
+    // =========================================
+    print_string("--- Practical XOR Applications ---");
+
+    // Swap sem variável temporária
+    let x = 10;
+    let y = 25;
+    print_string("Before swap: x=10, y=25");
+
+    let x = x ^ y;  // x agora contém x^y
+    let y = x ^ y;  // y = (x^y)^y = x
+    let x = x ^ y;  // x = (x^y)^x = y
+    print_string("After XOR swap:");
+    print_string("x =");
+    print_int(x);
+    print_string("y =");
+    print_int(y);
+
+    // Encriptação simples (XOR cipher)
+    let data = 42;
+    let key = 123;
+    let encrypted = data ^ key;
+    print_string("Encrypted (42 ^ 123) =");
+    print_int(encrypted);
+
+    let decrypted = encrypted ^ key;
+    print_string("Decrypted =");
+    print_int(decrypted);
+
+    print_string("=== Bitwise Demo Complete ===");
+}

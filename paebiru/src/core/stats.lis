@@ -1,0 +1,155 @@
+// Paebiru ML Library - Statistical Functions
+// Funcoes estatisticas para analise de dados
+
+use core::bytesil::{bs_mag, EPSILON};
+use core::state::{st_sum_mag, st_mean, st_variance, st_std_dev, st_max_mag, st_min_mag};
+
+// =============================================================================
+// Re-exports de state.lis
+// =============================================================================
+
+pub fn sum_state(s: State) -> Float {
+    return st_sum_mag(s);
+}
+
+pub fn mean(s: State) -> Float {
+    return st_mean(s);
+}
+
+pub fn variance(s: State) -> Float {
+    return st_variance(s);
+}
+
+pub fn std_dev(s: State) -> Float {
+    return st_std_dev(s);
+}
+
+pub fn max_magnitude(s: State) -> Float {
+    return st_max_mag(s);
+}
+
+pub fn min_magnitude(s: State) -> Float {
+    return st_min_mag(s);
+}
+
+// =============================================================================
+// Entropia
+// =============================================================================
+
+pub fn entropy(s: State) -> Float {
+    let total = st_sum_mag(s);
+    if total < EPSILON() {
+        return 0.0;
+    }
+    let eps = EPSILON();
+    let p0 = max_float(bs_mag(state_get_layer(s, 0)) / total, eps);
+    let p1 = max_float(bs_mag(state_get_layer(s, 1)) / total, eps);
+    let p2 = max_float(bs_mag(state_get_layer(s, 2)) / total, eps);
+    let p3 = max_float(bs_mag(state_get_layer(s, 3)) / total, eps);
+    let p4 = max_float(bs_mag(state_get_layer(s, 4)) / total, eps);
+    let p5 = max_float(bs_mag(state_get_layer(s, 5)) / total, eps);
+    let p6 = max_float(bs_mag(state_get_layer(s, 6)) / total, eps);
+    let p7 = max_float(bs_mag(state_get_layer(s, 7)) / total, eps);
+    let p8 = max_float(bs_mag(state_get_layer(s, 8)) / total, eps);
+    let p9 = max_float(bs_mag(state_get_layer(s, 9)) / total, eps);
+    let p10 = max_float(bs_mag(state_get_layer(s, 10)) / total, eps);
+    let p11 = max_float(bs_mag(state_get_layer(s, 11)) / total, eps);
+    let p12 = max_float(bs_mag(state_get_layer(s, 12)) / total, eps);
+    let p13 = max_float(bs_mag(state_get_layer(s, 13)) / total, eps);
+    let p14 = max_float(bs_mag(state_get_layer(s, 14)) / total, eps);
+    let p15 = max_float(bs_mag(state_get_layer(s, 15)) / total, eps);
+    let ent = 0.0 - p0 * ln(p0) - p1 * ln(p1) - p2 * ln(p2) - p3 * ln(p3);
+    let ent = ent - p4 * ln(p4) - p5 * ln(p5) - p6 * ln(p6) - p7 * ln(p7);
+    let ent = ent - p8 * ln(p8) - p9 * ln(p9) - p10 * ln(p10) - p11 * ln(p11);
+    let ent = ent - p12 * ln(p12) - p13 * ln(p13) - p14 * ln(p14) - p15 * ln(p15);
+    return ent;
+}
+
+pub fn entropy_normalized(s: State) -> Float {
+    return entropy(s) / ln(16.0);
+}
+
+// =============================================================================
+// KL Divergence
+// =============================================================================
+
+pub fn kl_divergence(p: State, q: State) -> Float {
+    let eps = EPSILON();
+    let sum = 0.0;
+    let p0 = max_float(bs_mag(state_get_layer(p, 0)), eps);
+    let q0 = max_float(bs_mag(state_get_layer(q, 0)), eps);
+    let sum = sum + p0 * ln(p0 / q0);
+    let p1 = max_float(bs_mag(state_get_layer(p, 1)), eps);
+    let q1 = max_float(bs_mag(state_get_layer(q, 1)), eps);
+    let sum = sum + p1 * ln(p1 / q1);
+    let p2 = max_float(bs_mag(state_get_layer(p, 2)), eps);
+    let q2 = max_float(bs_mag(state_get_layer(q, 2)), eps);
+    let sum = sum + p2 * ln(p2 / q2);
+    let p3 = max_float(bs_mag(state_get_layer(p, 3)), eps);
+    let q3 = max_float(bs_mag(state_get_layer(q, 3)), eps);
+    let sum = sum + p3 * ln(p3 / q3);
+    let p4 = max_float(bs_mag(state_get_layer(p, 4)), eps);
+    let q4 = max_float(bs_mag(state_get_layer(q, 4)), eps);
+    let sum = sum + p4 * ln(p4 / q4);
+    let p5 = max_float(bs_mag(state_get_layer(p, 5)), eps);
+    let q5 = max_float(bs_mag(state_get_layer(q, 5)), eps);
+    let sum = sum + p5 * ln(p5 / q5);
+    let p6 = max_float(bs_mag(state_get_layer(p, 6)), eps);
+    let q6 = max_float(bs_mag(state_get_layer(q, 6)), eps);
+    let sum = sum + p6 * ln(p6 / q6);
+    let p7 = max_float(bs_mag(state_get_layer(p, 7)), eps);
+    let q7 = max_float(bs_mag(state_get_layer(q, 7)), eps);
+    let sum = sum + p7 * ln(p7 / q7);
+    let p8 = max_float(bs_mag(state_get_layer(p, 8)), eps);
+    let q8 = max_float(bs_mag(state_get_layer(q, 8)), eps);
+    let sum = sum + p8 * ln(p8 / q8);
+    let p9 = max_float(bs_mag(state_get_layer(p, 9)), eps);
+    let q9 = max_float(bs_mag(state_get_layer(q, 9)), eps);
+    let sum = sum + p9 * ln(p9 / q9);
+    let p10 = max_float(bs_mag(state_get_layer(p, 10)), eps);
+    let q10 = max_float(bs_mag(state_get_layer(q, 10)), eps);
+    let sum = sum + p10 * ln(p10 / q10);
+    let p11 = max_float(bs_mag(state_get_layer(p, 11)), eps);
+    let q11 = max_float(bs_mag(state_get_layer(q, 11)), eps);
+    let sum = sum + p11 * ln(p11 / q11);
+    let p12 = max_float(bs_mag(state_get_layer(p, 12)), eps);
+    let q12 = max_float(bs_mag(state_get_layer(q, 12)), eps);
+    let sum = sum + p12 * ln(p12 / q12);
+    let p13 = max_float(bs_mag(state_get_layer(p, 13)), eps);
+    let q13 = max_float(bs_mag(state_get_layer(q, 13)), eps);
+    let sum = sum + p13 * ln(p13 / q13);
+    let p14 = max_float(bs_mag(state_get_layer(p, 14)), eps);
+    let q14 = max_float(bs_mag(state_get_layer(q, 14)), eps);
+    let sum = sum + p14 * ln(p14 / q14);
+    let p15 = max_float(bs_mag(state_get_layer(p, 15)), eps);
+    let q15 = max_float(bs_mag(state_get_layer(q, 15)), eps);
+    let sum = sum + p15 * ln(p15 / q15);
+    return sum;
+}
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+pub fn median_3(a: Float, b: Float, c: Float) -> Float {
+    if a <= b {
+        if b <= c {
+            return b;
+        }
+        if a <= c {
+            return c;
+        }
+        return a;
+    }
+    if a <= c {
+        return a;
+    }
+    if b <= c {
+        return c;
+    }
+    return b;
+}
+
+pub fn range(s: State) -> Float {
+    return st_max_mag(s) - st_min_mag(s);
+}
