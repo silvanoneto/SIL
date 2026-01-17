@@ -875,6 +875,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### Documentação
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — Arquitetura completa
+- [DIAGRAMS.md](DIAGRAMS.md) — Diagramas visuais (Mermaid)
 - [GETTING_STARTED.md](GETTING_STARTED.md) — Tutorial passo a passo
 - [PERFORMANCE.md](PERFORMANCE.md) — Benchmarks e otimizações
 

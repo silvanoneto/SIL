@@ -536,6 +536,7 @@ panic = "abort"
 ## 📖 Recursos
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — Arquitetura completa
+- [DIAGRAMS.md](DIAGRAMS.md) — Diagramas visuais (Mermaid)
 - [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) — Status e métricas
 
 ---

@@ -346,6 +346,15 @@ target_mode = "SIL-128"
 - [LIS & SIL Documentation](docs/LIS_SIL_DOCUMENTATION.md) - Documentação completa da linguagem
 - [Paebiru Library](paebiru/src/lib.lis) - Entry point da biblioteca ML
 
+### Ver também
+
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - Arquitetura completa do sistema
+- [DIAGRAMS.md](docs/DIAGRAMS.md) - Diagramas visuais (Mermaid)
+- [EXAMPLES.md](docs/EXAMPLES.md) - Casos de uso práticos
+- [INSTALL.md](docs/INSTALL.md) - Guia de instalação detalhado
+- [PERFORMANCE.md](docs/PERFORMANCE.md) - Benchmarks e otimizações
+- [PAEBIRU.md](docs/PAEBIRU.md) - Documentação da biblioteca ML
+
 ---
 
 ## ρ_sil - Métrica de Complexidade Edge

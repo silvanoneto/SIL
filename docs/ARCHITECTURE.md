@@ -77,21 +77,17 @@ O SIL organiza computação em **16 camadas hexadecimais (L0-LF)**, cada uma rep
 │   LA     │ Cosmopolítico  │ Ética, direitos, hospitalidade       │
 │          │                │                                      │
 ├──────────┼────────────────┼──────────────────────────────────────┤
-│ LB       │ EMERGÊNCIA     │ Inteligência coletiva                │
+│ LB-LC    │ EMERGÊNCIA     │ Inteligência coletiva                │
 │          │                │                                      │
-│   LB     │ Enxame         │ Flocking, swarm behavior             │
-│          │                │                                      │
-├──────────┼────────────────┼──────────────────────────────────────┤
-│ LC-LE    │ QUÂNTICO       │ Estados superpostos                  │
-│          │                │                                      │
-│   LC     │ Superposição   │ Estados quânticos, coerência         │
-│   LD     │ Fork/Merge     │ Bifurcação de estados                │
-│   LE     │ Emaranhamento  │ Correlação distribuída               │
+│   LB     │ Synergic       │ Flocking, swarm behavior             │
+│   LC     │ Quantum        │ Efeitos quânticos                    │
 │          │                │                                      │
 ├──────────┼────────────────┼──────────────────────────────────────┤
-│ LF       │ COLAPSO        │ Checkpoint e reset                   │
+│ LD-LF    │ META           │ Reflexão e checkpoint                │
 │          │                │                                      │
-│   LF     │ EOF/Reset      │ Finalização, checkpoint, restart     │
+│   LD     │ Superposition  │ Multi-estado, bifurcação             │
+│   LE     │ Entanglement   │ Correlação distribuída               │
+│   LF     │ Collapse       │ Finalização, checkpoint, restart     │
 └──────────┴────────────────┴──────────────────────────────────────┘
 ```
 
@@ -104,9 +100,8 @@ Cada camada possui **semântica específica**:
 - **L8 (Cibernético)**: Feedback loops e controle PID
 - **L9 (Geopolítico)**: Soberania digital, territórios e fronteiras
 - **LA (Cosmopolítico)**: Ética, direitos e hospitalidade
-- **LB (Emergência)**: Comportamentos coletivos não-previstos
-- **LC-LE (Quântico)**: Estados múltiplos e correlacionados
-- **LF (Colapso)**: Finalização, checkpoint, reinício do ciclo
+- **LB-LC (Emergência)**: Comportamentos coletivos e efeitos quânticos
+- **LD-LF (Meta)**: Superposição, emaranhamento e colapso
 
 ---
 
@@ -142,22 +137,16 @@ Todo programa SIL é um **loop fechado** de feedback:
         └─────────────────────────────────────────────────┘
                               ↓
         ┌─────────────────────────────────────────────────┐
-        │  LB: EMERGÊNCIA                                 │
-        │  └─ Swarm intelligence                          │
+        │  LB-LC: EMERGÊNCIA                              │
+        │  ├─ Swarm intelligence (LB)                     │
+        │  └─ Quantum effects (LC)                        │
         └─────────────────────────────────────────────────┘
                               ↓
         ┌─────────────────────────────────────────────────┐
-        │  LC-LE: QUÂNTICO                                │
-        │  ├─ Superposition                               │
-        │  ├─ Fork/Merge                                  │
-        │  └─ Entanglement                                │
-        └─────────────────────────────────────────────────┘
-                              ↓
-        ┌─────────────────────────────────────────────────┐
-        │  LF: COLAPSO                                    │
-        │  ├─ Checkpoint state                            │
-        │  ├─ Measure "finalidade"                        │
-        │  └─ Reset to L0 (feedback)                      │
+        │  LD-LF: META                                    │
+        │  ├─ Superposition (LD)                          │
+        │  ├─ Entanglement (LE)                           │
+        │  └─ Collapse/Checkpoint (LF)                    │
         └─────────────────────────────────────────────────┘
                               ↓
                         (LOOP BACK)
@@ -179,11 +168,11 @@ Cada valor em SIL é um **ByteSil** — um número complexo em **representação
 ```
 ByteSil = (ρ, θ)
   onde:
-    ρ ∈ [0, 15]     = logaritmo da magnitude (4 bits)
-    θ ∈ [0, 255]    = fase angular (8 bits)
+    ρ ∈ [-8, +7]    = logaritmo da magnitude (signed 4 bits)
+    θ ∈ [0, 15]     = fase angular (unsigned 4 bits)
 
 Valor complexo real:
-    z = e^ρ · e^(iθ·2π/256)
+    z = 2^ρ × e^(iθ × 2π/16)
 ```
 
 ### Por que log-polar?

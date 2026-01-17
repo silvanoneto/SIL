@@ -3,14 +3,14 @@
 ## Quick Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/silvanoneto//main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/silvanoneto/SIL/main/install.sh | bash
 ```
 
 Or clone and install locally:
 
 ```bash
-git clone https://github.com/silvanoneto/.git
-cd 
+git clone https://github.com/silvanoneto/SIL.git
+cd SIL
 chmod +x install.sh
 ./install.sh
 ```
@@ -32,20 +32,20 @@ source $HOME/.cargo/env
 
 The installation script will:
 
-1. ✅ Clone the repository to `~/.`
+1. ✅ Clone the repository to `~/.sil`
 2. ✅ Build all components (sil-core, lis-core, lis-cli, lis-format)
 3. ✅ Install binaries to `~/.cargo/bin/`:
    - `lis` - LIS compiler and runner
    - `lis-format` - Code formatter
-4. ✅ Create configuration at `~/.config//config.toml`
+4. ✅ Create configuration at `~/.config/sil/config.toml`
 
 ## Manual Installation
 
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/silvanoneto/.git
-cd 
+git clone https://github.com/silvanoneto/SIL.git
+cd SIL
 ```
 
 ### 2. Build Framework
@@ -166,7 +166,7 @@ lis check hello.lis
 
 ## Configuration
 
-Edit `~/.config//config.toml`:
+Edit `~/.config/sil/config.toml`:
 
 ```toml
 [sil]
@@ -188,7 +188,7 @@ max_width = 100
 
 ```bash
 # Update to latest version
-cd ~/.
+cd ~/.sil
 git pull
 cargo build --release
 cargo install --path lis-cli --force
@@ -198,23 +198,23 @@ cargo install --path lis-format --force
 Or use the update script:
 
 ```bash
-~/./update.sh
+~/.sil/update.sh
 ```
 
 ## Uninstalling
 
 ```bash
 # Remove installation
-rm -rf ~/.
+rm -rf ~/.sil
 
 # Uninstall binaries
 cargo uninstall lis lis-format
 
 # Remove config
-rm -rf ~/.config/
+rm -rf ~/.config/sil
 
 # Remove VSCode extension
-code --uninstall-extension sil-.sil-language
+code --uninstall-extension sil-language
 ```
 
 ## Troubleshooting
@@ -245,7 +245,7 @@ Check your hardware support:
 lis info  # Shows available backends
 ```
 
-Edit `~/.config//config.toml`:
+Edit `~/.config/sil/config.toml`:
 ```toml
 [sil]
 enable_gpu = false
@@ -255,7 +255,7 @@ enable_npu = false
 ### VSCode extension issues
 
 ```bash
-cd ~/./sil-vscode
+cd ~/.sil/sil-vscode
 npm install
 npm run compile
 code --install-extension . --force
@@ -266,8 +266,8 @@ code --install-extension . --force
 For contributing:
 
 ```bash
-git clone https://github.com/silvanoneto/.git
-cd 
+git clone https://github.com/silvanoneto/SIL.git
+cd SIL
 
 # Install development dependencies
 cargo build
@@ -291,14 +291,14 @@ cargo clippy
 
 ## Examples
 
-Example programs are in `~/./lis-cli/examples/`:
+Example programs are in `~/.sil/lis-cli/examples/`:
 
 ```bash
 # Simple program
-lis run ~/./lis-cli/examples/simple.lis
+lis run ~/.sil/lis-cli/examples/simple.lis
 
 # Complex numbers demo
-lis run ~/./lis-cli/examples/test_demo.lis
+lis run ~/.sil/lis-cli/examples/test_demo.lis
 ```
 
 ## Getting Help
@@ -342,10 +342,10 @@ AGPL-3.0 - See LICENSE file
 
 ## Resources
 
-- **Documentation**: `~/./docs/`
-- **Examples**: `~/./lis-cli/examples/`
-- **Config**: `~/.config//config.toml`
-- **GitHub**: https://github.com/silvanoneto/
+- **Documentation**: `~/.sil/docs/`
+- **Examples**: `~/.sil/lis-cli/examples/`
+- **Config**: `~/.config/sil/config.toml`
+- **GitHub**: [silvanoneto/SIL](https://github.com/silvanoneto/SIL)
 
 ---
 
