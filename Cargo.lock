@@ -652,6 +652,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "dotenv"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
+
+[[package]]
 name = "dynasm"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1927,15 +1933,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sil-benches"
-version = "2026.1.17"
-dependencies = [
- "criterion",
- "sil-core",
- "sil-orchestration",
-]
-
-[[package]]
 name = "sil-collapse"
 version = "2026.1.16"
 dependencies = [
@@ -1962,6 +1959,7 @@ dependencies = [
  "cranelift-object",
  "criterion",
  "dirs",
+ "dotenv",
  "dynasmrt",
  "half",
  "hex",
@@ -2068,6 +2066,18 @@ version = "2026.1.16"
 dependencies = [
  "criterion",
  "serde",
+ "sil-core",
+ "thiserror 2.0.17",
+]
+
+[[package]]
+name = "sil-ml"
+version = "2026.1.16"
+dependencies = [
+ "criterion",
+ "num-complex",
+ "serde",
+ "serde_json",
  "sil-core",
  "thiserror 2.0.17",
 ]

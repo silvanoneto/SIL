@@ -876,7 +876,7 @@ fn is_mnemonic(s: &str) -> bool {
     matches!(s,
         "NOP" | "HLT" | "RET" | "YIELD" |
         "JMP" | "JZ" | "JN" | "JC" | "JO" | "CALL" | "LOOP" |
-        "MOV" | "MOVI" | "MOVI16" | "MOVI32" | "LOAD" | "STORE" | "PUSH" | "POP" | "XCHG" | "LSTATE" | "SSTATE" |
+        "MOV" | "MOVI" | "LOAD" | "STORE" | "PUSH" | "POP" | "XCHG" | "LSTATE" | "SSTATE" |
         "MUL" | "DIV" | "POW" | "ROOT" | "INV" | "CONJ" | "ADD" | "SUB" |
         "MAG" | "PHASE" | "SCALE" | "ROTATE" |
         // Int/Float mode-aware ops
@@ -1198,8 +1198,6 @@ fn mnemonic_to_opcode(m: &str) -> Option<Opcode> {
         // Movimento de dados
         "MOV" => Opcode::Mov,
         "MOVI" => Opcode::Movi,
-        "MOVI16" => Opcode::Movi16,
-        "MOVI32" => Opcode::Movi32,
         "LOAD" => Opcode::Load,
         "STORE" => Opcode::Store,
         "PUSH" => Opcode::Push,

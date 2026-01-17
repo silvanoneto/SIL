@@ -1,0 +1,39 @@
+[package]
+name = "sil-ml"
+version = "2026.1.16"
+edition = "2024"
+authors = ["Silvano Neto <dev@silvanoneto.com>"]
+description = "SIL-ML - Machine Learning for SIL 16-layer architecture"
+license = "AGPL-3.0"
+rust-version = "1.85"
+
+[lib]
+name = "sil_ml"
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["cpu"]
+cpu = []
+gpu = ["sil-core/gpu"]
+npu = ["sil-core/npu"]
+simd = ["sil-core/simd"]
+arch = []
+transformer = ["arch"]
+kan = ["arch"]
+ssm = ["arch"]
+lnn = ["arch"]
+snn = ["arch"]
+inference = []
+distributed = []
+federated = ["distributed"]
+emergence = []
+
+[dependencies]
+sil-core = { path = "../sil-core" }
+thiserror = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+num-complex = "0.4"
+
+[dev-dependencies]
+criterion = "0.5"

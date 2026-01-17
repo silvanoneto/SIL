@@ -1,8 +1,0 @@
-// Benchmark module
-pub mod metrics;
-
-pub use metrics::{
-    benchmark_inference, benchmark_training,
-    metrics_create, metrics_report,
-    get_throughput, get_avg_latency, get_memory_usage
-};

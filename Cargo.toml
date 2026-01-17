@@ -27,6 +27,7 @@ members = [
     "sil-collapse",
     # SIL Orchestration
     "sil-orchestration",
-    "benches",
+    # SIL ML - Machine Learning
+    "sil-ml",
 ]
 resolver = "2"

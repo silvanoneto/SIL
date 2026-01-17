@@ -1,6 +1,6 @@
-# ML Distribuído com Paebiru/LIS
+# ML Distribuído com Paebiru
 
-A arquitetura SIL/LIS oferece vantagens estruturais únicas para distribuição de modelos. Vou explicar os mecanismos-chave:
+A arquitetura SIL oferece vantagens estruturais únicas para distribuição de modelos. Vou explicar os mecanismos-chave:
 
 ## 1. Representação Compacta: ByteSil
 

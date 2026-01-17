@@ -1,6 +1,0 @@
-// Model module
-pub mod encoder;
-pub mod classifier;
-
-pub use encoder::{encode_sample, encode_modality, fuse_modalities};
-pub use classifier::{classifier_forward, classifier_inference, init_classifier_weights};

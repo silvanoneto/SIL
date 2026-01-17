@@ -66,6 +66,9 @@
 //! 3. **Ciclo é fechado** — Todo programa tem feedback L(F) → L(0)
 //! 4. **Camadas são ortogonais** — Cada camada tem sua semântica
 //! 5. **Colapso é inevitável** — Todo estado eventualmente colapsa
+//!
+//! Note: Environment variables are loaded from `.env` via `dotenv` crate.
+//! See `.env.example` for configuration options.
 
 pub mod state;
 pub mod semantics;

@@ -19,7 +19,6 @@ STATE.md
 fix_*.sh
 
 # LIS/SIL temporary files in root
-/*.lis
 /*.sil
 /*.silc
 
@@ -32,6 +31,11 @@ fix_*.sh
 
 # Claude AI files
 .claude/
+
+# Environment variables (local configuration)
+.env
+.env.local
+.env.*.local
 
 # Python virtual environments
 env/

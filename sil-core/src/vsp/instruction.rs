@@ -236,8 +236,7 @@ impl Instruction {
                 format!("{} 0x{:06X}", self.opcode.mnemonic(), self.addr_or_imm24())
             }
 
-            // Formato C extended (novos opcodes Int/Float)
-            Movi16 | Movi32 |
+            // Formato C extended (opcodes Int/Float mode-aware)
             AddInt | SubInt | MulInt | DivInt |
             AddFloat | SubFloat | MulFloat | DivFloat |
             PowInt | PowFloat | SqrtFloat | ModInt |

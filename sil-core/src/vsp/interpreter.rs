@@ -16,6 +16,7 @@
 use crate::prelude::*;
 use crate::state::BitDeSil;
 use crate::vsp::{Opcode, SilcFile, VspError, assembler::StdlibIntrinsic};
+use crate::vsp::config;
 use std::time::Instant;
 use std::sync::Mutex;
 use once_cell::sync::Lazy;
@@ -51,12 +52,6 @@ static BENCHMARK_STATE: Lazy<Mutex<BenchmarkMetrics>> = Lazy::new(|| Mutex::new(
 
 /// Global string table for print_string (thread-safe)
 static STRING_TABLE: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(Vec::new()));
-
-/// Carbon intensity factor (gCO2e per kWh) - Brazil grid average
-const CARBON_INTENSITY_BRAZIL: f64 = 0.075; // Very clean grid (hydroelectric)
-
-/// Carbon intensity factor (gCO2e per kWh) - World average
-const CARBON_INTENSITY_WORLD: f64 = 0.475;
 
 /// Threaded interpreter with pre-computed dispatch table
 pub struct VspInterpreter {
@@ -135,8 +130,6 @@ impl VspInterpreter {
             // Data Movement
             Opcode::Mov => Self::op_mov,
             Opcode::Movi => Self::op_movi,
-            Opcode::Movi16 => Self::op_movi16,
-            Opcode::Movi32 => Self::op_movi32,
             Opcode::Xchg => Self::op_xchg,
             Opcode::Load => Self::op_load,
             Opcode::Store => Self::op_store,
@@ -351,41 +344,9 @@ impl VspInterpreter {
 
     // ═════════════════════════════════════════════════════════════════
     // INTEGER/FLOAT OPERATIONS (direct values, not log-polar)
-    // Values are stored as: i32 in R0.rho:R1.rho (low:high bytes)
-    // or f32 bits in R0:R1:R2:R3 (4 bytes)
     // ═════════════════════════════════════════════════════════════════
-
-    #[inline(always)]
-    fn op_movi16(state: &mut SilState, inst: &[u8]) -> Result<(), VspError> {
-        // MOVI16 format: [opcode][reg][imm_lo][imm_hi]
-        // Store 16-bit value across R[n].rho (low byte) and R[n+1].rho (high byte)
-        if inst.len() >= 4 {
-            let layer = (inst[1] & 0x0F) as usize;
-            let imm_lo = inst[2] as i8;
-            let imm_hi = inst[3] as i8;
-            if layer < 15 {
-                state.layers[layer] = ByteSil::new(imm_lo, 0);
-                state.layers[layer + 1] = ByteSil::new(imm_hi, 0);
-            }
-        }
-        Ok(())
-    }
-
-    #[inline(always)]
-    fn op_movi32(state: &mut SilState, inst: &[u8]) -> Result<(), VspError> {
-        // MOVI32 format: [opcode][reg][b0][b1][b2][b3]
-        // Store 32-bit value across 4 consecutive layers
-        if inst.len() >= 6 {
-            let layer = (inst[1] & 0x0F) as usize;
-            if layer <= 12 {
-                state.layers[layer] = ByteSil::new(inst[2] as i8, 0);
-                state.layers[layer + 1] = ByteSil::new(inst[3] as i8, 0);
-                state.layers[layer + 2] = ByteSil::new(inst[4] as i8, 0);
-                state.layers[layer + 3] = ByteSil::new(inst[5] as i8, 0);
-            }
-        }
-        Ok(())
-    }
+    // Int/Float extraction helpers (mode-aware via SilState)
+    // ═════════════════════════════════════════════════════════════════
 
     /// Extract i32 from 4 consecutive layers (little-endian)
     #[inline(always)]
@@ -1586,7 +1547,7 @@ impl VspInterpreter {
                 if let Some(ref meter) = *meter_guard {
                     // gCO2e = (Joules / 3600) * (gCO2e/Wh) = Joules * carbon_intensity / 3.6
                     let joules = meter.total_joules();
-                    let gco2e = joules * CARBON_INTENSITY_BRAZIL / 3.6;
+                    let gco2e = joules * *config::CARBON_INTENSITY_BRAZIL / 3.6;
                     let micrograms = (gco2e * 1e6) as u32;
                     state.layers[0] = ByteSil { rho: (micrograms & 0xFF) as i8, theta: 0 };
                     state.layers[1] = ByteSil { rho: ((micrograms >> 8) & 0xFF) as i8, theta: 0 };

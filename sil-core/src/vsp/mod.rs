@@ -53,6 +53,7 @@
 pub mod assembler;
 pub mod backend;
 pub mod bytecode;
+pub mod config;
 pub mod debugger;
 pub mod entanglement;
 pub mod error;
@@ -1278,7 +1279,7 @@ impl Vsp {
                 // Retorna magnitude = e^rho como Float em R0
                 // Para Float, armazenamos ln(mag) em rho, então o resultado é o próprio rho
                 // Mas quando impresso com print_float, será convertido via to_complex().norm()
-                let mag = (self.state.regs[0].rho as f64).exp();
+                let _mag = (self.state.regs[0].rho as f64).exp();
                 // Armazenar como ByteSil: rho = ln(mag) (que é o mesmo valor original)
                 // Isso parece circular, mas print_float fará e^rho novamente
                 // A solução correta é manter a magnitude como está (rho contém ln(mag))
@@ -1454,121 +1455,167 @@ impl Vsp {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // Helpers para Int/Float mode-aware
+    // Helpers Mode-Aware para Int/Float
+    // O tamanho é determinado EXCLUSIVAMENTE pelo SilMode atual
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// Carrega Int16 de um registrador (rho + theta = 16 bits)
-    fn load_int16(&self, reg: usize) -> i16 {
-        let lo = self.state.regs[reg].rho as u8 as u16;
-        let hi = (self.state.regs[reg].theta as u16) << 8;
-        (lo | hi) as i16
-    }
-
-    /// Armazena Int16 em um registrador
-    fn store_int16(&mut self, reg: usize, val: i16) {
-        let v = val as u16;
-        self.state.regs[reg] = ByteSil::new(
-            (v & 0xFF) as i8,
-            ((v >> 8) & 0xFF) as u8,
-        );
-    }
-
-    /// Carrega Int32 de 2 registradores consecutivos
-    fn load_int32(&self, reg: usize) -> i32 {
-        let lo = self.load_int16(reg) as u16 as u32;
-        let hi = (self.load_int16(reg + 1) as u16 as u32) << 16;
-        (lo | hi) as i32
-    }
-
-    /// Armazena Int32 em 2 registradores consecutivos
-    fn store_int32(&mut self, reg: usize, val: i32) {
-        self.store_int16(reg, val as i16);
-        self.store_int16(reg + 1, (val >> 16) as i16);
-    }
-
-    /// Carrega Float32 de 2 registradores consecutivos
-    fn load_float32(&self, reg: usize) -> f32 {
-        f32::from_bits(self.load_int32(reg) as u32)
-    }
-
-    /// Armazena Float32 em 2 registradores consecutivos
-    fn store_float32(&mut self, reg: usize, val: f32) {
-        self.store_int32(reg, val.to_bits() as i32);
-    }
-
-    /// Carrega Int64 de 4 registradores consecutivos
-    fn load_int64(&self, reg: usize) -> i64 {
-        let lo = self.load_int32(reg) as u32 as u64;
-        let hi = (self.load_int32(reg + 2) as u32 as u64) << 32;
-        (lo | hi) as i64
-    }
-
-    /// Armazena Int64 em 4 registradores consecutivos
-    fn store_int64(&mut self, reg: usize, val: i64) {
-        self.store_int32(reg, val as i32);
-        self.store_int32(reg + 2, (val >> 32) as i32);
-    }
-
-    /// Carrega Float64 de 4 registradores consecutivos
-    fn load_float64(&self, reg: usize) -> f64 {
-        f64::from_bits(self.load_int64(reg) as u64)
-    }
-
-    /// Armazena Float64 em 4 registradores consecutivos
-    fn store_float64(&mut self, reg: usize, val: f64) {
-        self.store_int64(reg, val.to_bits() as i64);
-    }
-
-    /// Carrega inteiro mode-aware (baseado no SilMode atual)
+    /// Carrega inteiro mode-aware (tamanho baseado no SilMode atual)
     fn load_int_mode(&self, reg: usize) -> i64 {
         match self.state.mode {
-            SilMode::Sil8 => self.state.regs[reg].rho as i64,
-            SilMode::Sil16 => self.load_int16(reg) as i64,
-            SilMode::Sil32 => self.load_int32(reg) as i64,
-            SilMode::Sil64 | SilMode::Sil128 => self.load_int64(reg),
+            SilMode::Sil8 => {
+                // 8 bits: apenas rho
+                self.state.regs[reg].rho as i64
+            }
+            SilMode::Sil16 => {
+                // 16 bits: rho (low) + theta (high) em 1 registrador
+                let lo = self.state.regs[reg].rho as u8 as u16;
+                let hi = (self.state.regs[reg].theta as u16) << 8;
+                (lo | hi) as i16 as i64
+            }
+            SilMode::Sil32 => {
+                // 32 bits: 2 registradores consecutivos
+                let r0 = &self.state.regs[reg];
+                let r1 = &self.state.regs[reg + 1];
+                let b0 = r0.rho as u8 as u32;
+                let b1 = (r0.theta as u32) << 8;
+                let b2 = (r1.rho as u8 as u32) << 16;
+                let b3 = (r1.theta as u32) << 24;
+                (b0 | b1 | b2 | b3) as i32 as i64
+            }
+            SilMode::Sil64 | SilMode::Sil128 => {
+                // 64 bits: 4 registradores consecutivos
+                let mut result: u64 = 0;
+                for i in 0..4 {
+                    let r = &self.state.regs[reg + i];
+                    let lo = r.rho as u8 as u64;
+                    let hi = (r.theta as u64) << 8;
+                    result |= (lo | hi) << (i * 16);
+                }
+                result as i64
+            }
         }
     }
 
-    /// Armazena inteiro mode-aware
+    /// Armazena inteiro mode-aware (tamanho baseado no SilMode atual)
+    /// NOTA: Para modos >= Sil16, usamos ByteSil como container raw de 16 bits,
+    /// não como representação log-polar. rho e theta armazenam bytes crus.
     fn store_int_mode(&mut self, reg: usize, val: i64) {
         match self.state.mode {
             SilMode::Sil8 => {
+                // 8 bits: apenas rho (usa semântica log-polar nativa)
                 self.state.regs[reg] = ByteSil::new(val as i8, 0);
             }
-            SilMode::Sil16 => self.store_int16(reg, val as i16),
-            SilMode::Sil32 => self.store_int32(reg, val as i32),
-            SilMode::Sil64 | SilMode::Sil128 => self.store_int64(reg, val),
+            SilMode::Sil16 => {
+                // 16 bits: rho (low byte) + theta (high byte) como raw bytes
+                let v = val as u16;
+                self.state.regs[reg] = ByteSil {
+                    rho: (v & 0xFF) as i8,
+                    theta: ((v >> 8) & 0xFF) as u8,
+                };
+            }
+            SilMode::Sil32 => {
+                // 32 bits: 2 registradores consecutivos como raw bytes
+                let v = val as u32;
+                self.state.regs[reg] = ByteSil {
+                    rho: (v & 0xFF) as i8,
+                    theta: ((v >> 8) & 0xFF) as u8,
+                };
+                self.state.regs[reg + 1] = ByteSil {
+                    rho: ((v >> 16) & 0xFF) as i8,
+                    theta: ((v >> 24) & 0xFF) as u8,
+                };
+            }
+            SilMode::Sil64 | SilMode::Sil128 => {
+                // 64 bits: 4 registradores consecutivos como raw bytes
+                let v = val as u64;
+                for i in 0..4 {
+                    let shift = i * 16;
+                    self.state.regs[reg + i] = ByteSil {
+                        rho: ((v >> shift) & 0xFF) as i8,
+                        theta: ((v >> (shift + 8)) & 0xFF) as u8,
+                    };
+                }
+            }
         }
     }
 
-    /// Carrega float mode-aware
+    /// Carrega float mode-aware (tamanho baseado no SilMode atual)
     fn load_float_mode(&self, reg: usize) -> f64 {
         match self.state.mode {
-            SilMode::Sil8 => self.state.regs[reg].to_complex().norm(),
+            SilMode::Sil8 => {
+                // ByteSil: usa representação log-polar
+                self.state.regs[reg].to_complex().norm()
+            }
             SilMode::Sil16 => {
                 // Float16 (half precision)
-                let bits = self.load_int16(reg) as u16;
-                half::f16::from_bits(bits).to_f64()
+                let lo = self.state.regs[reg].rho as u8 as u16;
+                let hi = (self.state.regs[reg].theta as u16) << 8;
+                half::f16::from_bits(lo | hi).to_f64()
             }
-            SilMode::Sil32 => self.load_float32(reg) as f64,
-            SilMode::Sil64 | SilMode::Sil128 => self.load_float64(reg),
+            SilMode::Sil32 => {
+                // Float32: 2 registradores
+                let r0 = &self.state.regs[reg];
+                let r1 = &self.state.regs[reg + 1];
+                let bits = (r0.rho as u8 as u32)
+                    | ((r0.theta as u32) << 8)
+                    | ((r1.rho as u8 as u32) << 16)
+                    | ((r1.theta as u32) << 24);
+                f32::from_bits(bits) as f64
+            }
+            SilMode::Sil64 | SilMode::Sil128 => {
+                // Float64: 4 registradores
+                let mut bits: u64 = 0;
+                for i in 0..4 {
+                    let r = &self.state.regs[reg + i];
+                    let lo = r.rho as u8 as u64;
+                    let hi = (r.theta as u64) << 8;
+                    bits |= (lo | hi) << (i * 16);
+                }
+                f64::from_bits(bits)
+            }
         }
     }
 
-    /// Armazena float mode-aware
+    /// Armazena float mode-aware (tamanho baseado no SilMode atual)
     fn store_float_mode(&mut self, reg: usize, val: f64) {
         match self.state.mode {
             SilMode::Sil8 => {
+                // ByteSil: usa representação log-polar
                 self.state.regs[reg] = ByteSil::from_complex(
                     num_complex::Complex64::new(val, 0.0)
                 );
             }
             SilMode::Sil16 => {
-                let f16_val = half::f16::from_f64(val);
-                self.store_int16(reg, f16_val.to_bits() as i16);
+                // Float16 (half precision) - raw bytes
+                let bits = half::f16::from_f64(val).to_bits();
+                self.state.regs[reg] = ByteSil {
+                    rho: (bits & 0xFF) as i8,
+                    theta: ((bits >> 8) & 0xFF) as u8,
+                };
             }
-            SilMode::Sil32 => self.store_float32(reg, val as f32),
-            SilMode::Sil64 | SilMode::Sil128 => self.store_float64(reg, val),
+            SilMode::Sil32 => {
+                // Float32: 2 registradores - raw bytes
+                let bits = (val as f32).to_bits();
+                self.state.regs[reg] = ByteSil {
+                    rho: (bits & 0xFF) as i8,
+                    theta: ((bits >> 8) & 0xFF) as u8,
+                };
+                self.state.regs[reg + 1] = ByteSil {
+                    rho: ((bits >> 16) & 0xFF) as i8,
+                    theta: ((bits >> 24) & 0xFF) as u8,
+                };
+            }
+            SilMode::Sil64 | SilMode::Sil128 => {
+                // Float64: 4 registradores - raw bytes
+                let bits = val.to_bits();
+                for i in 0..4 {
+                    let shift = i * 16;
+                    self.state.regs[reg + i] = ByteSil {
+                        rho: ((bits >> shift) & 0xFF) as i8,
+                        theta: ((bits >> (shift + 8)) & 0xFF) as u8,
+                    };
+                }
+            }
         }
     }
 
@@ -1703,9 +1750,12 @@ mod tests {
 
     #[test]
     fn test_mode_aware_int_sil8() {
+        // Sil8 usa semântica ByteSil log-polar com range [-8, 7]
         let mut vsp = Vsp::new(VspConfig::default().with_mode(SilMode::Sil8)).unwrap();
-        vsp.set_int(0, 42);
-        assert_eq!(vsp.get_int(0), 42);
+        vsp.set_int(0, 5);
+        assert_eq!(vsp.get_int(0), 5);
+        vsp.set_int(0, -3);
+        assert_eq!(vsp.get_int(0), -3);
         assert_eq!(vsp.regs_per_value(), 1);
     }
 
