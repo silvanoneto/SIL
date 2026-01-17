@@ -68,7 +68,8 @@ struct MeasurementState {
     start: Instant,
     /// Estágio do pipeline (se aplicável)
     stage: Option<PipelineStage>,
-    /// Operações no início
+    /// Operações no início (reservado para delta calculation)
+    #[allow(dead_code)]
     start_operations: u64,
     /// Utilização estimada
     utilization: f32,

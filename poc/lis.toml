@@ -1,0 +1,13 @@
+[package]
+name = "poc"
+version = "2026.1.17"
+description = "PoC: Classificador Multimodal de Gestos - Case comparativo SIL vs ML tradicional"
+authors = ["Silvano Neto"]
+license = "AGPL-3.0"
+
+[dependencies]
+paebiru = { path = "../paebiru" }
+
+[build]
+entry = "src/main.lis"
+target_mode = "SIL-128"

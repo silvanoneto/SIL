@@ -144,10 +144,39 @@ impl Instruction {
     pub fn as_bytes(&self) -> &[u8] {
         &self.raw[..self.len]
     }
-    
+
     /// Retorna os bytes raw (alias para compatibilidade)
     pub fn raw_bytes(&self) -> &[u8] {
         self.as_bytes()
+    }
+
+    /// Retorna um byte específico da instrução
+    pub fn raw_byte(&self, index: usize) -> u8 {
+        if index < self.len {
+            self.raw[index]
+        } else {
+            0
+        }
+    }
+
+    /// Retorna o número de operandos baseado no formato e nos bytes
+    /// Para FormatD: 1 operand se byte 1 parece endereço (> 0x0F), 2 se parece registrador
+    pub fn operand_count(&self) -> usize {
+        match self.opcode.format() {
+            InstructionFormat::FormatA => 0,
+            InstructionFormat::FormatB => 1,
+            InstructionFormat::FormatC => {
+                // FormatC: pode ter 1 ou 2 operandos
+                // Heurística: se byte 1 é < 16, provavelmente é registrador
+                if self.raw[1] < 16 { 2 } else { 1 }
+            }
+            InstructionFormat::FormatD => {
+                // FormatD: pode ter 0, 1, 2 ou 3 operandos
+                // Para JZ/JN: se byte 1 é < 16, é registrador (2 operandos)
+                // senão é endereço direto (1 operando)
+                if self.raw[1] < 16 { 2 } else { 1 }
+            }
+        }
     }
     
     /// Retorna o formato da instrução
@@ -205,6 +234,21 @@ impl Instruction {
             Trans | Pipe | Broadcast | Receive |
             Batch | Prefetch | Syscall => {
                 format!("{} 0x{:06X}", self.opcode.mnemonic(), self.addr_or_imm24())
+            }
+
+            // Formato C extended (novos opcodes Int/Float)
+            Movi16 | Movi32 |
+            AddInt | SubInt | MulInt | DivInt |
+            AddFloat | SubFloat | MulFloat | DivFloat |
+            PowInt | PowFloat | SqrtFloat | ModInt |
+            CmpInt | CmpFloat | TestInt |
+            AndInt | OrInt | XorInt | NotInt |
+            ShlInt | ShrInt | NegInt | AbsInt |
+            NegFloat | AbsFloat | FloorFloat | CeilFloat |
+            CvtIntToFloat | CvtFloatToInt |
+            CvtIntToByteSil | CvtByteSilToInt |
+            CvtFloatToByteSil | CvtByteSilToFloat => {
+                format!("{} R{:X}, R{:X}", self.opcode.mnemonic(), self.reg_a(), self.reg_b())
             }
         }
     }

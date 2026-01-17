@@ -1,5 +1,5 @@
 //! High-Performance Threaded Interpreter for VSP
-//! 
+//!
 //! This interpreter uses function pointer dispatch for near-native performance
 //! on any architecture. While slower than JIT (ARM64 DynASM), it provides:
 //! - Universal portability (x86, ARM, RISC-V, WASM, etc)
@@ -17,6 +17,9 @@ use crate::prelude::*;
 use crate::state::BitDeSil;
 use crate::vsp::{Opcode, SilcFile, VspError, assembler::StdlibIntrinsic};
 use std::time::Instant;
+use std::sync::Mutex;
+use once_cell::sync::Lazy;
+use sil_energy::{EnergyMeter, CpuEnergyModel};
 
 /// Handler function type for opcode execution
 type OpcodeHandler = fn(&mut SilState, &[u8]) -> Result<(), VspError>;
@@ -28,6 +31,32 @@ pub struct InterpreterStats {
     pub total_instructions: u64,
     pub execute_time_us: u64,
 }
+
+/// Benchmark metrics state
+#[derive(Debug, Clone, Default)]
+pub struct BenchmarkMetrics {
+    pub start_time: Option<Instant>,
+    pub total_samples: u64,
+    pub total_flops: u64,
+    pub total_macs: u64,
+    pub peak_memory_bytes: usize,
+    pub total_latency_us: u64,
+}
+
+/// Global energy meter state (thread-safe)
+static ENERGY_METER: Lazy<Mutex<Option<EnergyMeter>>> = Lazy::new(|| Mutex::new(None));
+
+/// Global benchmark state (thread-safe)
+static BENCHMARK_STATE: Lazy<Mutex<BenchmarkMetrics>> = Lazy::new(|| Mutex::new(BenchmarkMetrics::default()));
+
+/// Global string table for print_string (thread-safe)
+static STRING_TABLE: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(Vec::new()));
+
+/// Carbon intensity factor (gCO2e per kWh) - Brazil grid average
+const CARBON_INTENSITY_BRAZIL: f64 = 0.075; // Very clean grid (hydroelectric)
+
+/// Carbon intensity factor (gCO2e per kWh) - World average
+const CARBON_INTENSITY_WORLD: f64 = 0.475;
 
 /// Threaded interpreter with pre-computed dispatch table
 pub struct VspInterpreter {
@@ -106,17 +135,29 @@ impl VspInterpreter {
             // Data Movement
             Opcode::Mov => Self::op_mov,
             Opcode::Movi => Self::op_movi,
+            Opcode::Movi16 => Self::op_movi16,
+            Opcode::Movi32 => Self::op_movi32,
             Opcode::Xchg => Self::op_xchg,
             Opcode::Load => Self::op_load,
             Opcode::Store => Self::op_store,
             Opcode::Push => Self::op_push,
             Opcode::Pop => Self::op_pop,
 
-            // Arithmetic
+            // Arithmetic ByteSil
             Opcode::Mul => Self::op_mul,
             Opcode::Div => Self::op_div,
             Opcode::Add => Self::op_add,
             Opcode::Sub => Self::op_sub,
+
+            // Arithmetic Int/Float (direct values)
+            Opcode::AddInt => Self::op_add_int,
+            Opcode::SubInt => Self::op_sub_int,
+            Opcode::MulInt => Self::op_mul_int,
+            Opcode::DivInt => Self::op_div_int,
+            Opcode::AddFloat => Self::op_add_float,
+            Opcode::SubFloat => Self::op_sub_float,
+            Opcode::MulFloat => Self::op_mul_float,
+            Opcode::DivFloat => Self::op_div_float,
             Opcode::Inv => Self::op_inv,
             Opcode::Conj => Self::op_conj,
             Opcode::Pow => Self::op_pow,
@@ -191,16 +232,33 @@ impl VspInterpreter {
     }
 
     #[inline(always)]
-    fn op_mov(state: &mut SilState, _inst: &[u8]) -> Result<(), VspError> {
-        // Swap L0 and L1
-        state.layers.swap(0, 1);
+    fn op_mov(state: &mut SilState, inst: &[u8]) -> Result<(), VspError> {
+        // MOV format: [opcode][packed_regs][unused]
+        // packed_regs: (dest & 0x0F) | ((src & 0x0F) << 4)
+        // Copy source layer to destination layer
+        if inst.len() >= 2 {
+            let packed = inst[1];
+            let dest = (packed & 0x0F) as usize;
+            let src = ((packed >> 4) & 0x0F) as usize;
+            if dest < 16 && src < 16 {
+                state.layers[dest] = state.layers[src];
+            }
+        }
         Ok(())
     }
 
     #[inline(always)]
-    fn op_movi(state: &mut SilState, _inst: &[u8]) -> Result<(), VspError> {
-        // Set L0 to ONE
-        state.layers[0] = ByteSil::ONE;
+    fn op_movi(state: &mut SilState, inst: &[u8]) -> Result<(), VspError> {
+        // MOVI format: [opcode][reg][imm8]
+        // Store immediate value in specified layer (reg maps to layer)
+        if inst.len() >= 3 {
+            let layer = (inst[1] & 0x0F) as usize;
+            let imm = inst[2] as i8; // Signed 8-bit immediate
+            if layer < 16 {
+                // Store immediate in rho, keep theta at 0
+                state.layers[layer] = ByteSil::new(imm, 0);
+            }
+        }
         Ok(())
     }
 
@@ -288,6 +346,147 @@ impl VspInterpreter {
             rho: l0.rho.saturating_sub(l1.rho),
             theta: l0.theta.wrapping_sub(l1.theta),
         };
+        Ok(())
+    }
+
+    // ═════════════════════════════════════════════════════════════════
+    // INTEGER/FLOAT OPERATIONS (direct values, not log-polar)
+    // Values are stored as: i32 in R0.rho:R1.rho (low:high bytes)
+    // or f32 bits in R0:R1:R2:R3 (4 bytes)
+    // ═════════════════════════════════════════════════════════════════
+
+    #[inline(always)]
+    fn op_movi16(state: &mut SilState, inst: &[u8]) -> Result<(), VspError> {
+        // MOVI16 format: [opcode][reg][imm_lo][imm_hi]
+        // Store 16-bit value across R[n].rho (low byte) and R[n+1].rho (high byte)
+        if inst.len() >= 4 {
+            let layer = (inst[1] & 0x0F) as usize;
+            let imm_lo = inst[2] as i8;
+            let imm_hi = inst[3] as i8;
+            if layer < 15 {
+                state.layers[layer] = ByteSil::new(imm_lo, 0);
+                state.layers[layer + 1] = ByteSil::new(imm_hi, 0);
+            }
+        }
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn op_movi32(state: &mut SilState, inst: &[u8]) -> Result<(), VspError> {
+        // MOVI32 format: [opcode][reg][b0][b1][b2][b3]
+        // Store 32-bit value across 4 consecutive layers
+        if inst.len() >= 6 {
+            let layer = (inst[1] & 0x0F) as usize;
+            if layer <= 12 {
+                state.layers[layer] = ByteSil::new(inst[2] as i8, 0);
+                state.layers[layer + 1] = ByteSil::new(inst[3] as i8, 0);
+                state.layers[layer + 2] = ByteSil::new(inst[4] as i8, 0);
+                state.layers[layer + 3] = ByteSil::new(inst[5] as i8, 0);
+            }
+        }
+        Ok(())
+    }
+
+    /// Extract i32 from 4 consecutive layers (little-endian)
+    #[inline(always)]
+    fn extract_i32(state: &SilState, start: usize) -> i32 {
+        let b0 = state.layers[start].rho as u8 as u32;
+        let b1 = state.layers[start + 1].rho as u8 as u32;
+        let b2 = state.layers[start + 2].rho as u8 as u32;
+        let b3 = state.layers[start + 3].rho as u8 as u32;
+        ((b3 << 24) | (b2 << 16) | (b1 << 8) | b0) as i32
+    }
+
+    /// Store i32 into 4 consecutive layers (little-endian)
+    #[inline(always)]
+    fn store_i32(state: &mut SilState, start: usize, value: i32) {
+        let bytes = value.to_le_bytes();
+        state.layers[start] = ByteSil::new(bytes[0] as i8, 0);
+        state.layers[start + 1] = ByteSil::new(bytes[1] as i8, 0);
+        state.layers[start + 2] = ByteSil::new(bytes[2] as i8, 0);
+        state.layers[start + 3] = ByteSil::new(bytes[3] as i8, 0);
+    }
+
+    /// Extract f32 from 4 consecutive layers
+    #[inline(always)]
+    fn extract_f32(state: &SilState, start: usize) -> f32 {
+        let bits = Self::extract_i32(state, start) as u32;
+        f32::from_bits(bits)
+    }
+
+    /// Store f32 into 4 consecutive layers
+    #[inline(always)]
+    fn store_f32(state: &mut SilState, start: usize, value: f32) {
+        Self::store_i32(state, start, value.to_bits() as i32);
+    }
+
+    #[inline(always)]
+    fn op_add_int(state: &mut SilState, _inst: &[u8]) -> Result<(), VspError> {
+        // ADDINT: R0:R1:R2:R3 = R0:R1:R2:R3 + R4:R5:R6:R7
+        let a = Self::extract_i32(state, 0) as i32;
+        let b = Self::extract_i32(state, 4) as i32;
+        Self::store_i32(state, 0, a.wrapping_add(b));
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn op_sub_int(state: &mut SilState, _inst: &[u8]) -> Result<(), VspError> {
+        let a = Self::extract_i32(state, 0) as i32;
+        let b = Self::extract_i32(state, 4) as i32;
+        Self::store_i32(state, 0, a.wrapping_sub(b));
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn op_mul_int(state: &mut SilState, _inst: &[u8]) -> Result<(), VspError> {
+        let a = Self::extract_i32(state, 0) as i32;
+        let b = Self::extract_i32(state, 4) as i32;
+        Self::store_i32(state, 0, a.wrapping_mul(b));
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn op_div_int(state: &mut SilState, _inst: &[u8]) -> Result<(), VspError> {
+        let a = Self::extract_i32(state, 0) as i32;
+        let b = Self::extract_i32(state, 4) as i32;
+        if b != 0 {
+            Self::store_i32(state, 0, a / b);
+        }
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn op_add_float(state: &mut SilState, _inst: &[u8]) -> Result<(), VspError> {
+        // ADDFLOAT: R0:R1:R2:R3 = R0:R1:R2:R3 + R4:R5:R6:R7
+        let a = Self::extract_f32(state, 0);
+        let b = Self::extract_f32(state, 4);
+        Self::store_f32(state, 0, a + b);
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn op_sub_float(state: &mut SilState, _inst: &[u8]) -> Result<(), VspError> {
+        let a = Self::extract_f32(state, 0);
+        let b = Self::extract_f32(state, 4);
+        Self::store_f32(state, 0, a - b);
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn op_mul_float(state: &mut SilState, _inst: &[u8]) -> Result<(), VspError> {
+        let a = Self::extract_f32(state, 0);
+        let b = Self::extract_f32(state, 4);
+        Self::store_f32(state, 0, a * b);
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn op_div_float(state: &mut SilState, _inst: &[u8]) -> Result<(), VspError> {
+        let a = Self::extract_f32(state, 0);
+        let b = Self::extract_f32(state, 4);
+        if b != 0.0 {
+            Self::store_f32(state, 0, a / b);
+        }
         Ok(())
     }
 
@@ -539,8 +738,24 @@ impl VspInterpreter {
                 println!();
             }
             id if id == StdlibIntrinsic::PrintString as u8 => {
-                // Print string from L0 (simplified - just print rho value)
-                print!("{}", state.layers[0].rho);
+                // Print string from string table
+                // String index passed in inst[2..4] as u16 (little-endian)
+                let string_idx = if inst.len() >= 4 {
+                    u16::from_le_bytes([inst[2], inst[3]]) as usize
+                } else if inst.len() >= 3 {
+                    inst[2] as usize
+                } else {
+                    // Fallback to L0.rho for backwards compatibility
+                    let rho = state.layers[0].rho;
+                    if rho >= 0 { rho as usize } else { 0 }
+                };
+                if let Ok(table) = STRING_TABLE.lock() {
+                    if let Some(s) = table.get(string_idx) {
+                        println!("{}", s);
+                    } else {
+                        println!("[string#{}]", string_idx);
+                    }
+                }
             }
             id if id == StdlibIntrinsic::PrintInt as u8 => {
                 // Print integer from L0.rho
@@ -752,6 +967,73 @@ impl VspInterpreter {
                 }
                 state.layers[0] = ByteSil { rho: hash as i8, theta: 0 };
             }
+            id if id == StdlibIntrinsic::StateTensor as u8 => {
+                // Tensor product approximation: multiply magnitudes, add phases
+                // Takes L0-L7 as state A, L8-L15 as state B, result in L0-L15
+                // Simplified: just multiply corresponding layers
+                for i in 0..16 {
+                    let a = state.layers[i];
+                    let b = state.layers[(i + 8) % 16];
+                    state.layers[i] = ByteSil {
+                        rho: ((a.rho as i16 + b.rho as i16) / 2) as i8,
+                        theta: a.theta.wrapping_add(b.theta),
+                    };
+                }
+            }
+            id if id == StdlibIntrinsic::StateProject as u8 => {
+                // Project to specific layer group (0-3 for each 4-layer group)
+                let group = (state.layers[0].rho as usize) & 0x03;
+                let start = group * 4;
+                for i in 0..16 {
+                    if i < start || i >= start + 4 {
+                        state.layers[i] = ByteSil::NULL;
+                    }
+                }
+            }
+            id if id == StdlibIntrinsic::StateNormalize as u8 => {
+                // Normalize: find max magnitude and scale all relative to it
+                let max_rho = state.layers.iter()
+                    .map(|l| l.rho.abs())
+                    .max()
+                    .unwrap_or(0);
+                if max_rho > 0 {
+                    let scale = 7.0 / max_rho as f32;
+                    for layer in &mut state.layers {
+                        layer.rho = ((layer.rho as f32 * scale) as i8).clamp(-8, 7);
+                    }
+                }
+            }
+            id if id == StdlibIntrinsic::StateCollapseMag as u8 => {
+                // Collapse by summing magnitudes
+                let sum: i16 = state.layers.iter()
+                    .map(|l| l.rho as i16)
+                    .sum();
+                state.layers[0] = ByteSil { rho: (sum / 16) as i8, theta: 0 };
+            }
+            id if id == StdlibIntrinsic::StateCollapseSum as u8 => {
+                // Same as CollapseMag (alias)
+                let sum: i16 = state.layers.iter()
+                    .map(|l| l.rho as i16)
+                    .sum();
+                state.layers[0] = ByteSil { rho: (sum / 16) as i8, theta: 0 };
+            }
+            id if id == StdlibIntrinsic::StateCollapseFirst as u8 => {
+                // Collapse: first non-null layer
+                let first = state.layers.iter()
+                    .find(|l| **l != ByteSil::NULL)
+                    .copied()
+                    .unwrap_or(ByteSil::NULL);
+                state.layers[0] = first;
+            }
+            id if id == StdlibIntrinsic::StateCollapseLast as u8 => {
+                // Collapse: last non-null layer
+                let last = state.layers.iter()
+                    .rev()
+                    .find(|l| **l != ByteSil::NULL)
+                    .copied()
+                    .unwrap_or(ByteSil::NULL);
+                state.layers[0] = last;
+            }
 
             // ByteSil - Additional
             id if id == StdlibIntrinsic::BytesilAdd as u8 => {
@@ -949,6 +1231,23 @@ impl VspInterpreter {
             id if id == StdlibIntrinsic::FloatToString as u8 => { /* String ops: pass through */ }
             id if id == StdlibIntrinsic::StringToInt as u8 => { /* String ops: pass through */ }
             id if id == StdlibIntrinsic::StringToFloat as u8 => { /* String ops: pass through */ }
+
+            // Type conversions
+            id if id == StdlibIntrinsic::FloatFromInt as u8 => {
+                // Convert L0.rho (as integer) to float, store back in L0
+                // In ByteSil, we store the value in rho directly
+                // (No change needed since we're operating on the same rho)
+            }
+            id if id == StdlibIntrinsic::IntFromFloat as u8 => {
+                // Convert L0.rho (as float) to int, store back in L0
+                // Truncate fractional part (no-op in ByteSil since rho is already i8)
+            }
+            id if id == StdlibIntrinsic::FloatToInt as u8 => {
+                // Alias for IntFromFloat
+            }
+            id if id == StdlibIntrinsic::IntToFloat as u8 => {
+                // Alias for FloatFromInt
+            }
 
             // Transform Functions
             id if id == StdlibIntrinsic::ApplyFeedback as u8 => {
@@ -1232,6 +1531,237 @@ impl VspInterpreter {
                 }
             }
 
+            // ═══════════════════════════════════════════════════════════════════
+            // Energy & Benchmark Metrics
+            // ═══════════════════════════════════════════════════════════════════
+            id if id == StdlibIntrinsic::EnergyBegin as u8 => {
+                let mut meter_guard = ENERGY_METER.lock().unwrap();
+                if meter_guard.is_none() {
+                    *meter_guard = Some(EnergyMeter::new(Box::new(CpuEnergyModel::detect())));
+                }
+                if let Some(ref mut meter) = *meter_guard {
+                    let _ = meter.begin_measurement();
+                }
+            }
+            id if id == StdlibIntrinsic::EnergyEndJoules as u8 => {
+                let mut meter_guard = ENERGY_METER.lock().unwrap();
+                if let Some(ref mut meter) = *meter_guard {
+                    if let Ok(snapshot) = meter.end_measurement(1000) {
+                        // Store joules as scaled value (nanojoules fit in i8 for small values)
+                        // For larger values, use multiple layers
+                        let nanojoules = (snapshot.joules * 1e9) as u64;
+                        state.layers[0] = ByteSil { rho: (nanojoules & 0xFF) as i8, theta: 0 };
+                        state.layers[1] = ByteSil { rho: ((nanojoules >> 8) & 0xFF) as i8, theta: 0 };
+                        state.layers[2] = ByteSil { rho: ((nanojoules >> 16) & 0xFF) as i8, theta: 0 };
+                        state.layers[3] = ByteSil { rho: ((nanojoules >> 24) & 0xFF) as i8, theta: 0 };
+                    }
+                }
+            }
+            id if id == StdlibIntrinsic::EnergyEndWatts as u8 => {
+                let mut meter_guard = ENERGY_METER.lock().unwrap();
+                if let Some(ref mut meter) = *meter_guard {
+                    if let Ok(snapshot) = meter.end_measurement(1000) {
+                        // Store watts as milliwatts
+                        let milliwatts = (snapshot.watts * 1000.0) as u32;
+                        state.layers[0] = ByteSil { rho: (milliwatts & 0xFF) as i8, theta: 0 };
+                        state.layers[1] = ByteSil { rho: ((milliwatts >> 8) & 0xFF) as i8, theta: 0 };
+                        state.layers[2] = ByteSil { rho: ((milliwatts >> 16) & 0xFF) as i8, theta: 0 };
+                        state.layers[3] = ByteSil { rho: ((milliwatts >> 24) & 0xFF) as i8, theta: 0 };
+                    }
+                }
+            }
+            id if id == StdlibIntrinsic::EnergyEndSamplesPerJoule as u8 => {
+                let meter_guard = ENERGY_METER.lock().unwrap();
+                if let Some(ref meter) = *meter_guard {
+                    let efficiency = meter.efficiency();
+                    let samples_per_joule = efficiency as u32;
+                    state.layers[0] = ByteSil { rho: (samples_per_joule & 0xFF) as i8, theta: 0 };
+                    state.layers[1] = ByteSil { rho: ((samples_per_joule >> 8) & 0xFF) as i8, theta: 0 };
+                    state.layers[2] = ByteSil { rho: ((samples_per_joule >> 16) & 0xFF) as i8, theta: 0 };
+                    state.layers[3] = ByteSil { rho: ((samples_per_joule >> 24) & 0xFF) as i8, theta: 0 };
+                }
+            }
+            id if id == StdlibIntrinsic::CarbonFootprintGrams as u8 => {
+                let meter_guard = ENERGY_METER.lock().unwrap();
+                if let Some(ref meter) = *meter_guard {
+                    // gCO2e = (Joules / 3600) * (gCO2e/Wh) = Joules * carbon_intensity / 3.6
+                    let joules = meter.total_joules();
+                    let gco2e = joules * CARBON_INTENSITY_BRAZIL / 3.6;
+                    let micrograms = (gco2e * 1e6) as u32;
+                    state.layers[0] = ByteSil { rho: (micrograms & 0xFF) as i8, theta: 0 };
+                    state.layers[1] = ByteSil { rho: ((micrograms >> 8) & 0xFF) as i8, theta: 0 };
+                    state.layers[2] = ByteSil { rho: ((micrograms >> 16) & 0xFF) as i8, theta: 0 };
+                    state.layers[3] = ByteSil { rho: ((micrograms >> 24) & 0xFF) as i8, theta: 0 };
+                }
+            }
+            id if id == StdlibIntrinsic::TimestampNanosLow as u8 => {
+                let nanos = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_nanos() as u64)
+                    .unwrap_or(0);
+                let low = (nanos & 0xFFFFFFFF) as u32;
+                state.layers[0] = ByteSil { rho: (low & 0xFF) as i8, theta: 0 };
+                state.layers[1] = ByteSil { rho: ((low >> 8) & 0xFF) as i8, theta: 0 };
+                state.layers[2] = ByteSil { rho: ((low >> 16) & 0xFF) as i8, theta: 0 };
+                state.layers[3] = ByteSil { rho: ((low >> 24) & 0xFF) as i8, theta: 0 };
+            }
+            id if id == StdlibIntrinsic::TimestampNanosHigh as u8 => {
+                let nanos = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_nanos() as u64)
+                    .unwrap_or(0);
+                let high = ((nanos >> 32) & 0xFFFFFFFF) as u32;
+                state.layers[0] = ByteSil { rho: (high & 0xFF) as i8, theta: 0 };
+                state.layers[1] = ByteSil { rho: ((high >> 8) & 0xFF) as i8, theta: 0 };
+                state.layers[2] = ByteSil { rho: ((high >> 16) & 0xFF) as i8, theta: 0 };
+                state.layers[3] = ByteSil { rho: ((high >> 24) & 0xFF) as i8, theta: 0 };
+            }
+            id if id == StdlibIntrinsic::BenchmarkStart as u8 => {
+                let mut bench = BENCHMARK_STATE.lock().unwrap();
+                bench.start_time = Some(Instant::now());
+                bench.total_samples = 0;
+                bench.total_flops = 0;
+                bench.total_macs = 0;
+                bench.total_latency_us = 0;
+            }
+            id if id == StdlibIntrinsic::BenchmarkEnd as u8 => {
+                let bench = BENCHMARK_STATE.lock().unwrap();
+                if let Some(start) = bench.start_time {
+                    let elapsed_us = start.elapsed().as_micros() as u64;
+                    // Store elapsed time in layers
+                    state.layers[0] = ByteSil { rho: (elapsed_us & 0xFF) as i8, theta: 0 };
+                    state.layers[1] = ByteSil { rho: ((elapsed_us >> 8) & 0xFF) as i8, theta: 0 };
+                    state.layers[2] = ByteSil { rho: ((elapsed_us >> 16) & 0xFF) as i8, theta: 0 };
+                    state.layers[3] = ByteSil { rho: ((elapsed_us >> 24) & 0xFF) as i8, theta: 0 };
+                }
+            }
+            id if id == StdlibIntrinsic::FlopCount as u8 => {
+                let bench = BENCHMARK_STATE.lock().unwrap();
+                let flops = bench.total_flops as u32;
+                state.layers[0] = ByteSil { rho: (flops & 0xFF) as i8, theta: 0 };
+                state.layers[1] = ByteSil { rho: ((flops >> 8) & 0xFF) as i8, theta: 0 };
+                state.layers[2] = ByteSil { rho: ((flops >> 16) & 0xFF) as i8, theta: 0 };
+                state.layers[3] = ByteSil { rho: ((flops >> 24) & 0xFF) as i8, theta: 0 };
+            }
+            id if id == StdlibIntrinsic::MacCount as u8 => {
+                let bench = BENCHMARK_STATE.lock().unwrap();
+                let macs = bench.total_macs as u32;
+                state.layers[0] = ByteSil { rho: (macs & 0xFF) as i8, theta: 0 };
+                state.layers[1] = ByteSil { rho: ((macs >> 8) & 0xFF) as i8, theta: 0 };
+                state.layers[2] = ByteSil { rho: ((macs >> 16) & 0xFF) as i8, theta: 0 };
+                state.layers[3] = ByteSil { rho: ((macs >> 24) & 0xFF) as i8, theta: 0 };
+            }
+            id if id == StdlibIntrinsic::ThroughputSamplesPerSec as u8 => {
+                let bench = BENCHMARK_STATE.lock().unwrap();
+                if let Some(start) = bench.start_time {
+                    let elapsed_secs = start.elapsed().as_secs_f64();
+                    let throughput = if elapsed_secs > 0.0 {
+                        (bench.total_samples as f64 / elapsed_secs) as u32
+                    } else {
+                        0
+                    };
+                    state.layers[0] = ByteSil { rho: (throughput & 0xFF) as i8, theta: 0 };
+                    state.layers[1] = ByteSil { rho: ((throughput >> 8) & 0xFF) as i8, theta: 0 };
+                    state.layers[2] = ByteSil { rho: ((throughput >> 16) & 0xFF) as i8, theta: 0 };
+                    state.layers[3] = ByteSil { rho: ((throughput >> 24) & 0xFF) as i8, theta: 0 };
+                }
+            }
+            id if id == StdlibIntrinsic::LatencyMicros as u8 => {
+                let bench = BENCHMARK_STATE.lock().unwrap();
+                let avg_latency = if bench.total_samples > 0 {
+                    (bench.total_latency_us / bench.total_samples) as u32
+                } else {
+                    0
+                };
+                state.layers[0] = ByteSil { rho: (avg_latency & 0xFF) as i8, theta: 0 };
+                state.layers[1] = ByteSil { rho: ((avg_latency >> 8) & 0xFF) as i8, theta: 0 };
+                state.layers[2] = ByteSil { rho: ((avg_latency >> 16) & 0xFF) as i8, theta: 0 };
+                state.layers[3] = ByteSil { rho: ((avg_latency >> 24) & 0xFF) as i8, theta: 0 };
+            }
+            id if id == StdlibIntrinsic::MemoryPeakBytes as u8 => {
+                let bench = BENCHMARK_STATE.lock().unwrap();
+                let peak = bench.peak_memory_bytes as u32;
+                state.layers[0] = ByteSil { rho: (peak & 0xFF) as i8, theta: 0 };
+                state.layers[1] = ByteSil { rho: ((peak >> 8) & 0xFF) as i8, theta: 0 };
+                state.layers[2] = ByteSil { rho: ((peak >> 16) & 0xFF) as i8, theta: 0 };
+                state.layers[3] = ByteSil { rho: ((peak >> 24) & 0xFF) as i8, theta: 0 };
+            }
+            id if id == StdlibIntrinsic::AccuracyPerWatt as u8 => {
+                // Read accuracy from L0 (as percentage * 100)
+                let accuracy = state.layers[0].rho as f64 / 100.0;
+                let meter_guard = ENERGY_METER.lock().unwrap();
+                let watts = if let Some(ref meter) = *meter_guard {
+                    meter.current_watts().max(0.001) // Avoid division by zero
+                } else {
+                    1.0
+                };
+                let acc_per_watt = (accuracy / watts * 1000.0) as u32; // milli-accuracy per watt
+                state.layers[0] = ByteSil { rho: (acc_per_watt & 0xFF) as i8, theta: 0 };
+                state.layers[1] = ByteSil { rho: ((acc_per_watt >> 8) & 0xFF) as i8, theta: 0 };
+            }
+            id if id == StdlibIntrinsic::EnergyDelayProduct as u8 => {
+                let meter_guard = ENERGY_METER.lock().unwrap();
+                let bench = BENCHMARK_STATE.lock().unwrap();
+                let joules = if let Some(ref meter) = *meter_guard {
+                    meter.total_joules()
+                } else {
+                    0.0
+                };
+                let latency_s = if bench.total_samples > 0 {
+                    bench.total_latency_us as f64 / bench.total_samples as f64 / 1e6
+                } else {
+                    0.0
+                };
+                let edp = (joules * latency_s * 1e12) as u32; // picojoule-seconds
+                state.layers[0] = ByteSil { rho: (edp & 0xFF) as i8, theta: 0 };
+                state.layers[1] = ByteSil { rho: ((edp >> 8) & 0xFF) as i8, theta: 0 };
+                state.layers[2] = ByteSil { rho: ((edp >> 16) & 0xFF) as i8, theta: 0 };
+                state.layers[3] = ByteSil { rho: ((edp >> 24) & 0xFF) as i8, theta: 0 };
+            }
+            id if id == StdlibIntrinsic::TimestampNanosState as u8 => {
+                let nanos = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_nanos())
+                    .unwrap_or(0);
+                // Distribute across all 16 layers for full 128-bit precision
+                for i in 0..16 {
+                    let byte = ((nanos >> (i * 8)) & 0xFF) as i8;
+                    state.layers[i] = ByteSil { rho: byte, theta: 0 };
+                }
+            }
+            id if id == StdlibIntrinsic::EnergyTotalJoules as u8 => {
+                let meter_guard = ENERGY_METER.lock().unwrap();
+                if let Some(ref meter) = *meter_guard {
+                    let nanojoules = (meter.total_joules() * 1e9) as u64;
+                    state.layers[0] = ByteSil { rho: (nanojoules & 0xFF) as i8, theta: 0 };
+                    state.layers[1] = ByteSil { rho: ((nanojoules >> 8) & 0xFF) as i8, theta: 0 };
+                    state.layers[2] = ByteSil { rho: ((nanojoules >> 16) & 0xFF) as i8, theta: 0 };
+                    state.layers[3] = ByteSil { rho: ((nanojoules >> 24) & 0xFF) as i8, theta: 0 };
+                    state.layers[4] = ByteSil { rho: ((nanojoules >> 32) & 0xFF) as i8, theta: 0 };
+                    state.layers[5] = ByteSil { rho: ((nanojoules >> 40) & 0xFF) as i8, theta: 0 };
+                    state.layers[6] = ByteSil { rho: ((nanojoules >> 48) & 0xFF) as i8, theta: 0 };
+                    state.layers[7] = ByteSil { rho: ((nanojoules >> 56) & 0xFF) as i8, theta: 0 };
+                }
+            }
+            id if id == StdlibIntrinsic::EnergyEfficiency as u8 => {
+                let meter_guard = ENERGY_METER.lock().unwrap();
+                if let Some(ref meter) = *meter_guard {
+                    let efficiency = (meter.efficiency() * 1000.0) as u32; // milli-ops per joule
+                    state.layers[0] = ByteSil { rho: (efficiency & 0xFF) as i8, theta: 0 };
+                    state.layers[1] = ByteSil { rho: ((efficiency >> 8) & 0xFF) as i8, theta: 0 };
+                    state.layers[2] = ByteSil { rho: ((efficiency >> 16) & 0xFF) as i8, theta: 0 };
+                    state.layers[3] = ByteSil { rho: ((efficiency >> 24) & 0xFF) as i8, theta: 0 };
+                }
+            }
+            id if id == StdlibIntrinsic::BenchmarkReset as u8 => {
+                let mut meter_guard = ENERGY_METER.lock().unwrap();
+                if let Some(ref mut meter) = *meter_guard {
+                    meter.reset();
+                }
+                let mut bench = BENCHMARK_STATE.lock().unwrap();
+                *bench = BenchmarkMetrics::default();
+            }
+
             _ => {
                 // Unknown intrinsic - no-op
             }
@@ -1245,6 +1775,25 @@ impl Default for VspInterpreter {
     fn default() -> Self {
         Self::new()
     }
+}
+
+/// Set the global string table for print_string operations
+pub fn set_string_table(strings: Vec<String>) {
+    if let Ok(mut table) = STRING_TABLE.lock() {
+        *table = strings;
+    }
+}
+
+/// Clear the global string table
+pub fn clear_string_table() {
+    if let Ok(mut table) = STRING_TABLE.lock() {
+        table.clear();
+    }
+}
+
+/// Get a copy of the current string table
+pub fn get_string_table() -> Vec<String> {
+    STRING_TABLE.lock().map(|t| t.clone()).unwrap_or_default()
 }
 
 #[cfg(test)]

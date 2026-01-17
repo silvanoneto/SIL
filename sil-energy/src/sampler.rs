@@ -3,7 +3,7 @@
 //! Estratégias de amostragem para medição contínua de energia.
 
 use crate::{
-    EnergyModel, EnergyResult, EnergyError,
+    EnergyModel,
     snapshot::{EnergySnapshot, EnergyAccumulator},
 };
 use std::time::{Duration, Instant};

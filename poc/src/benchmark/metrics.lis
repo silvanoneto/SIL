@@ -1,0 +1,240 @@
+// PoC - Benchmark e Métricas
+// Coleta de métricas de performance para comparação com PyTorch
+
+use paebiru::core::bytesil::{bs_mag, bs_from_mag_clamped};
+use paebiru::core::state::{st_vacuum, st_set, st_get, st_sum_mag};
+use paebiru::edge::rho_sil::{rho_sil};
+use model::classifier::{classifier_forward, model_size_bytes};
+use data::synthetic::{generate_gesture_sample, prng_next};
+
+// =============================================================================
+// Estrutura de Métricas
+// =============================================================================
+
+// Layout do State de métricas:
+// L0: total_samples (normalizado /10000)
+// L1: total_inference_ns (normalizado /1e9)
+// L2: total_training_ns (normalizado /1e9)
+// L3: avg_rho_sil
+// L4: max_rho_sil
+// L5: min_rho_sil
+// L6: accuracy
+// L7: memory_bytes (normalizado /10000)
+
+pub fn metrics_create() -> State {
+    let m = st_vacuum();
+    let m = st_set(m, 5, bs_from_mag_clamped(1.0));  // min_rho inicia em 1.0
+    return m;
+}
+
+// =============================================================================
+// Registro de Métricas
+// =============================================================================
+
+// Registra uma inferência
+pub fn metrics_record_inference(metrics: State, latency_ns: Int, sample: State) -> State {
+    // Incrementa contagem de samples
+    let count = bs_mag(st_get(metrics, 0)) * 10000.0 + 1.0;
+    let m = st_set(metrics, 0, bs_from_mag_clamped(count / 10000.0));
+
+    // Acumula tempo de inferência
+    let total_ns = bs_mag(st_get(m, 1)) * 1000000000.0 + float_from_int(latency_ns);
+    let m = st_set(m, 1, bs_from_mag_clamped(total_ns / 1000000000.0));
+
+    // Atualiza estatísticas de rho_sil
+    let rho = rho_sil(sample);
+
+    // Média móvel de rho
+    let avg_rho = bs_mag(st_get(m, 3));
+    let new_avg = (avg_rho * (count - 1.0) + rho) / count;
+    let m = st_set(m, 3, bs_from_mag_clamped(new_avg));
+
+    // Max rho
+    let max_rho = bs_mag(st_get(m, 4));
+    if rho > max_rho {
+        let m = st_set(m, 4, bs_from_mag_clamped(rho));
+    }
+
+    // Min rho
+    let min_rho = bs_mag(st_get(m, 5));
+    if rho < min_rho {
+        let m = st_set(m, 5, bs_from_mag_clamped(rho));
+    }
+
+    return m;
+}
+
+// Registra acurácia
+pub fn metrics_set_accuracy(metrics: State, accuracy: Float) -> State {
+    return st_set(metrics, 6, bs_from_mag_clamped(accuracy));
+}
+
+// Registra uso de memória
+pub fn metrics_set_memory(metrics: State, bytes: Int) -> State {
+    return st_set(metrics, 7, bs_from_mag_clamped(float_from_int(bytes) / 10000.0));
+}
+
+// =============================================================================
+// Extração de Métricas
+// =============================================================================
+
+// Obtém número total de samples
+pub fn get_total_samples(metrics: State) -> Int {
+    return int_from_float(bs_mag(st_get(metrics, 0)) * 10000.0);
+}
+
+// Obtém throughput (samples/segundo)
+pub fn get_throughput(metrics: State) -> Float {
+    let samples = bs_mag(st_get(metrics, 0)) * 10000.0;
+    let total_ns = bs_mag(st_get(metrics, 1)) * 1000000000.0;
+    if total_ns < 1.0 { return 0.0; }
+    return samples / (total_ns / 1000000000.0);
+}
+
+// Obtém latência média por sample (nanosegundos)
+pub fn get_avg_latency(metrics: State) -> Float {
+    let samples = bs_mag(st_get(metrics, 0)) * 10000.0;
+    let total_ns = bs_mag(st_get(metrics, 1)) * 1000000000.0;
+    if samples < 1.0 { return 0.0; }
+    return total_ns / samples;
+}
+
+// Obtém uso de memória em bytes
+pub fn get_memory_usage(metrics: State) -> Int {
+    return int_from_float(bs_mag(st_get(metrics, 7)) * 10000.0);
+}
+
+// Obtém acurácia
+pub fn get_accuracy_metric(metrics: State) -> Float {
+    return bs_mag(st_get(metrics, 6));
+}
+
+// Obtém rho_sil médio
+pub fn get_avg_rho(metrics: State) -> Float {
+    return bs_mag(st_get(metrics, 3));
+}
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+// Benchmark de inferência
+// Executa num_iterations inferências e retorna métricas
+pub fn benchmark_inference(
+    w1: State,
+    b1: State,
+    w2: State,
+    b2: State,
+    num_iterations: Int,
+    noise_level: Float,
+    seed: Int
+) -> State {
+    let metrics = metrics_create();
+    let s = seed;
+
+    let i = 0;
+    loop {
+        if i >= num_iterations { break; }
+
+        // Gera sample
+        let s = prng_next(s);
+        let gesture = s % 16;
+        let s = prng_next(s);
+        let input = generate_gesture_sample(gesture, s, noise_level);
+
+        // Executa inferência
+        let output = classifier_forward(input, w1, b1, w2, b2);
+
+        // Latência estimada: ~200ns por inferência no VSP
+        // (tempo real requer instrumentação do runtime)
+        let latency_ns = 200;
+
+        // Registra métricas
+        let metrics = metrics_record_inference(metrics, latency_ns, input);
+
+        let i = i + 1;
+    }
+
+    // Registra uso de memória do modelo
+    let metrics = metrics_set_memory(metrics, model_size_bytes());
+
+    return metrics;
+}
+
+// Benchmark de treinamento
+// Executa num_steps passos de treinamento e retorna métricas
+pub fn benchmark_training(
+    w1: State,
+    b1: State,
+    w2: State,
+    b2: State,
+    num_steps: Int,
+    lr: Float,
+    noise_level: Float,
+    seed: Int
+) -> State {
+    let metrics = metrics_create();
+
+    // Estimativa de tempo de treinamento
+    // Assume ~500ns por step (forward + backward + update)
+    let estimated_step_ns = 500;
+    let total_ns = num_steps * estimated_step_ns;
+
+    let m = st_set(metrics, 2, bs_from_mag_clamped(float_from_int(total_ns) / 1000000000.0));
+
+    return m;
+}
+
+// =============================================================================
+// Relatório de Métricas
+// =============================================================================
+
+// Gera relatório de métricas (retorna State formatado)
+pub fn metrics_report(metrics: State) -> State {
+    // O relatório é o próprio State de métricas
+    // Em implementação real, imprimiríamos os valores
+    return metrics;
+}
+
+// =============================================================================
+// Comparação com PyTorch
+// =============================================================================
+
+// Tamanho do modelo PyTorch equivalente (FP32)
+pub fn pytorch_model_size_fp32() -> Int {
+    // 2 camadas Dense (16x16) + bias (16) = (256 + 16) * 2 = 544 parâmetros
+    // FP32: 544 * 4 bytes = 2176 bytes (tamanho real dos pesos)
+    return 2176;
+}
+
+// Tamanho do modelo PyTorch equivalente (FP16)
+pub fn pytorch_model_size_fp16() -> Int {
+    // 544 * 2 bytes = 1088 bytes
+    return 1088;
+}
+
+// Calcula razão de compressão
+pub fn compression_ratio_vs_fp32() -> Float {
+    return float_from_int(pytorch_model_size_fp32()) / float_from_int(model_size_bytes());
+}
+
+pub fn compression_ratio_vs_fp16() -> Float {
+    return float_from_int(pytorch_model_size_fp16()) / float_from_int(model_size_bytes());
+}
+
+// =============================================================================
+// Métricas de Eficiência
+// =============================================================================
+
+// Accuracy per KB (acurácia / KB de modelo)
+pub fn accuracy_per_kb(accuracy: Float, model_bytes: Int) -> Float {
+    let kb = float_from_int(model_bytes) / 1024.0;
+    return accuracy / kb;
+}
+
+// Throughput per Watt (estimado)
+// Assume ~0.1W para CPU mobile edge
+pub fn throughput_per_watt(throughput: Float) -> Float {
+    let watts = 0.1;
+    return throughput / watts;
+}

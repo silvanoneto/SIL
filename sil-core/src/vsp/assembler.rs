@@ -103,6 +103,13 @@ pub enum StdlibIntrinsic {
     StateIsNeutral = 0x3F,
     StateEquals = 0x40,
     StateCountNullLayers = 0x41,
+    StateTensor = 0x42,
+    StateProject = 0x43,
+    StateNormalize = 0x44,
+    StateCollapseMag = 0x45,
+    StateCollapseSum = 0x46,
+    StateCollapseFirst = 0x47,
+    StateCollapseLast = 0x48,
 
     // ═══════════════════════════════════════════════════════════════════════════
     // Math Functions (0x50-0x6F)
@@ -159,6 +166,14 @@ pub enum StdlibIntrinsic {
     FloatToString = 0x7D,
     StringToInt = 0x7E,
     StringToFloat = 0x7F,
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Type Conversions (0x80-0x8F)
+    // ═══════════════════════════════════════════════════════════════════════════
+    FloatFromInt = 0x80,
+    IntFromFloat = 0x81,
+    FloatToInt = 0x82,
+    IntToFloat = 0x83,
 
     // ═══════════════════════════════════════════════════════════════════════════
     // Transform Functions (0x90-0x9F)
@@ -222,6 +237,26 @@ pub enum StdlibIntrinsic {
     SignInt = 0xDB,
 
     // ═══════════════════════════════════════════════════════════════════════════
+    // Energy & Benchmark Metrics (0xE0-0xEF)
+    // ═══════════════════════════════════════════════════════════════════════════
+    EnergyBegin = 0xE0,              // Inicia medição de energia
+    EnergyEndJoules = 0xE1,          // Termina e retorna Joules
+    EnergyEndWatts = 0xE2,           // Termina e retorna Watts
+    EnergyEndSamplesPerJoule = 0xE3, // Retorna samples/J
+    CarbonFootprintGrams = 0xE4,     // Retorna gCO2e (baseado em região)
+    TimestampNanosLow = 0xE5,        // Timestamp ns (32-bit low)
+    TimestampNanosHigh = 0xE6,       // Timestamp ns (32-bit high)
+    BenchmarkStart = 0xE7,           // Inicia benchmark
+    BenchmarkEnd = 0xE8,             // Termina benchmark e retorna métricas
+    FlopCount = 0xE9,                // Contador de FLOPs
+    MacCount = 0xEA,                 // Contador de MACs
+    ThroughputSamplesPerSec = 0xEB,  // Samples/segundo atual
+    LatencyMicros = 0xEC,            // Latência média em microssegundos
+    MemoryPeakBytes = 0xED,          // Pico de memória em bytes
+    AccuracyPerWatt = 0xEE,          // Accuracy por Watt
+    EnergyDelayProduct = 0xEF,       // Energy-Delay Product (EDP)
+
+    // ═══════════════════════════════════════════════════════════════════════════
     // Debug Functions (0xF0-0xFF)
     // ═══════════════════════════════════════════════════════════════════════════
     DebugPrint = 0xF0,
@@ -236,6 +271,10 @@ pub enum StdlibIntrinsic {
     AssertEqInt = 0xF9,
     AssertEqBytesil = 0xFA,
     AssertEqState = 0xFB,
+    TimestampNanosState = 0xFC,      // Timestamp em ns (State para 128-bit)
+    EnergyTotalJoules = 0xFD,        // Energia total acumulada
+    EnergyEfficiency = 0xFE,         // Eficiência energética (ops/J)
+    BenchmarkReset = 0xFF,           // Reset de métricas de benchmark
 }
 
 impl StdlibIntrinsic {
@@ -313,6 +352,13 @@ impl StdlibIntrinsic {
             "state_hash" => Self::StateHash,
             "state_compare" => Self::StateCompare,
             "state_equals" => Self::StateEquals,
+            "state_tensor" => Self::StateTensor,
+            "state_project" => Self::StateProject,
+            "state_normalize" => Self::StateNormalize,
+            "state_collapse_mag" => Self::StateCollapseMag,
+            "state_collapse_sum" => Self::StateCollapseSum,
+            "state_collapse_first" => Self::StateCollapseFirst,
+            "state_collapse_last" => Self::StateCollapseLast,
 
             // ═══════════════════════════════════════════════════════════════════
             // Math - Basic
@@ -376,6 +422,12 @@ impl StdlibIntrinsic {
             "string_to_int" => Self::StringToInt,
             "string_to_float" => Self::StringToFloat,
 
+            // Type conversions
+            "float_from_int" => Self::FloatFromInt,
+            "int_from_float" => Self::IntFromFloat,
+            "float_to_int" => Self::FloatToInt,
+            "int_to_float" => Self::IntToFloat,
+
             // ═══════════════════════════════════════════════════════════════════
             // Transform
             // ═══════════════════════════════════════════════════════════════════
@@ -438,6 +490,26 @@ impl StdlibIntrinsic {
             "sign_int" => Self::SignInt,
 
             // ═══════════════════════════════════════════════════════════════════
+            // Energy & Benchmark Metrics
+            // ═══════════════════════════════════════════════════════════════════
+            "energy_begin" => Self::EnergyBegin,
+            "energy_end_joules" => Self::EnergyEndJoules,
+            "energy_end_watts" => Self::EnergyEndWatts,
+            "energy_end_samples_per_joule" => Self::EnergyEndSamplesPerJoule,
+            "carbon_footprint_grams" => Self::CarbonFootprintGrams,
+            "timestamp_nanos_low" => Self::TimestampNanosLow,
+            "timestamp_nanos_high" => Self::TimestampNanosHigh,
+            "benchmark_start" => Self::BenchmarkStart,
+            "benchmark_end" => Self::BenchmarkEnd,
+            "flop_count" => Self::FlopCount,
+            "mac_count" => Self::MacCount,
+            "throughput_samples_per_sec" => Self::ThroughputSamplesPerSec,
+            "latency_micros" => Self::LatencyMicros,
+            "memory_peak_bytes" => Self::MemoryPeakBytes,
+            "accuracy_per_watt" => Self::AccuracyPerWatt,
+            "energy_delay_product" => Self::EnergyDelayProduct,
+
+            // ═══════════════════════════════════════════════════════════════════
             // Debug
             // ═══════════════════════════════════════════════════════════════════
             "debug_print" => Self::DebugPrint,
@@ -452,6 +524,10 @@ impl StdlibIntrinsic {
             "assert_eq_int" => Self::AssertEqInt,
             "assert_eq_bytesil" => Self::AssertEqBytesil,
             "assert_eq_state" => Self::AssertEqState,
+            "timestamp_nanos_state" => Self::TimestampNanosState,
+            "energy_total_joules" => Self::EnergyTotalJoules,
+            "energy_efficiency" => Self::EnergyEfficiency,
+            "benchmark_reset" => Self::BenchmarkReset,
 
             _ => return None,
         })
@@ -800,14 +876,26 @@ fn is_mnemonic(s: &str) -> bool {
     matches!(s,
         "NOP" | "HLT" | "RET" | "YIELD" |
         "JMP" | "JZ" | "JN" | "JC" | "JO" | "CALL" | "LOOP" |
-        "MOV" | "MOVI" | "LOAD" | "STORE" | "PUSH" | "POP" | "XCHG" | "LSTATE" | "SSTATE" |
+        "MOV" | "MOVI" | "MOVI16" | "MOVI32" | "LOAD" | "STORE" | "PUSH" | "POP" | "XCHG" | "LSTATE" | "SSTATE" |
         "MUL" | "DIV" | "POW" | "ROOT" | "INV" | "CONJ" | "ADD" | "SUB" |
         "MAG" | "PHASE" | "SCALE" | "ROTATE" |
+        // Int/Float mode-aware ops
+        "ADDINT" | "SUBINT" | "MULINT" | "DIVINT" | "MODINT" | "POWINT" | "NEGINT" | "ABSINT" |
+        "ADDFLOAT" | "SUBFLOAT" | "MULFLOAT" | "DIVFLOAT" | "POWFLOAT" | "SQRTFLOAT" | "NEGFLOAT" | "ABSFLOAT" | "FLOORFLOAT" | "CEILFLOAT" |
+        // Comparação
+        "CMPINT" | "CMPFLOAT" | "TESTINT" |
+        // Bitwise inteiros
+        "ANDINT" | "ORINT" | "XORINT" | "NOTINT" | "SHLINT" | "SHRINT" |
+        // Conversões
+        "CVTI2F" | "CVTF2I" | "CVTI2B" | "CVTB2I" | "CVTF2B" | "CVTB2F" |
+        // Layer ops
         "XORL" | "ANDL" | "ORL" | "NOTL" | "SHIFTL" | "ROTATL" | "FOLD" | "SPREAD" | "GATHER" |
         "TRANS" | "PIPE" | "LERP" | "SLERP" | "GRAD" | "DESCENT" | "EMERGE" | "COLLAPSE" |
         "SETMODE" | "PROMOTE" | "DEMOTE" | "TRUNCATE" | "XORDEM" | "AVGDEM" | "MAXDEM" | "COMPAT" |
+        // Quantum/BitDeSil
+        "BIT.H" | "BIT.X" | "BIT.Y" | "BIT.Z" | "BIT.COLLAPSE" | "BIT.MEASURE" | "BIT.ROTQ" | "BIT.NORM" |
         "IN" | "OUT" | "SENSE" | "ACT" | "SYNC" | "BROADCAST" | "RECEIVE" | "ENTANGLE" |
-        "HINT.CPU" | "HINT.GPU" | "HINT.NPU" | "HINT.ANY" | "BATCH" | "UNBATCH" | "PREFETCH" | "FENCE" |
+        "HINT.CPU" | "HINT.GPU" | "HINT.NPU" | "HINT.ANY" | "HINT.FPGA" | "HINT.DSP" | "BATCH" | "UNBATCH" | "PREFETCH" | "FENCE" |
         "SYSCALL"
     )
 }
@@ -852,6 +940,8 @@ pub enum Directive {
     Align(u32),
     Byte(Vec<u8>),
     State(String, Vec<u8>),
+    /// String literal (stored in global string table for runtime)
+    StringLit(String),
 }
 
 /// Parser para assembly SIL
@@ -1030,6 +1120,15 @@ impl Parser {
                 }
                 Ok(Directive::State(String::new(), bytes))
             }
+            ".string" => {
+                // .string "literal text"
+                if let Token::StringLit(s) = self.current().clone() {
+                    self.advance();
+                    Ok(Directive::StringLit(s))
+                } else {
+                    Err(VspError::AssemblerError("Expected string literal after .string".to_string()))
+                }
+            }
             _ => Err(VspError::AssemblerError(format!(
                 "Unknown directive '{}'", name
             ))),
@@ -1083,6 +1182,7 @@ impl Parser {
 
 fn mnemonic_to_opcode(m: &str) -> Option<Opcode> {
     Some(match m {
+        // Controle
         "NOP" => Opcode::Nop,
         "HLT" => Opcode::Hlt,
         "RET" => Opcode::Ret,
@@ -1094,8 +1194,12 @@ fn mnemonic_to_opcode(m: &str) -> Option<Opcode> {
         "JO" => Opcode::Jo,
         "CALL" => Opcode::Call,
         "LOOP" => Opcode::Loop,
+
+        // Movimento de dados
         "MOV" => Opcode::Mov,
         "MOVI" => Opcode::Movi,
+        "MOVI16" => Opcode::Movi16,
+        "MOVI32" => Opcode::Movi32,
         "LOAD" => Opcode::Load,
         "STORE" => Opcode::Store,
         "PUSH" => Opcode::Push,
@@ -1103,6 +1207,8 @@ fn mnemonic_to_opcode(m: &str) -> Option<Opcode> {
         "XCHG" => Opcode::Xchg,
         "LSTATE" => Opcode::Lstate,
         "SSTATE" => Opcode::Sstate,
+
+        // Aritmética ByteSil
         "MUL" => Opcode::Mul,
         "DIV" => Opcode::Div,
         "POW" => Opcode::Pow,
@@ -1115,6 +1221,51 @@ fn mnemonic_to_opcode(m: &str) -> Option<Opcode> {
         "PHASE" => Opcode::Phase,
         "SCALE" => Opcode::Scale,
         "ROTATE" => Opcode::Rotate,
+
+        // Aritmética de inteiros (mode-aware)
+        "ADDINT" => Opcode::AddInt,
+        "SUBINT" => Opcode::SubInt,
+        "MULINT" => Opcode::MulInt,
+        "DIVINT" => Opcode::DivInt,
+        "MODINT" => Opcode::ModInt,
+        "POWINT" => Opcode::PowInt,
+        "NEGINT" => Opcode::NegInt,
+        "ABSINT" => Opcode::AbsInt,
+
+        // Aritmética de floats (mode-aware)
+        "ADDFLOAT" => Opcode::AddFloat,
+        "SUBFLOAT" => Opcode::SubFloat,
+        "MULFLOAT" => Opcode::MulFloat,
+        "DIVFLOAT" => Opcode::DivFloat,
+        "POWFLOAT" => Opcode::PowFloat,
+        "SQRTFLOAT" => Opcode::SqrtFloat,
+        "NEGFLOAT" => Opcode::NegFloat,
+        "ABSFLOAT" => Opcode::AbsFloat,
+        "FLOORFLOAT" => Opcode::FloorFloat,
+        "CEILFLOAT" => Opcode::CeilFloat,
+
+        // Comparação
+        "CMPINT" => Opcode::CmpInt,
+        "CMPFLOAT" => Opcode::CmpFloat,
+        "TESTINT" => Opcode::TestInt,
+
+        // Bitwise de inteiros
+        "ANDINT" => Opcode::AndInt,
+        "ORINT" => Opcode::OrInt,
+        "XORINT" => Opcode::XorInt,
+        "NOTINT" => Opcode::NotInt,
+        "SHLINT" => Opcode::ShlInt,
+        "SHRINT" => Opcode::ShrInt,
+
+        // Conversões
+        "CVTI2F" => Opcode::CvtIntToFloat,
+        "CVTF2I" => Opcode::CvtFloatToInt,
+        "CVTI2B" => Opcode::CvtIntToByteSil,
+        "CVTB2I" => Opcode::CvtByteSilToInt,
+        "CVTF2B" => Opcode::CvtFloatToByteSil,
+        "CVTB2F" => Opcode::CvtByteSilToFloat,
+
+        // Operações de camada
         "XORL" => Opcode::Xorl,
         "ANDL" => Opcode::Andl,
         "ORL" => Opcode::Orl,
@@ -1124,6 +1275,8 @@ fn mnemonic_to_opcode(m: &str) -> Option<Opcode> {
         "FOLD" => Opcode::Fold,
         "SPREAD" => Opcode::Spread,
         "GATHER" => Opcode::Gather,
+
+        // Transformações
         "TRANS" => Opcode::Trans,
         "PIPE" => Opcode::Pipe,
         "LERP" => Opcode::Lerp,
@@ -1132,6 +1285,8 @@ fn mnemonic_to_opcode(m: &str) -> Option<Opcode> {
         "DESCENT" => Opcode::Descent,
         "EMERGE" => Opcode::Emerge,
         "COLLAPSE" => Opcode::Collapse,
+
+        // Compatibilidade
         "SETMODE" => Opcode::Setmode,
         "PROMOTE" => Opcode::Promote,
         "DEMOTE" => Opcode::Demote,
@@ -1140,6 +1295,18 @@ fn mnemonic_to_opcode(m: &str) -> Option<Opcode> {
         "AVGDEM" => Opcode::Avgdem,
         "MAXDEM" => Opcode::Maxdem,
         "COMPAT" => Opcode::Compat,
+
+        // Quantum/BitDeSil
+        "BIT.H" => Opcode::BitHadamard,
+        "BIT.X" => Opcode::BitPauliX,
+        "BIT.Y" => Opcode::BitPauliY,
+        "BIT.Z" => Opcode::BitPauliZ,
+        "BIT.COLLAPSE" => Opcode::BitCollapse,
+        "BIT.MEASURE" => Opcode::BitMeasure,
+        "BIT.ROTQ" => Opcode::BitRotateQ,
+        "BIT.NORM" => Opcode::BitNormalize,
+
+        // I/O e Sistema
         "IN" => Opcode::In,
         "OUT" => Opcode::Out,
         "SENSE" => Opcode::Sense,
@@ -1148,15 +1315,20 @@ fn mnemonic_to_opcode(m: &str) -> Option<Opcode> {
         "BROADCAST" => Opcode::Broadcast,
         "RECEIVE" => Opcode::Receive,
         "ENTANGLE" => Opcode::Entangle,
+
+        // Hardware Hints
         "HINT.CPU" => Opcode::HintCpu,
         "HINT.GPU" => Opcode::HintGpu,
         "HINT.NPU" => Opcode::HintNpu,
         "HINT.ANY" => Opcode::HintAny,
+        "HINT.FPGA" => Opcode::HintFpga,
+        "HINT.DSP" => Opcode::HintDsp,
         "BATCH" => Opcode::Batch,
         "UNBATCH" => Opcode::Unbatch,
         "PREFETCH" => Opcode::Prefetch,
         "FENCE" => Opcode::Fence,
         "SYSCALL" => Opcode::Syscall,
+
         _ => return None,
     })
 }
@@ -1302,11 +1474,24 @@ impl Assembler {
         if instr.opcode == Opcode::Call {
             if let Some(Operand::LabelRef(name)) = instr.operands.first() {
                 if let Some(intrinsic) = StdlibIntrinsic::from_name(name) {
-                    // Emit SYSCALL with intrinsic ID instead of CALL
+                    // Emit SYSCALL with intrinsic ID
                     self.code.push(Opcode::Syscall as u8);
                     self.code.push(intrinsic as u8);
-                    self.code.push(0); // padding
-                    self.code.push(0); // padding
+
+                    // For print_string, include the string index in bytes 2-3
+                    if intrinsic == StdlibIntrinsic::PrintString {
+                        if let Some(Operand::Immediate(string_id)) = instr.operands.get(1) {
+                            let id = *string_id as u16;
+                            self.code.push((id & 0xFF) as u8);       // low byte
+                            self.code.push(((id >> 8) & 0xFF) as u8); // high byte
+                        } else {
+                            self.code.push(0);
+                            self.code.push(0);
+                        }
+                    } else {
+                        self.code.push(0); // padding
+                        self.code.push(0); // padding
+                    }
                     return Ok(());
                 }
             }
@@ -1343,7 +1528,7 @@ impl Assembler {
             }
             InstructionFormat::FormatD => {
                 self.code.push(opcode);
-                
+
                 // Encode operands
                 match instr.operands.len() {
                     0 => {
@@ -1352,7 +1537,8 @@ impl Assembler {
                     1 => {
                         // Address or immediate
                         let value = self.encode_operand_32(instr.operands.first(), instr.pos)?;
-                        self.code.extend_from_slice(&value.to_le_bytes()[..3]);
+                        let bytes = value.to_le_bytes();
+                        self.code.extend_from_slice(&bytes[..3]);
                     }
                     2 => {
                         let op1 = self.encode_operand(instr.operands.first(), instr.pos)?;
@@ -1446,7 +1632,7 @@ impl Assembler {
                 .ok_or_else(|| VspError::AssemblerError(format!(
                     "Undefined symbol '{}' at {}", name, pos
                 )))?;
-            
+
             // Patch the address
             let bytes = addr.to_le_bytes();
             if *offset + 2 < self.code.len() {

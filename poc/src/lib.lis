@@ -1,0 +1,23 @@
+// PoC: Classificador Multimodal de Gestos
+// Case comparativo SIL/Paebiru vs ML tradicional
+
+// Re-exports from paebiru
+pub use paebiru::core::bytesil::{bs_mag, bs_from_mag_clamped, bs_zero, bs_one};
+pub use paebiru::core::state::{
+    st_vacuum, st_neutral, st_uniform, st_singleton,
+    st_get, st_set, st_add, st_sub, st_mul, st_scale,
+    st_sum_mag, st_max_mag, st_mean, st_norm_l2,
+    st_xor, st_tensor
+};
+pub use paebiru::layers::dense::{dense_forward, dense_relu, dense_gelu, init_weights, init_bias_zero};
+pub use paebiru::lis::{
+    MOD_PHOTONIC, MOD_ACOUSTIC, MOD_DERMIC, MOD_PSYCHOMOTOR,
+    MOD_ELECTRONIC, MOD_ENVIRONMENTAL,
+    lis_config_create, lis_config_standard, lis_enable_modality
+};
+
+// Local modules
+pub mod model;
+pub mod data;
+pub mod training;
+pub mod benchmark;

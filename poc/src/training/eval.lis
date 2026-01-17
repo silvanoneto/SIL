@@ -1,0 +1,358 @@
+// PoC - Avaliação do Modelo
+// Métricas de acurácia e loss
+
+use paebiru::core::bytesil::{bs_mag, bs_from_mag_clamped};
+use paebiru::core::state::{st_vacuum, st_set, st_get};
+use model::classifier::{classifier_forward, predict_class};
+use data::synthetic::{generate_gesture_sample, generate_gesture_label, prng_next};
+
+// =============================================================================
+// Métricas de Loss
+// =============================================================================
+
+// Cross-entropy loss entre output (probabilidades) e target (one-hot)
+pub fn cross_entropy_loss(output: State, target: State) -> Float {
+    let eps = 0.0000001;
+    let loss = 0.0;
+
+    // sum(-target * log(output))
+    let t0 = bs_mag(st_get(target, 0));
+    let p0 = bs_mag(st_get(output, 0));
+    if t0 > 0.5 { let loss = loss - ln(p0 + eps); }
+
+    let t1 = bs_mag(st_get(target, 1));
+    let p1 = bs_mag(st_get(output, 1));
+    if t1 > 0.5 { let loss = loss - ln(p1 + eps); }
+
+    let t2 = bs_mag(st_get(target, 2));
+    let p2 = bs_mag(st_get(output, 2));
+    if t2 > 0.5 { let loss = loss - ln(p2 + eps); }
+
+    let t3 = bs_mag(st_get(target, 3));
+    let p3 = bs_mag(st_get(output, 3));
+    if t3 > 0.5 { let loss = loss - ln(p3 + eps); }
+
+    let t4 = bs_mag(st_get(target, 4));
+    let p4 = bs_mag(st_get(output, 4));
+    if t4 > 0.5 { let loss = loss - ln(p4 + eps); }
+
+    let t5 = bs_mag(st_get(target, 5));
+    let p5 = bs_mag(st_get(output, 5));
+    if t5 > 0.5 { let loss = loss - ln(p5 + eps); }
+
+    let t6 = bs_mag(st_get(target, 6));
+    let p6 = bs_mag(st_get(output, 6));
+    if t6 > 0.5 { let loss = loss - ln(p6 + eps); }
+
+    let t7 = bs_mag(st_get(target, 7));
+    let p7 = bs_mag(st_get(output, 7));
+    if t7 > 0.5 { let loss = loss - ln(p7 + eps); }
+
+    let t8 = bs_mag(st_get(target, 8));
+    let p8 = bs_mag(st_get(output, 8));
+    if t8 > 0.5 { let loss = loss - ln(p8 + eps); }
+
+    let t9 = bs_mag(st_get(target, 9));
+    let p9 = bs_mag(st_get(output, 9));
+    if t9 > 0.5 { let loss = loss - ln(p9 + eps); }
+
+    let t10 = bs_mag(st_get(target, 10));
+    let p10 = bs_mag(st_get(output, 10));
+    if t10 > 0.5 { let loss = loss - ln(p10 + eps); }
+
+    let t11 = bs_mag(st_get(target, 11));
+    let p11 = bs_mag(st_get(output, 11));
+    if t11 > 0.5 { let loss = loss - ln(p11 + eps); }
+
+    let t12 = bs_mag(st_get(target, 12));
+    let p12 = bs_mag(st_get(output, 12));
+    if t12 > 0.5 { let loss = loss - ln(p12 + eps); }
+
+    let t13 = bs_mag(st_get(target, 13));
+    let p13 = bs_mag(st_get(output, 13));
+    if t13 > 0.5 { let loss = loss - ln(p13 + eps); }
+
+    let t14 = bs_mag(st_get(target, 14));
+    let p14 = bs_mag(st_get(output, 14));
+    if t14 > 0.5 { let loss = loss - ln(p14 + eps); }
+
+    let t15 = bs_mag(st_get(target, 15));
+    let p15 = bs_mag(st_get(output, 15));
+    if t15 > 0.5 { let loss = loss - ln(p15 + eps); }
+
+    return loss;
+}
+
+// Compute loss médio sobre batch
+pub fn compute_loss(
+    w1: State,
+    b1: State,
+    w2: State,
+    b2: State,
+    num_samples: Int,
+    noise_level: Float,
+    seed: Int
+) -> Float {
+    let total_loss = 0.0;
+    let s = seed;
+
+    let i = 0;
+    loop {
+        if i >= num_samples { break; }
+
+        // Gera sample
+        let s = prng_next(s);
+        let gesture = s % 16;
+        let s = prng_next(s);
+        let input = generate_gesture_sample(gesture, s, noise_level);
+        let label = generate_gesture_label(gesture);
+
+        // Forward
+        let output = classifier_forward(input, w1, b1, w2, b2);
+
+        // Loss
+        let loss = cross_entropy_loss(output, label);
+        let total_loss = total_loss + loss;
+
+        let i = i + 1;
+    }
+
+    return total_loss / float_from_int(num_samples);
+}
+
+// =============================================================================
+// Métricas de Acurácia
+// =============================================================================
+
+// Calcula acurácia sobre amostras
+pub fn accuracy(
+    w1: State,
+    b1: State,
+    w2: State,
+    b2: State,
+    num_samples: Int,
+    noise_level: Float,
+    seed: Int
+) -> Float {
+    let correct = 0;
+    let s = seed;
+
+    let i = 0;
+    loop {
+        if i >= num_samples { break; }
+
+        // Gera sample
+        let s = prng_next(s);
+        let true_class = s % 16;
+        let s = prng_next(s);
+        let input = generate_gesture_sample(true_class, s, noise_level);
+
+        // Predição
+        let output = classifier_forward(input, w1, b1, w2, b2);
+        let pred_class = predict_class(output);
+
+        // Verifica
+        if pred_class == true_class {
+            let correct = correct + 1;
+        }
+
+        let i = i + 1;
+    }
+
+    return float_from_int(correct) / float_from_int(num_samples);
+}
+
+// Avaliação completa (retorna State com métricas)
+// Layout: [accuracy, avg_loss, avg_confidence, num_samples/1000]
+pub fn evaluate(
+    w1: State,
+    b1: State,
+    w2: State,
+    b2: State,
+    num_samples: Int,
+    noise_level: Float,
+    seed: Int
+) -> State {
+    let acc = accuracy(w1, b1, w2, b2, num_samples, noise_level, seed);
+    let loss = compute_loss(w1, b1, w2, b2, num_samples, noise_level, seed + 12345);
+
+    let metrics = st_vacuum();
+    let metrics = st_set(metrics, 0, bs_from_mag_clamped(acc));
+    let metrics = st_set(metrics, 1, bs_from_mag_clamped(loss / 10.0));  // Normaliza loss
+    let metrics = st_set(metrics, 2, bs_from_mag_clamped(float_from_int(num_samples) / 1000.0));
+
+    return metrics;
+}
+
+// Extrai acurácia das métricas
+pub fn get_accuracy(metrics: State) -> Float {
+    return bs_mag(st_get(metrics, 0));
+}
+
+// Extrai loss das métricas
+pub fn get_loss(metrics: State) -> Float {
+    return bs_mag(st_get(metrics, 1)) * 10.0;
+}
+
+// =============================================================================
+// Confusion Matrix (Simplificada)
+// =============================================================================
+
+// Calcula acurácia por classe
+// Retorna State onde cada camada é a acurácia daquela classe
+pub fn per_class_accuracy(
+    w1: State,
+    b1: State,
+    w2: State,
+    b2: State,
+    samples_per_class: Int,
+    noise_level: Float,
+    seed: Int
+) -> State {
+    let accuracies = st_vacuum();
+    let s = seed;
+
+    // Para cada classe
+    let class_idx = 0;
+    loop {
+        if class_idx >= 16 { break; }
+
+        let correct = 0;
+        let j = 0;
+        loop {
+            if j >= samples_per_class { break; }
+
+            // Gera sample desta classe
+            let s = prng_next(s);
+            let input = generate_gesture_sample(class_idx, s, noise_level);
+
+            // Predição
+            let output = classifier_forward(input, w1, b1, w2, b2);
+            let pred_class = predict_class(output);
+
+            if pred_class == class_idx {
+                let correct = correct + 1;
+            }
+
+            let j = j + 1;
+        }
+
+        let class_acc = float_from_int(correct) / float_from_int(samples_per_class);
+        let accuracies = st_set(accuracies, class_idx, bs_from_mag_clamped(class_acc));
+
+        let class_idx = class_idx + 1;
+    }
+
+    return accuracies;
+}
+
+// =============================================================================
+// Validation Set e Métricas por Época
+// =============================================================================
+
+// Estrutura de métricas por época
+// Layout: [epoch/100, train_loss/10, val_loss/10, train_acc, val_acc, lr]
+pub fn epoch_metrics_create(epoch: Int, train_loss: Float, val_loss: Float, train_acc: Float, val_acc: Float, lr: Float) -> State {
+    let m = st_vacuum();
+    let m = st_set(m, 0, bs_from_mag_clamped(float_from_int(epoch) / 100.0));
+    let m = st_set(m, 1, bs_from_mag_clamped(train_loss / 10.0));
+    let m = st_set(m, 2, bs_from_mag_clamped(val_loss / 10.0));
+    let m = st_set(m, 3, bs_from_mag_clamped(train_acc));
+    let m = st_set(m, 4, bs_from_mag_clamped(val_acc));
+    let m = st_set(m, 5, bs_from_mag_clamped(lr));
+    return m;
+}
+
+pub fn get_epoch_num(m: State) -> Int { return int_from_float(bs_mag(st_get(m, 0)) * 100.0); }
+pub fn get_train_loss(m: State) -> Float { return bs_mag(st_get(m, 1)) * 10.0; }
+pub fn get_val_loss(m: State) -> Float { return bs_mag(st_get(m, 2)) * 10.0; }
+pub fn get_train_acc(m: State) -> Float { return bs_mag(st_get(m, 3)); }
+pub fn get_val_acc(m: State) -> Float { return bs_mag(st_get(m, 4)); }
+pub fn get_epoch_lr(m: State) -> Float { return bs_mag(st_get(m, 5)); }
+
+// Valida modelo em conjunto de validação separado
+pub fn validate(
+    w1: State,
+    b1: State,
+    w2: State,
+    b2: State,
+    num_samples: Int,
+    noise_level: Float,
+    seed: Int
+) -> State {
+    // Usa seed diferente do treino para garantir dados não vistos
+    let val_seed = seed + 77777;
+    let val_acc = accuracy(w1, b1, w2, b2, num_samples, noise_level, val_seed);
+    let val_loss = compute_loss(w1, b1, w2, b2, num_samples, noise_level, val_seed + 1000);
+
+    let result = st_vacuum();
+    let result = st_set(result, 0, bs_from_mag_clamped(val_acc));
+    let result = st_set(result, 1, bs_from_mag_clamped(val_loss / 10.0));
+    return result;
+}
+
+// Early stopping check
+// Retorna 1 se deve parar (val_loss não melhorou por patience epochs)
+pub fn should_early_stop(
+    current_val_loss: Float,
+    best_val_loss: Float,
+    epochs_without_improvement: Int,
+    patience: Int
+) -> Int {
+    if current_val_loss >= best_val_loss {
+        if epochs_without_improvement >= patience {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+// Atualiza melhor loss e contador de epochs sem melhoria
+// Retorna State com [best_loss, epochs_without_improvement/100]
+pub fn update_early_stopping_state(
+    current_val_loss: Float,
+    best_val_loss: Float,
+    epochs_without_improvement: Int
+) -> State {
+    let result = st_vacuum();
+
+    if current_val_loss < best_val_loss {
+        // Melhorou: atualiza best e reseta contador
+        let result = st_set(result, 0, bs_from_mag_clamped(current_val_loss / 10.0));
+        let result = st_set(result, 1, bs_from_mag_clamped(0.0));
+    } else {
+        // Não melhorou: mantém best e incrementa contador
+        let result = st_set(result, 0, bs_from_mag_clamped(best_val_loss / 10.0));
+        let result = st_set(result, 1, bs_from_mag_clamped(float_from_int(epochs_without_improvement + 1) / 100.0));
+    }
+
+    return result;
+}
+
+pub fn get_best_loss(es_state: State) -> Float {
+    return bs_mag(st_get(es_state, 0)) * 10.0;
+}
+
+pub fn get_epochs_without_improvement(es_state: State) -> Int {
+    return int_from_float(bs_mag(st_get(es_state, 1)) * 100.0);
+}
+
+// =============================================================================
+// Split de Dados (Train/Val/Test)
+// =============================================================================
+
+// Retorna seed offset para split específico
+// Split 0 = Train (70%), Split 1 = Val (15%), Split 2 = Test (15%)
+pub fn get_split_seed(base_seed: Int, split: Int) -> Int {
+    if split == 0 { return base_seed; }           // Train
+    if split == 1 { return base_seed + 100000; }  // Validation
+    return base_seed + 200000;                     // Test
+}
+
+// Calcula número de samples por split
+// split: 0=train(70%), 1=val(15%), 2=test(15%)
+pub fn get_split_size(total_samples: Int, split: Int) -> Int {
+    if split == 0 { return (total_samples * 70) / 100; }  // Train: 70%
+    if split == 1 { return (total_samples * 15) / 100; }  // Val: 15%
+    return (total_samples * 15) / 100;                     // Test: 15%
+}

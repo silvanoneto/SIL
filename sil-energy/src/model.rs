@@ -73,7 +73,8 @@ pub struct CpuEnergyModel {
     name: String,
     /// Joules por ciclo
     joules_per_cycle: f64,
-    /// Frequência em Hz
+    /// Frequência em Hz (reservado para frequency scaling)
+    #[allow(dead_code)]
     frequency_hz: f64,
     /// Potência idle (W)
     idle_watts: f64,

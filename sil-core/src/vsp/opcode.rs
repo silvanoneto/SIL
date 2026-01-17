@@ -95,7 +95,7 @@ pub enum Opcode {
     Lstate = 0x27,
     /// Store full state (128 bits)
     Sstate = 0x28,
-    
+
     // ═══════════════════════════════════════════════════════════════
     // ARITMÉTICA BYTESIL (0x40-0x5F)
     // ═══════════════════════════════════════════════════════════════
@@ -124,7 +124,57 @@ pub enum Opcode {
     Scale = 0x4A,
     /// Rotaciona fase
     Rotate = 0x4B,
-    
+
+    // ═══════════════════════════════════════════════════════════════
+    // ARITMÉTICA INT/FLOAT MODE-AWARE (0x4C-0x5F)
+    // Tamanho determinado pelo SilMode: 8/16/32/64 bits
+    // ═══════════════════════════════════════════════════════════════
+
+    /// Adição de inteiros (tamanho pelo modo)
+    AddInt = 0x4C,
+    /// Subtração de inteiros
+    SubInt = 0x4D,
+    /// Multiplicação de inteiros
+    MulInt = 0x4E,
+    /// Divisão de inteiros
+    DivInt = 0x4F,
+    /// Adição de floats IEEE754
+    AddFloat = 0x50,
+    /// Subtração de floats
+    SubFloat = 0x51,
+    /// Multiplicação de floats
+    MulFloat = 0x52,
+    /// Divisão de floats
+    DivFloat = 0x53,
+    /// Potência de inteiros
+    PowInt = 0x54,
+    /// Potência de floats
+    PowFloat = 0x55,
+    /// Raiz quadrada de float
+    SqrtFloat = 0x56,
+    /// Módulo de inteiros
+    ModInt = 0x57,
+
+    // Comparação mode-aware (0x58-0x5A)
+    /// Compara inteiros, afeta flags Z/N
+    CmpInt = 0x58,
+    /// Compara floats IEEE754
+    CmpFloat = 0x59,
+    /// Test (AND lógico) de inteiros
+    TestInt = 0x5A,
+
+    // Bitwise de inteiros mode-aware (0x5B-0x5F)
+    /// AND bitwise de inteiros
+    AndInt = 0x5B,
+    /// OR bitwise de inteiros
+    OrInt = 0x5C,
+    /// XOR bitwise de inteiros
+    XorInt = 0x5D,
+    /// NOT bitwise de inteiros
+    NotInt = 0x5E,
+    /// Shift left de inteiros
+    ShlInt = 0x5F,
+
     // ═══════════════════════════════════════════════════════════════
     // OPERAÇÕES DE CAMADA (0x60-0x7F)
     // ═══════════════════════════════════════════════════════════════
@@ -147,7 +197,39 @@ pub enum Opcode {
     Spread = 0x67,
     /// Gather de grupo
     Gather = 0x68,
-    
+
+    // Operações adicionais de inteiros (0x69-0x6C)
+    /// Shift right de inteiros
+    ShrInt = 0x69,
+    /// Negação de inteiros
+    NegInt = 0x6A,
+    /// Valor absoluto de inteiros
+    AbsInt = 0x6B,
+
+    // Operações float especiais (0x6C-0x6F)
+    /// Negação de float
+    NegFloat = 0x6C,
+    /// Valor absoluto de float
+    AbsFloat = 0x6D,
+    /// Floor de float
+    FloorFloat = 0x6E,
+    /// Ceil de float
+    CeilFloat = 0x6F,
+
+    // Conversões (0x70-0x77)
+    /// Int → Float
+    CvtIntToFloat = 0x70,
+    /// Float → Int
+    CvtFloatToInt = 0x71,
+    /// Int → ByteSil
+    CvtIntToByteSil = 0x72,
+    /// ByteSil → Int
+    CvtByteSilToInt = 0x73,
+    /// Float → ByteSil
+    CvtFloatToByteSil = 0x74,
+    /// ByteSil → Float
+    CvtByteSilToFloat = 0x75,
+
     // ═══════════════════════════════════════════════════════════════
     // TRANSFORMAÇÕES (0x80-0x9F)
     // ═══════════════════════════════════════════════════════════════
@@ -287,8 +369,8 @@ impl Opcode {
             0x26 => Self::Xchg,
             0x27 => Self::Lstate,
             0x28 => Self::Sstate,
-            
-            // Aritmética
+
+            // Aritmética ByteSil
             0x40 => Self::Mul,
             0x41 => Self::Div,
             0x42 => Self::Pow,
@@ -301,7 +383,33 @@ impl Opcode {
             0x49 => Self::Phase,
             0x4A => Self::Scale,
             0x4B => Self::Rotate,
-            
+
+            // Aritmética de inteiros/floats diretos
+            0x4C => Self::AddInt,
+            0x4D => Self::SubInt,
+            0x4E => Self::MulInt,
+            0x4F => Self::DivInt,
+            0x50 => Self::AddFloat,
+            0x51 => Self::SubFloat,
+            0x52 => Self::MulFloat,
+            0x53 => Self::DivFloat,
+            0x54 => Self::PowInt,
+            0x55 => Self::PowFloat,
+            0x56 => Self::SqrtFloat,
+            0x57 => Self::ModInt,
+
+            // Comparação
+            0x58 => Self::CmpInt,
+            0x59 => Self::CmpFloat,
+            0x5A => Self::TestInt,
+
+            // Bitwise inteiros
+            0x5B => Self::AndInt,
+            0x5C => Self::OrInt,
+            0x5D => Self::XorInt,
+            0x5E => Self::NotInt,
+            0x5F => Self::ShlInt,
+
             // Camada
             0x60 => Self::Xorl,
             0x61 => Self::Andl,
@@ -312,6 +420,25 @@ impl Opcode {
             0x66 => Self::Fold,
             0x67 => Self::Spread,
             0x68 => Self::Gather,
+
+            // Operações adicionais inteiros
+            0x69 => Self::ShrInt,
+            0x6A => Self::NegInt,
+            0x6B => Self::AbsInt,
+
+            // Operações float especiais
+            0x6C => Self::NegFloat,
+            0x6D => Self::AbsFloat,
+            0x6E => Self::FloorFloat,
+            0x6F => Self::CeilFloat,
+
+            // Conversões
+            0x70 => Self::CvtIntToFloat,
+            0x71 => Self::CvtFloatToInt,
+            0x72 => Self::CvtIntToByteSil,
+            0x73 => Self::CvtByteSilToInt,
+            0x74 => Self::CvtFloatToByteSil,
+            0x75 => Self::CvtByteSilToFloat,
             
             // Transformação
             0x80 => Self::Trans,
@@ -399,6 +526,17 @@ impl Opcode {
             Self::Mov | Self::Movi | Self::Xchg |
             Self::Mul | Self::Div | Self::Pow | Self::Root |
             Self::Add | Self::Sub | Self::Scale | Self::Rotate |
+            // Inteiros/Floats
+            Self::AddInt | Self::SubInt | Self::MulInt | Self::DivInt |
+            Self::AddFloat | Self::SubFloat | Self::MulFloat | Self::DivFloat |
+            Self::PowInt | Self::PowFloat | Self::SqrtFloat | Self::ModInt |
+            Self::CmpInt | Self::CmpFloat | Self::TestInt |
+            Self::AndInt | Self::OrInt | Self::XorInt | Self::NotInt |
+            Self::ShlInt | Self::ShrInt | Self::NegInt | Self::AbsInt |
+            Self::NegFloat | Self::AbsFloat | Self::FloorFloat | Self::CeilFloat |
+            Self::CvtIntToFloat | Self::CvtFloatToInt |
+            Self::CvtIntToByteSil | Self::CvtByteSilToInt |
+            Self::CvtFloatToByteSil | Self::CvtByteSilToFloat |
             Self::Xorl | Self::Andl | Self::Orl |
             Self::Lerp | Self::Slerp | Self::Descent |
             Self::Promote | Self::Demote | Self::Truncate |
@@ -450,6 +588,39 @@ impl Opcode {
             Self::Phase => "PHASE",
             Self::Scale => "SCALE",
             Self::Rotate => "ROTATE",
+            Self::AddInt => "ADDINT",
+            Self::SubInt => "SUBINT",
+            Self::MulInt => "MULINT",
+            Self::DivInt => "DIVINT",
+            Self::AddFloat => "ADDFLOAT",
+            Self::SubFloat => "SUBFLOAT",
+            Self::MulFloat => "MULFLOAT",
+            Self::DivFloat => "DIVFLOAT",
+            Self::PowInt => "POWINT",
+            Self::PowFloat => "POWFLOAT",
+            Self::SqrtFloat => "SQRTFLOAT",
+            Self::ModInt => "MODINT",
+            Self::CmpInt => "CMPINT",
+            Self::CmpFloat => "CMPFLOAT",
+            Self::TestInt => "TESTINT",
+            Self::AndInt => "ANDINT",
+            Self::OrInt => "ORINT",
+            Self::XorInt => "XORINT",
+            Self::NotInt => "NOTINT",
+            Self::ShlInt => "SHLINT",
+            Self::ShrInt => "SHRINT",
+            Self::NegInt => "NEGINT",
+            Self::AbsInt => "ABSINT",
+            Self::NegFloat => "NEGFLOAT",
+            Self::AbsFloat => "ABSFLOAT",
+            Self::FloorFloat => "FLOORFLOAT",
+            Self::CeilFloat => "CEILFLOAT",
+            Self::CvtIntToFloat => "CVTI2F",
+            Self::CvtFloatToInt => "CVTF2I",
+            Self::CvtIntToByteSil => "CVTI2B",
+            Self::CvtByteSilToInt => "CVTB2I",
+            Self::CvtFloatToByteSil => "CVTF2B",
+            Self::CvtByteSilToFloat => "CVTB2F",
             Self::Xorl => "XORL",
             Self::Andl => "ANDL",
             Self::Orl => "ORL",

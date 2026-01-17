@@ -1,8 +1,0 @@
-// LIS Example: Hello World
-// Demonstra: Programa mínimo, função main, print básico
-// Documentação: Seção 12.1
-
-// Ponto de entrada do programa
-fn main() {
-    print_string("Hello, World!");
-}

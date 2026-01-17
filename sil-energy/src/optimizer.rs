@@ -3,7 +3,6 @@
 //! Estratégias para redução automática de consumo energético.
 
 use crate::{
-    EnergyModel, EnergyResult, EnergyError,
     ProcessorType, PipelineStage,
     snapshot::{EnergySnapshot, EnergyStats},
 };

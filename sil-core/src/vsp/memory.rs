@@ -190,6 +190,7 @@ impl VspMemory {
     pub fn fetch(&self, pc: u32) -> VspResult<&[u8]> {
         let offset = pc as usize;
         if offset >= self.code.len() {
+            eprintln!("[FETCH] PC={:#x} out of bounds (code len={})", pc, self.code.len());
             return Err(VspError::AddressOutOfBounds(pc));
         }
         

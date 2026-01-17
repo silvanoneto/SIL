@@ -1,0 +1,559 @@
+// PoC - Gerador de Dados Sintéticos
+// 16 classes de gestos mapeando para camadas L0-LF
+
+use paebiru::core::bytesil::{bs_from_mag_clamped, bs_mag};
+use paebiru::core::state::{st_vacuum, st_set, st_get, st_singleton};
+
+// =============================================================================
+// Classes de Gestos (16 classes -> L0-LF)
+// =============================================================================
+
+pub fn GESTURE_WAVE() -> Int { return 0; }          // L0: movimento ondulatório
+pub fn GESTURE_SWIPE_LEFT() -> Int { return 1; }    // L1: deslize para esquerda
+pub fn GESTURE_SWIPE_RIGHT() -> Int { return 2; }   // L2: deslize para direita
+pub fn GESTURE_TAP() -> Int { return 3; }           // L3: toque único
+pub fn GESTURE_DOUBLE_TAP() -> Int { return 4; }    // L4: toque duplo
+pub fn GESTURE_PINCH() -> Int { return 5; }         // L5: pinça (aproximar dedos)
+pub fn GESTURE_SPREAD() -> Int { return 6; }        // L6: espalhar (afastar dedos)
+pub fn GESTURE_ROTATE_CW() -> Int { return 7; }     // L7: rotação horária
+pub fn GESTURE_ROTATE_CCW() -> Int { return 8; }    // L8: rotação anti-horária
+pub fn GESTURE_PUSH() -> Int { return 9; }          // L9: empurrar
+pub fn GESTURE_PULL() -> Int { return 10; }         // LA: puxar
+pub fn GESTURE_SHAKE() -> Int { return 11; }        // LB: sacudir
+pub fn GESTURE_TILT_LEFT() -> Int { return 12; }    // LC: inclinar esquerda
+pub fn GESTURE_TILT_RIGHT() -> Int { return 13; }   // LD: inclinar direita
+pub fn GESTURE_HOVER() -> Int { return 14; }        // LE: pairar
+pub fn GESTURE_STILL() -> Int { return 15; }        // LF: parado
+
+// =============================================================================
+// PRNG (Linear Congruential Generator)
+// =============================================================================
+
+pub fn prng_next(seed: Int) -> Int {
+    let a = 1103515245;
+    let c = 12345;
+    let m = 2147483647;
+    let next = (seed * a + c) % m;
+    if next < 0 { return 0 - next; }
+    return next;
+}
+
+// Gera float em [0, 1) a partir de seed
+pub fn prng_float(seed: Int) -> Float {
+    let s = prng_next(seed);
+    return float_from_int(s % 10000) / 10000.0;
+}
+
+// Gera ruído gaussiano aproximado (Box-Muller simplificado)
+pub fn noise(seed: Int, level: Float) -> Float {
+    let u = prng_float(seed);
+    return (u - 0.5) * 2.0 * level;
+}
+
+// =============================================================================
+// Padrões de Gestos com 16 Features Discriminativas
+// =============================================================================
+
+// Cada gesto usa TODAS as 16 camadas semânticas do State:
+// L0:  proximity     - distância do sensor
+// L1:  audio_level   - nível de som captado
+// L2:  pressure_x    - pressão horizontal
+// L3:  pressure_y    - pressão vertical
+// L4:  touch_area    - área de contato
+// L5:  accel_x       - aceleração X
+// L6:  accel_y       - aceleração Y
+// L7:  accel_z       - aceleração Z
+// L8:  gyro_x        - rotação X
+// L9:  gyro_y        - rotação Y
+// L10: gyro_z        - rotação Z
+// L11: velocity_mag  - magnitude da velocidade
+// L12: rotation_mag  - magnitude da rotação
+// L13: stability     - estabilidade (inverso da variância)
+// L14: periodicity   - periodicidade do movimento
+// L15: confidence    - confiança do padrão (1.0 - ruído)
+
+// Gera padrão base para cada classe de gesto
+// Cada gesto tem valores únicos em 8-12 camadas com deltas > 0.3
+fn gesture_pattern(gesture: Int) -> State {
+    let p = st_vacuum();
+
+    // L0: WAVE - movimento ondulatório repetitivo
+    // Características: alta periodicidade, gyro X/Y alto, velocidade média
+    if gesture == 0 {
+        let p = st_set(p, 0, bs_from_mag_clamped(0.3));   // proximity baixa
+        let p = st_set(p, 1, bs_from_mag_clamped(0.15));  // audio baixo
+        let p = st_set(p, 2, bs_from_mag_clamped(0.1));   // pressure_x baixo
+        let p = st_set(p, 3, bs_from_mag_clamped(0.1));   // pressure_y baixo
+        let p = st_set(p, 4, bs_from_mag_clamped(0.2));   // touch_area baixa
+        let p = st_set(p, 5, bs_from_mag_clamped(0.5));   // accel_x médio
+        let p = st_set(p, 6, bs_from_mag_clamped(0.4));   // accel_y médio
+        let p = st_set(p, 7, bs_from_mag_clamped(0.2));   // accel_z baixo
+        let p = st_set(p, 8, bs_from_mag_clamped(0.85));  // gyro_x ALTO ★
+        let p = st_set(p, 9, bs_from_mag_clamped(0.8));   // gyro_y ALTO ★
+        let p = st_set(p, 10, bs_from_mag_clamped(0.3));  // gyro_z baixo
+        let p = st_set(p, 11, bs_from_mag_clamped(0.5));  // velocity médio
+        let p = st_set(p, 12, bs_from_mag_clamped(0.75)); // rotation ALTO ★
+        let p = st_set(p, 13, bs_from_mag_clamped(0.4));  // stability média
+        let p = st_set(p, 14, bs_from_mag_clamped(0.95)); // periodicity MUITO ALTA ★★
+        let p = st_set(p, 15, bs_from_mag_clamped(0.85)); // confidence alta
+        return p;
+    }
+
+    // L1: SWIPE_LEFT - deslize horizontal para esquerda
+    // Características: accel_x ALTO, pressure_x alto, velocidade alta
+    if gesture == 1 {
+        let p = st_set(p, 0, bs_from_mag_clamped(0.5));   // proximity média
+        let p = st_set(p, 1, bs_from_mag_clamped(0.1));   // audio baixo
+        let p = st_set(p, 2, bs_from_mag_clamped(0.9));   // pressure_x ALTO ★★
+        let p = st_set(p, 3, bs_from_mag_clamped(0.2));   // pressure_y baixo
+        let p = st_set(p, 4, bs_from_mag_clamped(0.4));   // touch_area média
+        let p = st_set(p, 5, bs_from_mag_clamped(0.95));  // accel_x MUITO ALTO ★★
+        let p = st_set(p, 6, bs_from_mag_clamped(0.15));  // accel_y baixo
+        let p = st_set(p, 7, bs_from_mag_clamped(0.1));   // accel_z baixo
+        let p = st_set(p, 8, bs_from_mag_clamped(0.1));   // gyro_x baixo
+        let p = st_set(p, 9, bs_from_mag_clamped(0.15));  // gyro_y baixo
+        let p = st_set(p, 10, bs_from_mag_clamped(0.2));  // gyro_z baixo
+        let p = st_set(p, 11, bs_from_mag_clamped(0.85)); // velocity ALTO ★
+        let p = st_set(p, 12, bs_from_mag_clamped(0.15)); // rotation baixo
+        let p = st_set(p, 13, bs_from_mag_clamped(0.7));  // stability alta
+        let p = st_set(p, 14, bs_from_mag_clamped(0.1));  // periodicity baixa
+        let p = st_set(p, 15, bs_from_mag_clamped(0.9));  // confidence alta
+        return p;
+    }
+
+    // L2: SWIPE_RIGHT - deslize horizontal para direita
+    // Características: accel_y ALTO (oposto ao left), pressure_y alto
+    if gesture == 2 {
+        let p = st_set(p, 0, bs_from_mag_clamped(0.5));   // proximity média
+        let p = st_set(p, 1, bs_from_mag_clamped(0.1));   // audio baixo
+        let p = st_set(p, 2, bs_from_mag_clamped(0.2));   // pressure_x baixo
+        let p = st_set(p, 3, bs_from_mag_clamped(0.9));   // pressure_y ALTO ★★
+        let p = st_set(p, 4, bs_from_mag_clamped(0.4));   // touch_area média
+        let p = st_set(p, 5, bs_from_mag_clamped(0.15));  // accel_x baixo
+        let p = st_set(p, 6, bs_from_mag_clamped(0.95));  // accel_y MUITO ALTO ★★
+        let p = st_set(p, 7, bs_from_mag_clamped(0.1));   // accel_z baixo
+        let p = st_set(p, 8, bs_from_mag_clamped(0.15));  // gyro_x baixo
+        let p = st_set(p, 9, bs_from_mag_clamped(0.1));   // gyro_y baixo
+        let p = st_set(p, 10, bs_from_mag_clamped(0.2));  // gyro_z baixo
+        let p = st_set(p, 11, bs_from_mag_clamped(0.85)); // velocity ALTO ★
+        let p = st_set(p, 12, bs_from_mag_clamped(0.15)); // rotation baixo
+        let p = st_set(p, 13, bs_from_mag_clamped(0.7));  // stability alta
+        let p = st_set(p, 14, bs_from_mag_clamped(0.1));  // periodicity baixa
+        let p = st_set(p, 15, bs_from_mag_clamped(0.9));  // confidence alta
+        return p;
+    }
+
+    // L3: TAP - toque único rápido
+    // Características: proximity MUITO ALTA, pressure alto, touch_area alto, áudio médio
+    if gesture == 3 {
+        let p = st_set(p, 0, bs_from_mag_clamped(0.98));  // proximity MUITO ALTA ★★
+        let p = st_set(p, 1, bs_from_mag_clamped(0.6));   // audio médio (impacto)
+        let p = st_set(p, 2, bs_from_mag_clamped(0.7));   // pressure_x alto
+        let p = st_set(p, 3, bs_from_mag_clamped(0.7));   // pressure_y alto
+        let p = st_set(p, 4, bs_from_mag_clamped(0.85)); // touch_area ALTO ★
+        let p = st_set(p, 5, bs_from_mag_clamped(0.3));   // accel_x baixo
+        let p = st_set(p, 6, bs_from_mag_clamped(0.3));   // accel_y baixo
+        let p = st_set(p, 7, bs_from_mag_clamped(0.6));   // accel_z médio (impacto)
+        let p = st_set(p, 8, bs_from_mag_clamped(0.1));   // gyro_x baixo
+        let p = st_set(p, 9, bs_from_mag_clamped(0.1));   // gyro_y baixo
+        let p = st_set(p, 10, bs_from_mag_clamped(0.1));  // gyro_z baixo
+        let p = st_set(p, 11, bs_from_mag_clamped(0.2));  // velocity baixo
+        let p = st_set(p, 12, bs_from_mag_clamped(0.1));  // rotation baixo
+        let p = st_set(p, 13, bs_from_mag_clamped(0.85)); // stability ALTA ★
+        let p = st_set(p, 14, bs_from_mag_clamped(0.05)); // periodicity muito baixa
+        let p = st_set(p, 15, bs_from_mag_clamped(0.95)); // confidence muito alta
+        return p;
+    }
+
+    // L4: DOUBLE_TAP - dois toques rápidos
+    // Características: similar ao TAP mas com periodicidade média e audio mais alto
+    if gesture == 4 {
+        let p = st_set(p, 0, bs_from_mag_clamped(0.95));  // proximity muito alta
+        let p = st_set(p, 1, bs_from_mag_clamped(0.85));  // audio ALTO ★★ (dois impactos)
+        let p = st_set(p, 2, bs_from_mag_clamped(0.65));  // pressure_x alto
+        let p = st_set(p, 3, bs_from_mag_clamped(0.65));  // pressure_y alto
+        let p = st_set(p, 4, bs_from_mag_clamped(0.8));   // touch_area alto
+        let p = st_set(p, 5, bs_from_mag_clamped(0.25));  // accel_x baixo
+        let p = st_set(p, 6, bs_from_mag_clamped(0.25));  // accel_y baixo
+        let p = st_set(p, 7, bs_from_mag_clamped(0.7));   // accel_z ALTO ★ (dois impactos)
+        let p = st_set(p, 8, bs_from_mag_clamped(0.1));   // gyro_x baixo
+        let p = st_set(p, 9, bs_from_mag_clamped(0.1));   // gyro_y baixo
+        let p = st_set(p, 10, bs_from_mag_clamped(0.15)); // gyro_z baixo
+        let p = st_set(p, 11, bs_from_mag_clamped(0.25)); // velocity baixo
+        let p = st_set(p, 12, bs_from_mag_clamped(0.1));  // rotation baixo
+        let p = st_set(p, 13, bs_from_mag_clamped(0.6));  // stability média
+        let p = st_set(p, 14, bs_from_mag_clamped(0.7));  // periodicity ALTA ★ (ritmo)
+        let p = st_set(p, 15, bs_from_mag_clamped(0.9));  // confidence alta
+        return p;
+    }
+
+    // L5: PINCH - aproximar dedos
+    // Características: touch_area DIMINUINDO (representado como baixo), pressure alto
+    if gesture == 5 {
+        let p = st_set(p, 0, bs_from_mag_clamped(0.8));   // proximity alta
+        let p = st_set(p, 1, bs_from_mag_clamped(0.05));  // audio muito baixo
+        let p = st_set(p, 2, bs_from_mag_clamped(0.8));   // pressure_x ALTO ★
+        let p = st_set(p, 3, bs_from_mag_clamped(0.8));   // pressure_y ALTO ★
+        let p = st_set(p, 4, bs_from_mag_clamped(0.25));  // touch_area BAIXO ★★ (convergente)
+        let p = st_set(p, 5, bs_from_mag_clamped(0.4));   // accel_x médio
+        let p = st_set(p, 6, bs_from_mag_clamped(0.4));   // accel_y médio
+        let p = st_set(p, 7, bs_from_mag_clamped(0.15));  // accel_z baixo
+        let p = st_set(p, 8, bs_from_mag_clamped(0.2));   // gyro_x baixo
+        let p = st_set(p, 9, bs_from_mag_clamped(0.2));   // gyro_y baixo
+        let p = st_set(p, 10, bs_from_mag_clamped(0.1));  // gyro_z baixo
+        let p = st_set(p, 11, bs_from_mag_clamped(0.45)); // velocity médio
+        let p = st_set(p, 12, bs_from_mag_clamped(0.15)); // rotation baixo
+        let p = st_set(p, 13, bs_from_mag_clamped(0.75)); // stability alta
+        let p = st_set(p, 14, bs_from_mag_clamped(0.15)); // periodicity baixa
+        let p = st_set(p, 15, bs_from_mag_clamped(0.85)); // confidence alta
+        return p;
+    }
+
+    // L6: SPREAD - afastar dedos
+    // Características: touch_area AUMENTANDO (representado como alto), pressure baixo
+    if gesture == 6 {
+        let p = st_set(p, 0, bs_from_mag_clamped(0.75));  // proximity alta
+        let p = st_set(p, 1, bs_from_mag_clamped(0.05));  // audio muito baixo
+        let p = st_set(p, 2, bs_from_mag_clamped(0.2));   // pressure_x BAIXO ★★ (divergente)
+        let p = st_set(p, 3, bs_from_mag_clamped(0.2));   // pressure_y BAIXO ★★ (divergente)
+        let p = st_set(p, 4, bs_from_mag_clamped(0.95));  // touch_area MUITO ALTO ★★
+        let p = st_set(p, 5, bs_from_mag_clamped(0.45));  // accel_x médio
+        let p = st_set(p, 6, bs_from_mag_clamped(0.45));  // accel_y médio
+        let p = st_set(p, 7, bs_from_mag_clamped(0.1));   // accel_z baixo
+        let p = st_set(p, 8, bs_from_mag_clamped(0.15));  // gyro_x baixo
+        let p = st_set(p, 9, bs_from_mag_clamped(0.15));  // gyro_y baixo
+        let p = st_set(p, 10, bs_from_mag_clamped(0.1));  // gyro_z baixo
+        let p = st_set(p, 11, bs_from_mag_clamped(0.5));  // velocity médio
+        let p = st_set(p, 12, bs_from_mag_clamped(0.1));  // rotation baixo
+        let p = st_set(p, 13, bs_from_mag_clamped(0.7));  // stability alta
+        let p = st_set(p, 14, bs_from_mag_clamped(0.1));  // periodicity baixa
+        let p = st_set(p, 15, bs_from_mag_clamped(0.85)); // confidence alta
+        return p;
+    }
+
+    // L7: ROTATE_CW - rotação horária
+    // Características: gyro_z MUITO ALTO, rotation_mag alto
+    if gesture == 7 {
+        let p = st_set(p, 0, bs_from_mag_clamped(0.6));   // proximity média
+        let p = st_set(p, 1, bs_from_mag_clamped(0.1));   // audio baixo
+        let p = st_set(p, 2, bs_from_mag_clamped(0.3));   // pressure_x baixo
+        let p = st_set(p, 3, bs_from_mag_clamped(0.3));   // pressure_y baixo
+        let p = st_set(p, 4, bs_from_mag_clamped(0.5));   // touch_area média
+        let p = st_set(p, 5, bs_from_mag_clamped(0.2));   // accel_x baixo
+        let p = st_set(p, 6, bs_from_mag_clamped(0.2));   // accel_y baixo
+        let p = st_set(p, 7, bs_from_mag_clamped(0.1));   // accel_z baixo
+        let p = st_set(p, 8, bs_from_mag_clamped(0.3));   // gyro_x baixo
+        let p = st_set(p, 9, bs_from_mag_clamped(0.3));   // gyro_y baixo
+        let p = st_set(p, 10, bs_from_mag_clamped(0.98)); // gyro_z MUITO ALTO ★★
+        let p = st_set(p, 11, bs_from_mag_clamped(0.35)); // velocity baixo
+        let p = st_set(p, 12, bs_from_mag_clamped(0.95)); // rotation MUITO ALTO ★★
+        let p = st_set(p, 13, bs_from_mag_clamped(0.65)); // stability média
+        let p = st_set(p, 14, bs_from_mag_clamped(0.2));  // periodicity baixa
+        let p = st_set(p, 15, bs_from_mag_clamped(0.9));  // confidence alta
+        return p;
+    }
+
+    // L8: ROTATE_CCW - rotação anti-horária
+    // Características: gyro_z ALTO mas gyro_x/y também altos (diferente de CW)
+    if gesture == 8 {
+        let p = st_set(p, 0, bs_from_mag_clamped(0.6));   // proximity média
+        let p = st_set(p, 1, bs_from_mag_clamped(0.1));   // audio baixo
+        let p = st_set(p, 2, bs_from_mag_clamped(0.3));   // pressure_x baixo
+        let p = st_set(p, 3, bs_from_mag_clamped(0.3));   // pressure_y baixo
+        let p = st_set(p, 4, bs_from_mag_clamped(0.5));   // touch_area média
+        let p = st_set(p, 5, bs_from_mag_clamped(0.2));   // accel_x baixo
+        let p = st_set(p, 6, bs_from_mag_clamped(0.2));   // accel_y baixo
+        let p = st_set(p, 7, bs_from_mag_clamped(0.1));   // accel_z baixo
+        let p = st_set(p, 8, bs_from_mag_clamped(0.7));   // gyro_x ALTO ★ (diferente de CW)
+        let p = st_set(p, 9, bs_from_mag_clamped(0.7));   // gyro_y ALTO ★ (diferente de CW)
+        let p = st_set(p, 10, bs_from_mag_clamped(0.85)); // gyro_z alto
+        let p = st_set(p, 11, bs_from_mag_clamped(0.35)); // velocity baixo
+        let p = st_set(p, 12, bs_from_mag_clamped(0.9));  // rotation alto
+        let p = st_set(p, 13, bs_from_mag_clamped(0.6));  // stability média
+        let p = st_set(p, 14, bs_from_mag_clamped(0.25)); // periodicity baixa
+        let p = st_set(p, 15, bs_from_mag_clamped(0.88)); // confidence alta
+        return p;
+    }
+
+    // L9: PUSH - empurrar para frente
+    // Características: accel_z MUITO ALTO, proximity diminuindo
+    if gesture == 9 {
+        let p = st_set(p, 0, bs_from_mag_clamped(0.35));  // proximity BAIXA ★ (afastando)
+        let p = st_set(p, 1, bs_from_mag_clamped(0.15));  // audio baixo
+        let p = st_set(p, 2, bs_from_mag_clamped(0.5));   // pressure_x médio
+        let p = st_set(p, 3, bs_from_mag_clamped(0.5));   // pressure_y médio
+        let p = st_set(p, 4, bs_from_mag_clamped(0.55));  // touch_area média
+        let p = st_set(p, 5, bs_from_mag_clamped(0.25));  // accel_x baixo
+        let p = st_set(p, 6, bs_from_mag_clamped(0.25));  // accel_y baixo
+        let p = st_set(p, 7, bs_from_mag_clamped(0.95));  // accel_z MUITO ALTO ★★
+        let p = st_set(p, 8, bs_from_mag_clamped(0.15));  // gyro_x baixo
+        let p = st_set(p, 9, bs_from_mag_clamped(0.15));  // gyro_y baixo
+        let p = st_set(p, 10, bs_from_mag_clamped(0.1));  // gyro_z baixo
+        let p = st_set(p, 11, bs_from_mag_clamped(0.7));  // velocity alto
+        let p = st_set(p, 12, bs_from_mag_clamped(0.1));  // rotation baixo
+        let p = st_set(p, 13, bs_from_mag_clamped(0.75)); // stability alta
+        let p = st_set(p, 14, bs_from_mag_clamped(0.1));  // periodicity baixa
+        let p = st_set(p, 15, bs_from_mag_clamped(0.9));  // confidence alta
+        return p;
+    }
+
+    // L10: PULL - puxar para trás
+    // Características: accel_z BAIXO (negativo), proximity aumentando
+    if gesture == 10 {
+        let p = st_set(p, 0, bs_from_mag_clamped(0.85));  // proximity ALTA ★ (aproximando)
+        let p = st_set(p, 1, bs_from_mag_clamped(0.15));  // audio baixo
+        let p = st_set(p, 2, bs_from_mag_clamped(0.5));   // pressure_x médio
+        let p = st_set(p, 3, bs_from_mag_clamped(0.5));   // pressure_y médio
+        let p = st_set(p, 4, bs_from_mag_clamped(0.6));   // touch_area média
+        let p = st_set(p, 5, bs_from_mag_clamped(0.2));   // accel_x baixo
+        let p = st_set(p, 6, bs_from_mag_clamped(0.2));   // accel_y baixo
+        let p = st_set(p, 7, bs_from_mag_clamped(0.05));  // accel_z MUITO BAIXO ★★
+        let p = st_set(p, 8, bs_from_mag_clamped(0.1));   // gyro_x baixo
+        let p = st_set(p, 9, bs_from_mag_clamped(0.1));   // gyro_y baixo
+        let p = st_set(p, 10, bs_from_mag_clamped(0.1));  // gyro_z baixo
+        let p = st_set(p, 11, bs_from_mag_clamped(0.65)); // velocity médio-alto
+        let p = st_set(p, 12, bs_from_mag_clamped(0.1));  // rotation baixo
+        let p = st_set(p, 13, bs_from_mag_clamped(0.7));  // stability alta
+        let p = st_set(p, 14, bs_from_mag_clamped(0.1));  // periodicity baixa
+        let p = st_set(p, 15, bs_from_mag_clamped(0.88)); // confidence alta
+        return p;
+    }
+
+    // L11: SHAKE - sacudir vigorosamente
+    // Características: TUDO ALTO exceto stability (que é baixa)
+    if gesture == 11 {
+        let p = st_set(p, 0, bs_from_mag_clamped(0.5));   // proximity média
+        let p = st_set(p, 1, bs_from_mag_clamped(0.75));  // audio ALTO ★
+        let p = st_set(p, 2, bs_from_mag_clamped(0.6));   // pressure_x alto
+        let p = st_set(p, 3, bs_from_mag_clamped(0.6));   // pressure_y alto
+        let p = st_set(p, 4, bs_from_mag_clamped(0.45));  // touch_area média
+        let p = st_set(p, 5, bs_from_mag_clamped(0.9));   // accel_x ALTO ★
+        let p = st_set(p, 6, bs_from_mag_clamped(0.9));   // accel_y ALTO ★
+        let p = st_set(p, 7, bs_from_mag_clamped(0.85));  // accel_z ALTO ★
+        let p = st_set(p, 8, bs_from_mag_clamped(0.8));   // gyro_x alto
+        let p = st_set(p, 9, bs_from_mag_clamped(0.8));   // gyro_y alto
+        let p = st_set(p, 10, bs_from_mag_clamped(0.75)); // gyro_z alto
+        let p = st_set(p, 11, bs_from_mag_clamped(0.95)); // velocity MUITO ALTO ★★
+        let p = st_set(p, 12, bs_from_mag_clamped(0.8));  // rotation alto
+        let p = st_set(p, 13, bs_from_mag_clamped(0.1));  // stability MUITO BAIXA ★★
+        let p = st_set(p, 14, bs_from_mag_clamped(0.85)); // periodicity ALTA ★
+        let p = st_set(p, 15, bs_from_mag_clamped(0.7));  // confidence média
+        return p;
+    }
+
+    // L12: TILT_LEFT - inclinar para esquerda
+    // Características: gyro_x ALTO, accel_x médio-alto
+    if gesture == 12 {
+        let p = st_set(p, 0, bs_from_mag_clamped(0.4));   // proximity média
+        let p = st_set(p, 1, bs_from_mag_clamped(0.05));  // audio muito baixo
+        let p = st_set(p, 2, bs_from_mag_clamped(0.6));   // pressure_x ALTO ★
+        let p = st_set(p, 3, bs_from_mag_clamped(0.15));  // pressure_y baixo
+        let p = st_set(p, 4, bs_from_mag_clamped(0.35));  // touch_area baixa
+        let p = st_set(p, 5, bs_from_mag_clamped(0.65));  // accel_x ALTO ★
+        let p = st_set(p, 6, bs_from_mag_clamped(0.15));  // accel_y baixo
+        let p = st_set(p, 7, bs_from_mag_clamped(0.3));   // accel_z baixo
+        let p = st_set(p, 8, bs_from_mag_clamped(0.85));  // gyro_x MUITO ALTO ★★
+        let p = st_set(p, 9, bs_from_mag_clamped(0.1));   // gyro_y baixo
+        let p = st_set(p, 10, bs_from_mag_clamped(0.25)); // gyro_z baixo
+        let p = st_set(p, 11, bs_from_mag_clamped(0.3));  // velocity baixo
+        let p = st_set(p, 12, bs_from_mag_clamped(0.55)); // rotation médio
+        let p = st_set(p, 13, bs_from_mag_clamped(0.8));  // stability alta
+        let p = st_set(p, 14, bs_from_mag_clamped(0.05)); // periodicity muito baixa
+        let p = st_set(p, 15, bs_from_mag_clamped(0.92)); // confidence alta
+        return p;
+    }
+
+    // L13: TILT_RIGHT - inclinar para direita
+    // Características: gyro_y ALTO (oposto de tilt_left), accel_y médio-alto
+    if gesture == 13 {
+        let p = st_set(p, 0, bs_from_mag_clamped(0.4));   // proximity média
+        let p = st_set(p, 1, bs_from_mag_clamped(0.05));  // audio muito baixo
+        let p = st_set(p, 2, bs_from_mag_clamped(0.15));  // pressure_x baixo
+        let p = st_set(p, 3, bs_from_mag_clamped(0.6));   // pressure_y ALTO ★
+        let p = st_set(p, 4, bs_from_mag_clamped(0.35));  // touch_area baixa
+        let p = st_set(p, 5, bs_from_mag_clamped(0.15));  // accel_x baixo
+        let p = st_set(p, 6, bs_from_mag_clamped(0.65));  // accel_y ALTO ★
+        let p = st_set(p, 7, bs_from_mag_clamped(0.3));   // accel_z baixo
+        let p = st_set(p, 8, bs_from_mag_clamped(0.1));   // gyro_x baixo
+        let p = st_set(p, 9, bs_from_mag_clamped(0.85));  // gyro_y MUITO ALTO ★★
+        let p = st_set(p, 10, bs_from_mag_clamped(0.25)); // gyro_z baixo
+        let p = st_set(p, 11, bs_from_mag_clamped(0.3));  // velocity baixo
+        let p = st_set(p, 12, bs_from_mag_clamped(0.55)); // rotation médio
+        let p = st_set(p, 13, bs_from_mag_clamped(0.8));  // stability alta
+        let p = st_set(p, 14, bs_from_mag_clamped(0.05)); // periodicity muito baixa
+        let p = st_set(p, 15, bs_from_mag_clamped(0.92)); // confidence alta
+        return p;
+    }
+
+    // L14: HOVER - pairar sobre o sensor
+    // Características: proximity ALTA, TUDO MAIS BAIXO
+    if gesture == 14 {
+        let p = st_set(p, 0, bs_from_mag_clamped(0.92));  // proximity MUITO ALTA ★★
+        let p = st_set(p, 1, bs_from_mag_clamped(0.02));  // audio muito baixo
+        let p = st_set(p, 2, bs_from_mag_clamped(0.05));  // pressure_x muito baixo
+        let p = st_set(p, 3, bs_from_mag_clamped(0.05));  // pressure_y muito baixo
+        let p = st_set(p, 4, bs_from_mag_clamped(0.1));   // touch_area baixa
+        let p = st_set(p, 5, bs_from_mag_clamped(0.08));  // accel_x muito baixo
+        let p = st_set(p, 6, bs_from_mag_clamped(0.08));  // accel_y muito baixo
+        let p = st_set(p, 7, bs_from_mag_clamped(0.05));  // accel_z muito baixo
+        let p = st_set(p, 8, bs_from_mag_clamped(0.05));  // gyro_x muito baixo
+        let p = st_set(p, 9, bs_from_mag_clamped(0.05));  // gyro_y muito baixo
+        let p = st_set(p, 10, bs_from_mag_clamped(0.05)); // gyro_z muito baixo
+        let p = st_set(p, 11, bs_from_mag_clamped(0.05)); // velocity muito baixo
+        let p = st_set(p, 12, bs_from_mag_clamped(0.05)); // rotation muito baixo
+        let p = st_set(p, 13, bs_from_mag_clamped(0.95)); // stability MUITO ALTA ★★
+        let p = st_set(p, 14, bs_from_mag_clamped(0.02)); // periodicity muito baixa
+        let p = st_set(p, 15, bs_from_mag_clamped(0.98)); // confidence MUITO ALTA ★★
+        return p;
+    }
+
+    // L15: STILL - completamente parado
+    // Características: TUDO MUITO BAIXO, stability e confidence MÁXIMAS
+    let p = st_set(p, 0, bs_from_mag_clamped(0.15));  // proximity baixa (não tocando)
+    let p = st_set(p, 1, bs_from_mag_clamped(0.01));  // audio quase zero
+    let p = st_set(p, 2, bs_from_mag_clamped(0.02));  // pressure_x quase zero
+    let p = st_set(p, 3, bs_from_mag_clamped(0.02));  // pressure_y quase zero
+    let p = st_set(p, 4, bs_from_mag_clamped(0.02));  // touch_area quase zero
+    let p = st_set(p, 5, bs_from_mag_clamped(0.02));  // accel_x quase zero
+    let p = st_set(p, 6, bs_from_mag_clamped(0.02));  // accel_y quase zero
+    let p = st_set(p, 7, bs_from_mag_clamped(0.02));  // accel_z quase zero
+    let p = st_set(p, 8, bs_from_mag_clamped(0.02));  // gyro_x quase zero
+    let p = st_set(p, 9, bs_from_mag_clamped(0.02));  // gyro_y quase zero
+    let p = st_set(p, 10, bs_from_mag_clamped(0.02)); // gyro_z quase zero
+    let p = st_set(p, 11, bs_from_mag_clamped(0.01)); // velocity quase zero
+    let p = st_set(p, 12, bs_from_mag_clamped(0.01)); // rotation quase zero
+    let p = st_set(p, 13, bs_from_mag_clamped(0.99)); // stability MÁXIMA ★★★
+    let p = st_set(p, 14, bs_from_mag_clamped(0.01)); // periodicity quase zero
+    let p = st_set(p, 15, bs_from_mag_clamped(0.99)); // confidence MÁXIMA ★★★
+    return p;
+}
+
+// =============================================================================
+// Geração de Amostras
+// =============================================================================
+
+// Gera amostra para classe de gesto específica
+// Adiciona ruído controlado ao padrão base em TODAS as 16 camadas
+pub fn generate_gesture_sample(gesture: Int, seed: Int, noise_level: Float) -> State {
+    let pattern = gesture_pattern(gesture);
+
+    // Adiciona ruído a cada uma das 16 camadas
+    let s = prng_next(seed);
+    let v0 = bs_mag(st_get(pattern, 0)) + noise(s, noise_level);
+
+    let s = prng_next(s);
+    let v1 = bs_mag(st_get(pattern, 1)) + noise(s, noise_level);
+
+    let s = prng_next(s);
+    let v2 = bs_mag(st_get(pattern, 2)) + noise(s, noise_level);
+
+    let s = prng_next(s);
+    let v3 = bs_mag(st_get(pattern, 3)) + noise(s, noise_level);
+
+    let s = prng_next(s);
+    let v4 = bs_mag(st_get(pattern, 4)) + noise(s, noise_level);
+
+    let s = prng_next(s);
+    let v5 = bs_mag(st_get(pattern, 5)) + noise(s, noise_level);
+
+    let s = prng_next(s);
+    let v6 = bs_mag(st_get(pattern, 6)) + noise(s, noise_level);
+
+    let s = prng_next(s);
+    let v7 = bs_mag(st_get(pattern, 7)) + noise(s, noise_level);
+
+    let s = prng_next(s);
+    let v8 = bs_mag(st_get(pattern, 8)) + noise(s, noise_level);
+
+    let s = prng_next(s);
+    let v9 = bs_mag(st_get(pattern, 9)) + noise(s, noise_level);
+
+    let s = prng_next(s);
+    let v10 = bs_mag(st_get(pattern, 10)) + noise(s, noise_level);
+
+    let s = prng_next(s);
+    let v11 = bs_mag(st_get(pattern, 11)) + noise(s, noise_level);
+
+    let s = prng_next(s);
+    let v12 = bs_mag(st_get(pattern, 12)) + noise(s, noise_level);
+
+    let s = prng_next(s);
+    let v13 = bs_mag(st_get(pattern, 13)) + noise(s, noise_level);
+
+    let s = prng_next(s);
+    let v14 = bs_mag(st_get(pattern, 14)) + noise(s, noise_level);
+
+    let s = prng_next(s);
+    let v15 = bs_mag(st_get(pattern, 15)) + noise(s, noise_level);
+
+    // Cria State com valores ruidosos em TODAS as 16 camadas (clampados em [0, 1])
+    let sample = st_vacuum();
+    let sample = st_set(sample, 0, bs_from_mag_clamped(clamp_float(v0, 0.0, 1.0)));
+    let sample = st_set(sample, 1, bs_from_mag_clamped(clamp_float(v1, 0.0, 1.0)));
+    let sample = st_set(sample, 2, bs_from_mag_clamped(clamp_float(v2, 0.0, 1.0)));
+    let sample = st_set(sample, 3, bs_from_mag_clamped(clamp_float(v3, 0.0, 1.0)));
+    let sample = st_set(sample, 4, bs_from_mag_clamped(clamp_float(v4, 0.0, 1.0)));
+    let sample = st_set(sample, 5, bs_from_mag_clamped(clamp_float(v5, 0.0, 1.0)));
+    let sample = st_set(sample, 6, bs_from_mag_clamped(clamp_float(v6, 0.0, 1.0)));
+    let sample = st_set(sample, 7, bs_from_mag_clamped(clamp_float(v7, 0.0, 1.0)));
+    let sample = st_set(sample, 8, bs_from_mag_clamped(clamp_float(v8, 0.0, 1.0)));
+    let sample = st_set(sample, 9, bs_from_mag_clamped(clamp_float(v9, 0.0, 1.0)));
+    let sample = st_set(sample, 10, bs_from_mag_clamped(clamp_float(v10, 0.0, 1.0)));
+    let sample = st_set(sample, 11, bs_from_mag_clamped(clamp_float(v11, 0.0, 1.0)));
+    let sample = st_set(sample, 12, bs_from_mag_clamped(clamp_float(v12, 0.0, 1.0)));
+    let sample = st_set(sample, 13, bs_from_mag_clamped(clamp_float(v13, 0.0, 1.0)));
+    let sample = st_set(sample, 14, bs_from_mag_clamped(clamp_float(v14, 0.0, 1.0)));
+    let sample = st_set(sample, 15, bs_from_mag_clamped(clamp_float(v15, 0.0, 1.0)));
+
+    return sample;
+}
+
+// Gera label one-hot para classe de gesto
+pub fn generate_gesture_label(gesture: Int) -> State {
+    return st_singleton(gesture, bs_from_mag_clamped(1.0));
+}
+
+// =============================================================================
+// Geração de Batch
+// =============================================================================
+
+// Estrutura de retorno: State com metadados do batch
+// Esta é uma simplificação - em implementação real usaríamos array de States
+pub fn generate_batch(batch_size: Int, seed: Int, noise_level: Float) -> State {
+    // Retorna State representando configuração do batch
+    let config = st_vacuum();
+    let config = st_set(config, 0, bs_from_mag_clamped(float_from_int(batch_size) / 256.0));
+    let config = st_set(config, 1, bs_from_mag_clamped(float_from_int(seed) / 1000000.0));
+    let config = st_set(config, 2, bs_from_mag_clamped(noise_level));
+    return config;
+}
+
+// Gera par (sample, label) para índice específico do batch
+pub fn get_batch_item(batch_config: State, index: Int) -> State {
+    let base_seed = int_from_float(bs_mag(st_get(batch_config, 1)) * 1000000.0);
+    let noise_level = bs_mag(st_get(batch_config, 2));
+
+    // Deriva seed único para este item
+    let item_seed = prng_next(base_seed + index);
+
+    // Seleciona classe aleatória
+    let gesture = item_seed % 16;
+
+    // Gera sample
+    return generate_gesture_sample(gesture, item_seed, noise_level);
+}
+
+// Obtém label para índice específico do batch
+pub fn get_batch_label(batch_config: State, index: Int) -> State {
+    let base_seed = int_from_float(bs_mag(st_get(batch_config, 1)) * 1000000.0);
+    let item_seed = prng_next(base_seed + index);
+    let gesture = item_seed % 16;
+    return generate_gesture_label(gesture);
+}
+
+// Obtém classe do gesto para índice específico
+pub fn get_batch_class(batch_config: State, index: Int) -> Int {
+    let base_seed = int_from_float(bs_mag(st_get(batch_config, 1)) * 1000000.0);
+    let item_seed = prng_next(base_seed + index);
+    return item_seed % 16;
+}

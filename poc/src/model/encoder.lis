@@ -1,0 +1,113 @@
+// PoC - Encoder Multimodal
+// Codifica dados de sensores para State usando camadas semânticas LIS
+
+use paebiru::core::bytesil::{bs_from_mag_clamped, bs_mag, bs_zero};
+use paebiru::core::state::{st_vacuum, st_singleton, st_set, st_get, st_xor, st_tensor};
+use paebiru::lis::{MOD_PHOTONIC, MOD_ACOUSTIC, MOD_DERMIC, MOD_PSYCHOMOTOR};
+
+// =============================================================================
+// Codificação de Modalidade Individual
+// =============================================================================
+
+// Codifica valor de magnitude para camada específica
+pub fn encode_modality(value: Float, modality: Int) -> State {
+    let clamped = clamp_float(value, 0.0, 1.0);
+    let bs = bs_from_mag_clamped(clamped);
+    return st_singleton(modality, bs);
+}
+
+// Codifica vetor de 3 valores (ex: acelerômetro XYZ) para State
+// Distribui pelos 3 primeiros slots da camada base
+pub fn encode_vector3(x: Float, y: Float, z: Float, base_layer: Int) -> State {
+    let s = st_vacuum();
+    let s = st_set(s, base_layer, bs_from_mag_clamped(clamp_float(x, 0.0, 1.0)));
+    let s = st_set(s, base_layer + 1, bs_from_mag_clamped(clamp_float(y, 0.0, 1.0)));
+    let s = st_set(s, base_layer + 2, bs_from_mag_clamped(clamp_float(z, 0.0, 1.0)));
+    return s;
+}
+
+// =============================================================================
+// Fusão Multimodal
+// =============================================================================
+
+// Combina múltiplas modalidades usando XOR (fusão aditiva)
+pub fn fuse_modalities(m0: State, m1: State) -> State {
+    return st_xor(m0, m1);
+}
+
+// Combina 3 modalidades
+pub fn fuse_3(m0: State, m1: State, m2: State) -> State {
+    let c01 = st_xor(m0, m1);
+    return st_xor(c01, m2);
+}
+
+// Combina 4 modalidades
+pub fn fuse_4(m0: State, m1: State, m2: State, m3: State) -> State {
+    let c01 = st_xor(m0, m1);
+    let c23 = st_xor(m2, m3);
+    return st_xor(c01, c23);
+}
+
+// Fusão multiplicativa usando tensor product
+pub fn fuse_tensor(m0: State, m1: State) -> State {
+    return st_tensor(m0, m1);
+}
+
+// =============================================================================
+// Pipeline de Codificação Completo
+// =============================================================================
+
+// Codifica amostra completa de sensores para State
+// Entrada: dados de 4 sensores simulando gestos
+//   - proximity: sensor de proximidade (L0: Photonic)
+//   - audio_level: nível de áudio (L1: Acoustic)
+//   - pressure: pressão/toque (L4: Dermic)
+//   - accel_mag: magnitude do acelerômetro (L6: Psychomotor)
+//   - gyro_mag: magnitude do giroscópio (L6+1)
+pub fn encode_sample(
+    proximity: Float,
+    audio_level: Float,
+    pressure: Float,
+    accel_mag: Float,
+    gyro_mag: Float
+) -> State {
+    // Codifica cada modalidade em sua camada semântica
+    let visual = encode_modality(proximity, MOD_PHOTONIC());
+    let audio = encode_modality(audio_level, MOD_ACOUSTIC());
+    let touch = encode_modality(pressure, MOD_DERMIC());
+
+    // Movimento: combina acelerômetro e giroscópio na camada Psychomotor
+    let motion = st_vacuum();
+    let motion = st_set(motion, MOD_PSYCHOMOTOR(), bs_from_mag_clamped(accel_mag));
+    let motion = st_set(motion, MOD_PSYCHOMOTOR() + 1, bs_from_mag_clamped(gyro_mag));
+
+    // Fusão hierárquica: (visual XOR audio) XOR (touch XOR motion)
+    return fuse_4(visual, audio, touch, motion);
+}
+
+// Codificação simplificada: apenas 4 valores escalares
+pub fn encode_sample_simple(v0: Float, v1: Float, v2: Float, v3: Float) -> State {
+    let s = st_vacuum();
+    let s = st_set(s, 0, bs_from_mag_clamped(v0));
+    let s = st_set(s, 1, bs_from_mag_clamped(v1));
+    let s = st_set(s, 2, bs_from_mag_clamped(v2));
+    let s = st_set(s, 3, bs_from_mag_clamped(v3));
+    return s;
+}
+
+// =============================================================================
+// Normalização de Entrada
+// =============================================================================
+
+// Normaliza valor bruto de sensor para [0, 1]
+pub fn normalize_sensor(raw: Float, min_val: Float, max_val: Float) -> Float {
+    let range = max_val - min_val;
+    if range < 0.0001 { return 0.5; }
+    return clamp_float((raw - min_val) / range, 0.0, 1.0);
+}
+
+// Normaliza magnitude de vetor 3D
+pub fn normalize_magnitude(x: Float, y: Float, z: Float, max_mag: Float) -> Float {
+    let mag = sqrt(x * x + y * y + z * z);
+    return clamp_float(mag / max_mag, 0.0, 1.0);
+}

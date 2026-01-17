@@ -226,21 +226,21 @@ impl Vsp {
         loop {
             // Fetch
             let raw = self.memory.fetch(self.state.pc)?;
-            
+
             // Decode
             let instr = Instruction::decode(&raw)?;
             self.state.pc += instr.size() as u32;
-            
+
             // Execute
             self.execute(&instr)?;
             self.cycles += 1;
-            
+
             // Check termination
             if self.state.sr.halt || self.state.sr.collapse {
                 break;
             }
         }
-        
+
         Ok(self.to_sil_state())
     }
     
@@ -249,10 +249,10 @@ impl Vsp {
         let raw = self.memory.fetch(self.state.pc)?;
         let instr = Instruction::decode(&raw)?;
         self.state.pc += instr.size() as u32;
-        
+
         self.execute(&instr)?;
         self.cycles += 1;
-        
+
         Ok(!self.state.sr.halt && !self.state.sr.collapse)
     }
     
@@ -286,14 +286,48 @@ impl Vsp {
             }
             
             Jz => {
-                if self.state.sr.zero {
-                    self.state.pc = instr.addr_or_imm24();
+                // JZ can work in two modes:
+                // 1. Single operand (label): uses sr.zero flag
+                // 2. Two operands (Ra, label): tests if Ra.rho == 0
+                let operands = instr.operand_count();
+                let should_jump = if operands >= 2 {
+                    // Two operand mode: test Ra.rho == 0
+                    let ra = instr.reg_a();
+                    self.state.regs[ra].rho == 0
+                } else {
+                    // Single operand mode: use status register
+                    self.state.sr.zero
+                };
+                if should_jump {
+                    // For 2-operand mode, address is in bytes 2-3 (16-bit)
+                    // For 1-operand mode, address is in bytes 1-3 (24-bit)
+                    let addr = if operands >= 2 {
+                        (instr.raw_byte(2) as u32) | ((instr.raw_byte(3) as u32) << 8)
+                    } else {
+                        instr.addr_or_imm24()
+                    };
+                    self.state.pc = addr;
                 }
             }
-            
+
             Jn => {
-                if self.state.sr.negative {
-                    self.state.pc = instr.addr_or_imm24();
+                // JN can work in two modes:
+                // 1. Single operand (label): uses sr.negative flag
+                // 2. Two operands (Ra, label): tests if Ra.rho < 0
+                let operands = instr.operand_count();
+                let should_jump = if operands >= 2 {
+                    let ra = instr.reg_a();
+                    self.state.regs[ra].rho < 0
+                } else {
+                    self.state.sr.negative
+                };
+                if should_jump {
+                    let addr = if operands >= 2 {
+                        (instr.raw_byte(2) as u32) | ((instr.raw_byte(3) as u32) << 8)
+                    } else {
+                        instr.addr_or_imm24()
+                    };
+                    self.state.pc = addr;
                 }
             }
             
@@ -335,8 +369,10 @@ impl Vsp {
             
             Movi => {
                 let ra = instr.reg_a();
-                let imm = instr.imm8();
-                self.state.regs[ra] = ByteSil::from_u8(imm);
+                let imm = instr.imm8() as i8; // Signed immediate value
+                // Store immediate as rho value with theta=0
+                // This allows storing string indices and small integers directly
+                self.state.regs[ra] = ByteSil::new(imm, 0);
             }
             
             Load => {
@@ -463,7 +499,258 @@ impl Vsp {
                 let delta = instr.imm8();
                 self.state.regs[ra].theta = (self.state.regs[ra].theta + delta) % 16;
             }
-            
+
+            // ─────────────────────────────────────────────────────────
+            // Operações de Inteiros (mode-aware)
+            // ─────────────────────────────────────────────────────────
+            AddInt => {
+                let (ra, rb) = instr.reg_pair();
+                let a = self.load_int_mode(ra);
+                let b = self.load_int_mode(rb);
+                self.store_int_mode(ra, a.wrapping_add(b));
+            }
+
+            SubInt => {
+                let (ra, rb) = instr.reg_pair();
+                let a = self.load_int_mode(ra);
+                let b = self.load_int_mode(rb);
+                self.store_int_mode(ra, a.wrapping_sub(b));
+            }
+
+            MulInt => {
+                let (ra, rb) = instr.reg_pair();
+                let a = self.load_int_mode(ra);
+                let b = self.load_int_mode(rb);
+                self.store_int_mode(ra, a.wrapping_mul(b));
+            }
+
+            DivInt => {
+                let (ra, rb) = instr.reg_pair();
+                let a = self.load_int_mode(ra);
+                let b = self.load_int_mode(rb);
+                if b != 0 {
+                    self.store_int_mode(ra, a / b);
+                } else {
+                    self.state.sr.overflow = true;
+                }
+            }
+
+            ModInt => {
+                let (ra, rb) = instr.reg_pair();
+                let a = self.load_int_mode(ra);
+                let b = self.load_int_mode(rb);
+                if b != 0 {
+                    self.store_int_mode(ra, a % b);
+                } else {
+                    self.state.sr.overflow = true;
+                }
+            }
+
+            PowInt => {
+                let (ra, rb) = instr.reg_pair();
+                let base = self.load_int_mode(ra);
+                let exp = self.load_int_mode(rb) as u32;
+                self.store_int_mode(ra, base.pow(exp));
+            }
+
+            NegInt => {
+                let ra = instr.reg_a();
+                let a = self.load_int_mode(ra);
+                self.store_int_mode(ra, -a);
+            }
+
+            AbsInt => {
+                let ra = instr.reg_a();
+                let a = self.load_int_mode(ra);
+                self.store_int_mode(ra, a.abs());
+            }
+
+            // Bitwise de inteiros
+            AndInt => {
+                let (ra, rb) = instr.reg_pair();
+                let a = self.load_int_mode(ra);
+                let b = self.load_int_mode(rb);
+                self.store_int_mode(ra, a & b);
+            }
+
+            OrInt => {
+                let (ra, rb) = instr.reg_pair();
+                let a = self.load_int_mode(ra);
+                let b = self.load_int_mode(rb);
+                self.store_int_mode(ra, a | b);
+            }
+
+            XorInt => {
+                let (ra, rb) = instr.reg_pair();
+                let a = self.load_int_mode(ra);
+                let b = self.load_int_mode(rb);
+                self.store_int_mode(ra, a ^ b);
+            }
+
+            NotInt => {
+                let ra = instr.reg_a();
+                let a = self.load_int_mode(ra);
+                self.store_int_mode(ra, !a);
+            }
+
+            ShlInt => {
+                let (ra, rb) = instr.reg_pair();
+                let a = self.load_int_mode(ra);
+                let shift = self.load_int_mode(rb) as u32;
+                self.store_int_mode(ra, a << shift);
+            }
+
+            ShrInt => {
+                let (ra, rb) = instr.reg_pair();
+                let a = self.load_int_mode(ra);
+                let shift = self.load_int_mode(rb) as u32;
+                self.store_int_mode(ra, a >> shift);
+            }
+
+            // Comparação de inteiros
+            CmpInt => {
+                let (ra, rb) = instr.reg_pair();
+                let a = self.load_int_mode(ra);
+                let b = self.load_int_mode(rb);
+                self.state.sr.zero = a == b;
+                self.state.sr.negative = a < b;
+            }
+
+            TestInt => {
+                let (ra, rb) = instr.reg_pair();
+                let a = self.load_int_mode(ra);
+                let b = self.load_int_mode(rb);
+                let result = a & b;
+                self.state.sr.zero = result == 0;
+            }
+
+            // ─────────────────────────────────────────────────────────
+            // Operações de Float (mode-aware)
+            // ─────────────────────────────────────────────────────────
+            AddFloat => {
+                let (ra, rb) = instr.reg_pair();
+                let a = self.load_float_mode(ra);
+                let b = self.load_float_mode(rb);
+                self.store_float_mode(ra, a + b);
+            }
+
+            SubFloat => {
+                let (ra, rb) = instr.reg_pair();
+                let a = self.load_float_mode(ra);
+                let b = self.load_float_mode(rb);
+                self.store_float_mode(ra, a - b);
+            }
+
+            MulFloat => {
+                let (ra, rb) = instr.reg_pair();
+                let a = self.load_float_mode(ra);
+                let b = self.load_float_mode(rb);
+                self.store_float_mode(ra, a * b);
+            }
+
+            DivFloat => {
+                let (ra, rb) = instr.reg_pair();
+                let a = self.load_float_mode(ra);
+                let b = self.load_float_mode(rb);
+                self.store_float_mode(ra, a / b);
+            }
+
+            PowFloat => {
+                let (ra, rb) = instr.reg_pair();
+                let a = self.load_float_mode(ra);
+                let b = self.load_float_mode(rb);
+                self.store_float_mode(ra, a.powf(b));
+            }
+
+            SqrtFloat => {
+                let ra = instr.reg_a();
+                let a = self.load_float_mode(ra);
+                self.store_float_mode(ra, a.sqrt());
+            }
+
+            NegFloat => {
+                let ra = instr.reg_a();
+                let a = self.load_float_mode(ra);
+                self.store_float_mode(ra, -a);
+            }
+
+            AbsFloat => {
+                let ra = instr.reg_a();
+                let a = self.load_float_mode(ra);
+                self.store_float_mode(ra, a.abs());
+            }
+
+            FloorFloat => {
+                let ra = instr.reg_a();
+                let a = self.load_float_mode(ra);
+                self.store_float_mode(ra, a.floor());
+            }
+
+            CeilFloat => {
+                let ra = instr.reg_a();
+                let a = self.load_float_mode(ra);
+                self.store_float_mode(ra, a.ceil());
+            }
+
+            CmpFloat => {
+                let (ra, rb) = instr.reg_pair();
+                let a = self.load_float_mode(ra);
+                let b = self.load_float_mode(rb);
+                self.state.sr.zero = (a - b).abs() < f64::EPSILON;
+                self.state.sr.negative = a < b;
+            }
+
+            // ─────────────────────────────────────────────────────────
+            // Conversões
+            // ─────────────────────────────────────────────────────────
+            CvtIntToFloat => {
+                let ra = instr.reg_a();
+                let i = self.load_int_mode(ra);
+                self.store_float_mode(ra, i as f64);
+            }
+
+            CvtFloatToInt => {
+                let ra = instr.reg_a();
+                let f = self.load_float_mode(ra);
+                self.store_int_mode(ra, f as i64);
+            }
+
+            CvtIntToByteSil => {
+                let ra = instr.reg_a();
+                let i = self.load_int_mode(ra);
+                // Converte inteiro para ByteSil: usa log para rho
+                let rho = if i == 0 {
+                    ByteSil::RHO_MIN
+                } else {
+                    ((i.abs() as f64).ln().round() as i8).clamp(ByteSil::RHO_MIN, ByteSil::RHO_MAX)
+                };
+                let theta = if i < 0 { 8 } else { 0 }; // 180° se negativo
+                self.state.regs[ra] = ByteSil::new(rho, theta);
+            }
+
+            CvtByteSilToInt => {
+                let ra = instr.reg_a();
+                let bs = self.state.regs[ra];
+                let mag = (bs.rho as f64).exp();
+                let sign = if bs.theta >= 8 { -1.0 } else { 1.0 };
+                self.store_int_mode(ra, (mag * sign) as i64);
+            }
+
+            CvtFloatToByteSil => {
+                let ra = instr.reg_a();
+                let f = self.load_float_mode(ra);
+                self.state.regs[ra] = ByteSil::from_complex(
+                    num_complex::Complex64::new(f, 0.0)
+                );
+            }
+
+            CvtByteSilToFloat => {
+                let ra = instr.reg_a();
+                let bs = self.state.regs[ra];
+                let f = bs.to_complex().norm();
+                self.store_float_mode(ra, f);
+            }
+
             // ─────────────────────────────────────────────────────────
             // Operações de Camada
             // ─────────────────────────────────────────────────────────
@@ -763,8 +1050,11 @@ impl Vsp {
             }
             
             Syscall => {
-                let syscall_num = instr.addr_or_imm24();
-                self.syscall(syscall_num)?;
+                let syscall_data = instr.addr_or_imm24();
+                // byte 1 = intrinsic_id, bytes 2-3 = arg (e.g., string_id)
+                let intrinsic_id = (syscall_data & 0xFF) as u8;
+                let syscall_arg = ((syscall_data >> 8) & 0xFFFF) as u16;
+                self.syscall(intrinsic_id, syscall_arg)?;
             }
 
             // ─────────────────────────────────────────────────────────
@@ -854,9 +1144,8 @@ impl Vsp {
     }
     
     /// Executa syscall
-    fn syscall(&mut self, num: u32) -> VspResult<()> {
+    fn syscall(&mut self, id: u8, arg: u16) -> VspResult<()> {
         use StdlibIntrinsic::*;
-        let id = num as u8;
 
         match id {
             // ────── I/O Functions ──────
@@ -864,18 +1153,39 @@ impl Vsp {
                 println!();
             }
             id if id == PrintString as u8 => {
-                // Print value from R0.rho
-                print!("{}", self.state.regs[0].rho);
+                // Print string from global string table
+                // arg contains the string index directly
+                let string_idx = if arg > 0 {
+                    arg as usize
+                } else {
+                    // Fallback to R0.rho for backwards compatibility
+                    self.state.regs[0].rho.max(0) as usize
+                };
+                let table = interpreter::get_string_table();
+                if let Some(s) = table.get(string_idx) {
+                    println!("{}", s);
+                } else {
+                    println!("[string#{}]", string_idx);
+                }
             }
             id if id == PrintInt as u8 => {
-                println!("{}", self.state.regs[0].rho);
+                // Print integer mode-aware (uses current SilMode)
+                let value = self.load_int_mode(0);
+                print!("{}", value);
+                use std::io::Write;
+                let _ = std::io::stdout().flush();
             }
             id if id == PrintFloat as u8 => {
-                let mag = (self.state.regs[0].rho as f64).exp();
-                println!("{:.6}", mag);
+                // Print float mode-aware (uses current SilMode)
+                let value = self.load_float_mode(0);
+                print!("{:.6}", value);
+                use std::io::Write;
+                let _ = std::io::stdout().flush();
             }
             id if id == PrintBool as u8 => {
-                println!("{}", self.state.regs[0].rho != 0);
+                print!("{}", self.state.regs[0].rho != 0);
+                use std::io::Write;
+                let _ = std::io::stdout().flush();
             }
             id if id == PrintBytesil as u8 => {
                 let b = self.state.regs[0];
@@ -954,6 +1264,44 @@ impl Vsp {
                     ((a.rho as i16 + b.rho as i16) / 2) as i8,
                     ((a.theta as u16 + b.theta as u16) / 2) as u8,
                 );
+            }
+            id if id == BytesilRho as u8 => {
+                // Retorna rho como inteiro em R0.rho
+                // R0.rho já contém o valor, não precisa fazer nada
+            }
+            id if id == BytesilTheta as u8 => {
+                // Retorna theta como inteiro em R0.rho
+                let theta = self.state.regs[0].theta;
+                self.state.regs[0] = ByteSil::new(theta as i8, 0);
+            }
+            id if id == BytesilMagnitude as u8 => {
+                // Retorna magnitude = e^rho como Float em R0
+                // Para Float, armazenamos ln(mag) em rho, então o resultado é o próprio rho
+                // Mas quando impresso com print_float, será convertido via to_complex().norm()
+                let mag = (self.state.regs[0].rho as f64).exp();
+                // Armazenar como ByteSil: rho = ln(mag) (que é o mesmo valor original)
+                // Isso parece circular, mas print_float fará e^rho novamente
+                // A solução correta é manter a magnitude como está (rho contém ln(mag))
+                // NÃO modificamos R0 - a magnitude já está codificada em rho
+            }
+            id if id == BytesilPhaseDegrees as u8 => {
+                // Retorna fase em graus: theta * (360/256) = theta * 1.40625
+                let degrees = (self.state.regs[0].theta as f64) * 1.40625;
+                // Armazenar como scaled int
+                self.state.regs[0] = ByteSil::new((degrees as i8).clamp(-128, 127) as i8, 0);
+            }
+            id if id == BytesilPhaseRadians as u8 => {
+                // Retorna fase em radianos: theta * (2*PI/256)
+                let radians = (self.state.regs[0].theta as f64) * std::f64::consts::TAU / 256.0;
+                self.state.regs[0] = ByteSil::new((radians * 10.0) as i8, 0);
+            }
+            id if id == BytesilIsNull as u8 => {
+                let is_null = self.state.regs[0] == ByteSil::NULL;
+                self.state.regs[0] = ByteSil::new(is_null as i8, 0);
+            }
+            id if id == BytesilNorm as u8 => {
+                // Normaliza para magnitude 1 (rho=0)
+                self.state.regs[0] = ByteSil::new(0, self.state.regs[0].theta);
             }
 
             // ────── State Functions ──────
@@ -1036,6 +1384,32 @@ impl Vsp {
                 }
             }
 
+            // ────── Energy Functions ──────
+            0xE0 => { // EnergyBegin
+                // No-op: energia é medida externamente pelo runtime
+            }
+            0xE1 => { // EnergyEndJoules
+                // Retorna 0 joules (placeholder)
+                self.state.regs[0] = ByteSil::new(0, 0);
+            }
+            0xE2 => { // EnergyEndWatts
+                self.state.regs[0] = ByteSil::new(0, 0);
+            }
+            0xE3 => { // EnergyEndSamplesPerJoule
+                self.state.regs[0] = ByteSil::new(0, 0);
+            }
+
+            // ────── Time Functions ──────
+            0xF6 => { // TimestampMicros
+                use std::time::{SystemTime, UNIX_EPOCH};
+                let micros = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map(|d| d.as_micros() as i64)
+                    .unwrap_or(0);
+                // Store low 8 bits in R0.rho (limited precision for ByteSil)
+                self.state.regs[0] = ByteSil::new((micros & 0x7F) as i8, 0);
+            }
+
             // ────── Legacy Syscalls ──────
             0 => self.state.sr.halt = true, // exit
 
@@ -1078,7 +1452,126 @@ impl Vsp {
     pub fn memory_mut(&mut self) -> &mut VspMemory {
         &mut self.memory
     }
-    
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Helpers para Int/Float mode-aware
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Carrega Int16 de um registrador (rho + theta = 16 bits)
+    fn load_int16(&self, reg: usize) -> i16 {
+        let lo = self.state.regs[reg].rho as u8 as u16;
+        let hi = (self.state.regs[reg].theta as u16) << 8;
+        (lo | hi) as i16
+    }
+
+    /// Armazena Int16 em um registrador
+    fn store_int16(&mut self, reg: usize, val: i16) {
+        let v = val as u16;
+        self.state.regs[reg] = ByteSil::new(
+            (v & 0xFF) as i8,
+            ((v >> 8) & 0xFF) as u8,
+        );
+    }
+
+    /// Carrega Int32 de 2 registradores consecutivos
+    fn load_int32(&self, reg: usize) -> i32 {
+        let lo = self.load_int16(reg) as u16 as u32;
+        let hi = (self.load_int16(reg + 1) as u16 as u32) << 16;
+        (lo | hi) as i32
+    }
+
+    /// Armazena Int32 em 2 registradores consecutivos
+    fn store_int32(&mut self, reg: usize, val: i32) {
+        self.store_int16(reg, val as i16);
+        self.store_int16(reg + 1, (val >> 16) as i16);
+    }
+
+    /// Carrega Float32 de 2 registradores consecutivos
+    fn load_float32(&self, reg: usize) -> f32 {
+        f32::from_bits(self.load_int32(reg) as u32)
+    }
+
+    /// Armazena Float32 em 2 registradores consecutivos
+    fn store_float32(&mut self, reg: usize, val: f32) {
+        self.store_int32(reg, val.to_bits() as i32);
+    }
+
+    /// Carrega Int64 de 4 registradores consecutivos
+    fn load_int64(&self, reg: usize) -> i64 {
+        let lo = self.load_int32(reg) as u32 as u64;
+        let hi = (self.load_int32(reg + 2) as u32 as u64) << 32;
+        (lo | hi) as i64
+    }
+
+    /// Armazena Int64 em 4 registradores consecutivos
+    fn store_int64(&mut self, reg: usize, val: i64) {
+        self.store_int32(reg, val as i32);
+        self.store_int32(reg + 2, (val >> 32) as i32);
+    }
+
+    /// Carrega Float64 de 4 registradores consecutivos
+    fn load_float64(&self, reg: usize) -> f64 {
+        f64::from_bits(self.load_int64(reg) as u64)
+    }
+
+    /// Armazena Float64 em 4 registradores consecutivos
+    fn store_float64(&mut self, reg: usize, val: f64) {
+        self.store_int64(reg, val.to_bits() as i64);
+    }
+
+    /// Carrega inteiro mode-aware (baseado no SilMode atual)
+    fn load_int_mode(&self, reg: usize) -> i64 {
+        match self.state.mode {
+            SilMode::Sil8 => self.state.regs[reg].rho as i64,
+            SilMode::Sil16 => self.load_int16(reg) as i64,
+            SilMode::Sil32 => self.load_int32(reg) as i64,
+            SilMode::Sil64 | SilMode::Sil128 => self.load_int64(reg),
+        }
+    }
+
+    /// Armazena inteiro mode-aware
+    fn store_int_mode(&mut self, reg: usize, val: i64) {
+        match self.state.mode {
+            SilMode::Sil8 => {
+                self.state.regs[reg] = ByteSil::new(val as i8, 0);
+            }
+            SilMode::Sil16 => self.store_int16(reg, val as i16),
+            SilMode::Sil32 => self.store_int32(reg, val as i32),
+            SilMode::Sil64 | SilMode::Sil128 => self.store_int64(reg, val),
+        }
+    }
+
+    /// Carrega float mode-aware
+    fn load_float_mode(&self, reg: usize) -> f64 {
+        match self.state.mode {
+            SilMode::Sil8 => self.state.regs[reg].to_complex().norm(),
+            SilMode::Sil16 => {
+                // Float16 (half precision)
+                let bits = self.load_int16(reg) as u16;
+                half::f16::from_bits(bits).to_f64()
+            }
+            SilMode::Sil32 => self.load_float32(reg) as f64,
+            SilMode::Sil64 | SilMode::Sil128 => self.load_float64(reg),
+        }
+    }
+
+    /// Armazena float mode-aware
+    fn store_float_mode(&mut self, reg: usize, val: f64) {
+        match self.state.mode {
+            SilMode::Sil8 => {
+                self.state.regs[reg] = ByteSil::from_complex(
+                    num_complex::Complex64::new(val, 0.0)
+                );
+            }
+            SilMode::Sil16 => {
+                let f16_val = half::f16::from_f64(val);
+                self.store_int16(reg, f16_val.to_bits() as i16);
+            }
+            SilMode::Sil32 => self.store_float32(reg, val as f32),
+            SilMode::Sil64 | SilMode::Sil128 => self.store_float64(reg, val),
+        }
+    }
+
     /// Retorna o processador atual (hint)
     pub fn current_processor(&self) -> &str {
         match self.backend_hint {
@@ -1107,31 +1600,169 @@ impl Vsp {
         self.cycles = 0;
         self.backend_hint = None;
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // API Pública Mode-Aware
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Define o modo SIL (determina tamanho de Int/Float)
+    pub fn set_mode(&mut self, mode: SilMode) {
+        self.state.mode = mode;
+    }
+
+    /// Retorna o modo SIL atual
+    pub fn mode(&self) -> SilMode {
+        self.state.mode
+    }
+
+    /// Armazena inteiro no registrador (tamanho baseado no modo)
+    /// - Sil8: 8 bits (i8)
+    /// - Sil16: 16 bits (i16)
+    /// - Sil32: 32 bits (i32)
+    /// - Sil64/Sil128: 64 bits (i64)
+    pub fn set_int(&mut self, reg: usize, value: i64) {
+        self.store_int_mode(reg, value);
+    }
+
+    /// Lê inteiro do registrador (tamanho baseado no modo)
+    pub fn get_int(&self, reg: usize) -> i64 {
+        self.load_int_mode(reg)
+    }
+
+    /// Armazena float no registrador (tamanho baseado no modo)
+    /// - Sil8: ByteSil (log-polar)
+    /// - Sil16: f16 (half precision)
+    /// - Sil32: f32
+    /// - Sil64/Sil128: f64
+    pub fn set_float(&mut self, reg: usize, value: f64) {
+        self.store_float_mode(reg, value);
+    }
+
+    /// Lê float do registrador (tamanho baseado no modo)
+    pub fn get_float(&self, reg: usize) -> f64 {
+        self.load_float_mode(reg)
+    }
+
+    /// Armazena ByteSil diretamente no registrador
+    pub fn set_bytesil(&mut self, reg: usize, value: ByteSil) {
+        self.state.regs[reg] = value;
+    }
+
+    /// Lê ByteSil do registrador
+    pub fn get_bytesil(&self, reg: usize) -> ByteSil {
+        self.state.regs[reg]
+    }
+
+    /// Retorna quantos registradores um valor Int/Float ocupa no modo atual
+    pub fn regs_per_value(&self) -> usize {
+        match self.state.mode {
+            SilMode::Sil8 => 1,
+            SilMode::Sil16 => 1,
+            SilMode::Sil32 => 2,
+            SilMode::Sil64 | SilMode::Sil128 => 4,
+        }
+    }
+
+    /// Retorna o tamanho em bits do modo atual
+    pub fn mode_bits(&self) -> usize {
+        match self.state.mode {
+            SilMode::Sil8 => 8,
+            SilMode::Sil16 => 16,
+            SilMode::Sil32 => 32,
+            SilMode::Sil64 => 64,
+            SilMode::Sil128 => 128,
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_vsp_creation() {
         let vsp = Vsp::new(VspConfig::default());
         assert!(vsp.is_ok());
     }
-    
+
     #[test]
     fn test_simple_program() {
         let mut vsp = Vsp::new(VspConfig::default()).unwrap();
-        
+
         // Programa: MOVI R0, 0x55; HLT
         let code = vec![
             0x21, 0x00, 0x55, // MOVI R0, 0x55
             0x01,             // HLT
         ];
-        
+
         vsp.load_bytes(&code, &[]).unwrap();
         let result = vsp.run().unwrap();
-        
+
         assert_eq!(result.layers[0].to_u8(), 0x55);
+    }
+
+    #[test]
+    fn test_mode_aware_int_sil8() {
+        let mut vsp = Vsp::new(VspConfig::default().with_mode(SilMode::Sil8)).unwrap();
+        vsp.set_int(0, 42);
+        assert_eq!(vsp.get_int(0), 42);
+        assert_eq!(vsp.regs_per_value(), 1);
+    }
+
+    #[test]
+    fn test_mode_aware_int_sil16() {
+        let mut vsp = Vsp::new(VspConfig::default().with_mode(SilMode::Sil16)).unwrap();
+        vsp.set_int(0, 1000);
+        assert_eq!(vsp.get_int(0), 1000);
+        assert_eq!(vsp.regs_per_value(), 1);
+    }
+
+    #[test]
+    fn test_mode_aware_int_sil32() {
+        let mut vsp = Vsp::new(VspConfig::default().with_mode(SilMode::Sil32)).unwrap();
+        vsp.set_int(0, 100_000);
+        assert_eq!(vsp.get_int(0), 100_000);
+        assert_eq!(vsp.regs_per_value(), 2);
+    }
+
+    #[test]
+    fn test_mode_aware_int_sil64() {
+        let mut vsp = Vsp::new(VspConfig::default().with_mode(SilMode::Sil64)).unwrap();
+        vsp.set_int(0, 10_000_000_000i64);
+        assert_eq!(vsp.get_int(0), 10_000_000_000i64);
+        assert_eq!(vsp.regs_per_value(), 4);
+    }
+
+    #[test]
+    fn test_mode_aware_float_sil32() {
+        let mut vsp = Vsp::new(VspConfig::default().with_mode(SilMode::Sil32)).unwrap();
+        vsp.set_float(0, 3.14159);
+        let result = vsp.get_float(0);
+        assert!((result - 3.14159).abs() < 0.001); // f32 precision
+    }
+
+    #[test]
+    fn test_mode_aware_float_sil64() {
+        let mut vsp = Vsp::new(VspConfig::default().with_mode(SilMode::Sil64)).unwrap();
+        vsp.set_float(0, std::f64::consts::PI);
+        let result = vsp.get_float(0);
+        assert!((result - std::f64::consts::PI).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_mode_switch() {
+        let mut vsp = Vsp::new(VspConfig::default()).unwrap();
+
+        // Começa em Sil128 (default)
+        assert_eq!(vsp.mode(), SilMode::Sil128);
+
+        // Muda para Sil32
+        vsp.set_mode(SilMode::Sil32);
+        assert_eq!(vsp.mode(), SilMode::Sil32);
+        assert_eq!(vsp.mode_bits(), 32);
+
+        // Testa int no novo modo
+        vsp.set_int(0, 42);
+        assert_eq!(vsp.get_int(0), 42);
     }
 }

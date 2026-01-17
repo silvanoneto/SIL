@@ -1,8 +1,8 @@
 [workspace]
 members = [
-    # SIL Core
+    # SIL Core - VM e Runtime
     "sil-core",
-    # SIL Energy (medição em Joules)
+    # SIL Energy - medição em Joules
     "sil-energy",
     # SIL Perception (L0-L4)
     "sil-photonic",
@@ -27,12 +27,6 @@ members = [
     "sil-collapse",
     # SIL Orchestration
     "sil-orchestration",
-    # LIS Language
-    "lis-core",
-    "lis-cli",
-    "lis-format",
-    "lis-runtime",
-    "lis-api",
     "benches",
 ]
 resolver = "2"
